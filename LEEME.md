@@ -58,11 +58,11 @@ El caballero está cortado en piezas, como un muñeco articulado, y se anima por
 | Pieza | Qué es | Gira en |
 |---|---|---|
 | `Caballero_Torso` | Cabeza, torso y cadera | (fija; sube y baja al caminar) |
-| `Caballero_PiernaAtras_Muslo` / `PiernaFrente_Muslo` | Muslos | La cadera |
-| `Caballero_PiernaAtras_Pie` / `PiernaFrente_Pie` | Rodilla, espinilla y pie | La rodilla |
+| `Caballero_PiernaFrente_Muslo` | Muslo (se usa para las dos piernas) | La cadera |
+| `Caballero_PiernaFrente_Pie` | Rodilla, espinilla y pie (las dos piernas) | La rodilla |
 | `Caballero_Brazo` | Brazo con el cañón | El hombro (apunta) |
 
-La importación (Sprite, 850 píxeles por unidad y pivotes) y la posición de cada pieza están en `Editor/PlayerArt.cs`. Si redibujas una pieza con el mismo tamaño y pose, no hay que tocar nada. Los ángulos del paso, salto y caída se ajustan en el componente `PlayerRigAnimator` del prefab.
+La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada hacia atrás, para que las dos sean simétricas y completas. La importación (Sprite, 850 píxeles por unidad y pivotes) y la posición de cada pieza están en `Editor/PlayerArt.cs`. Si redibujas una pieza con el mismo tamaño y pose, no hay que tocar nada. Los ángulos del paso, salto y caída se ajustan en el componente `PlayerRigAnimator` del prefab.
 
 **Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 

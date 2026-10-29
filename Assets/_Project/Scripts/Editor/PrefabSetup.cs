@@ -237,14 +237,22 @@ namespace HealingKnight.EditorTools
                     SetupUtils.Child(parent, name, new Vector3(localPos.x, localPos.y, 0f)).transform;
 
                 // Piernas: muslo (gira en la cadera) y, colgando de él, rodilla+pie (gira en la rodilla).
-                Transform backThigh = Joint(b, "PiernaAtras", PlayerArt.BackThigh.position);
-                Piece(backThigh, PlayerArt.BackThigh, Vector3.zero, 0);
-                Transform backKnee = Joint(backThigh, "RodillaAtras", PlayerArt.BackShin.position - PlayerArt.BackThigh.position);
-                Piece(backKnee, PlayerArt.BackShin, Vector3.zero, 2);
+                Vector2 kneeOffset = PlayerArt.FrontShin.position - PlayerArt.FrontThigh.position;
+
+                // Pierna de atrás: mismo dibujo que la de enfrente, inclinada hacia atrás en reposo.
+                // "PiernaAtras" guarda la inclinación; "MusloAtras" es lo que mueve el animador.
+                Transform backHip = Joint(b, "PiernaAtras", PlayerArt.BackHip);
+                backHip.localRotation = Quaternion.Euler(0f, 0f, PlayerArt.BackLegRestAngle);
+                Transform backThigh = Joint(backHip, "MusloAtras", Vector2.zero);
+                Piece(backThigh, PlayerArt.FrontThigh, Vector3.zero, 0);
+                Transform backKneeRest = Joint(backThigh, "RodillaAtrasReposo", kneeOffset);
+                backKneeRest.localRotation = Quaternion.Euler(0f, 0f, -PlayerArt.BackLegRestAngle); // el pie queda plano
+                Transform backKnee = Joint(backKneeRest, "RodillaAtras", Vector2.zero);
+                Piece(backKnee, PlayerArt.FrontShin, Vector3.zero, 2);
 
                 Transform frontThigh = Joint(b, "PiernaFrente", PlayerArt.FrontThigh.position);
                 Piece(frontThigh, PlayerArt.FrontThigh, Vector3.zero, 4);
-                Transform frontKnee = Joint(frontThigh, "RodillaFrente", PlayerArt.FrontShin.position - PlayerArt.FrontThigh.position);
+                Transform frontKnee = Joint(frontThigh, "RodillaFrente", kneeOffset);
                 Piece(frontKnee, PlayerArt.FrontShin, Vector3.zero, 6);
 
                 // Parte de arriba (torso + brazo): sube y baja un poco al caminar.

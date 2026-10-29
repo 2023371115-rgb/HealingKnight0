@@ -8,10 +8,10 @@ namespace HealingKnight.EditorTools
     /// (como un muñeco articulado). Cada pieza tiene su PNG y su "_Color" (lo que pinta el medicamento, en blanco):
     ///
     ///   Torso                cabeza, torso y cadera          pivote: la cadera (articulación de la pierna de enfrente)
-    ///   PiernaAtras_Muslo    muslo de la pierna de atrás     pivote: la cadera de atrás
-    ///   PiernaAtras_Pie      rodilla, espinilla y pie        pivote: el centro de la rodilla
-    ///   PiernaFrente_Muslo   muslo de la pierna de enfrente  pivote: la cadera
+    ///   PiernaFrente_Muslo   muslo                           pivote: la cadera
     ///   PiernaFrente_Pie     rodilla, espinilla y pie        pivote: el centro de la rodilla
+    ///   (la pierna de atrás usa el MISMO dibujo que la de enfrente, un poco inclinada: así las dos son
+    ///    simétricas y completas; en el dibujo original la de atrás estaba tapada en parte)
     ///   Brazo                brazo con el cañón              pivote: el hombro (gira al apuntar)
     ///
     /// Esta clase deja la importación lista (Sprite, píxeles por unidad y pivotes) y da dónde va cada pieza.
@@ -34,10 +34,14 @@ namespace HealingKnight.EditorTools
         }
 
         public static readonly Piece Torso = new Piece("Caballero_Torso", new Vector2(0.3784f, 0.0640f), new Vector2(0.0062f, 0.7662f));
-        public static readonly Piece BackThigh = new Piece("Caballero_PiernaAtras_Muslo", new Vector2(0.5909f, 0.8098f), new Vector2(-0.0813f, 0.7765f));
-        public static readonly Piece BackShin = new Piece("Caballero_PiernaAtras_Pie", new Vector2(0.6486f, 0.8754f), new Vector2(-0.1123f, 0.4683f));
         public static readonly Piece FrontThigh = new Piece("Caballero_PiernaFrente_Muslo", new Vector2(0.3385f, 0.8317f), new Vector2(0.0062f, 0.7662f));
         public static readonly Piece FrontShin = new Piece("Caballero_PiernaFrente_Pie", new Vector2(0.3104f, 0.8699f), new Vector2(0.0679f, 0.4548f));
+        /// <summary>Cadera de la pierna de atrás (usa las piezas de la de enfrente).</summary>
+        public static readonly Vector2 BackHip = new Vector2(-0.0813f, 0.7765f);
+
+        /// <summary>Inclinación de la pierna de atrás en reposo (grados; negativo = hacia atrás), como en el dibujo.</summary>
+        public const float BackLegRestAngle = -16.9f;
+
         public static readonly Piece Arm = new Piece("Caballero_Brazo", new Vector2(66.1f / 656f, 117.16f / 219f), new Vector2(-24.9f / 850f, 979.16f / 850f));
 
         /// <summary>Del hombro a la punta del cañón (en unidades): de ahí salen las cápsulas.</summary>
