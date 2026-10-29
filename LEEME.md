@@ -47,6 +47,19 @@ Los controles se definen en `Scripts/Gameplay/Player/PlayerInputReader.cs`.
 
 ---
 
+## Arte del caballero
+
+Está en `Assets/_Project/Art/Player` (esa carpeta no la borra "Regenerar proyecto base"):
+
+| Archivo | Qué es |
+|---|---|
+| `Caballero_Cuerpo` | El cuerpo sin el brazo. Pivote entre los pies. |
+| `Caballero_Cuerpo_Color` | Lo que cambia de color en el cuerpo: cresta, ojos, círculo del casco y articulaciones (en blanco). |
+| `Caballero_Brazo` | El brazo con el cañón, horizontal hacia la derecha. Pivote en el hombro: gira para apuntar. |
+| `Caballero_Brazo_Color` | Lo que cambia de color en el cañón (en blanco). |
+
+Las piezas `_Color` van encima y `PlayerShooter` les pone el color del medicamento. La importación (Sprite, 850 píxeles por unidad y los pivotes) la deja lista `Editor/PlayerArt.cs` al crear el prefab; ahí están también la posición del hombro y el largo del cañón. Si reemplazas los PNG por otros con el mismo tamaño y pose, no hay que tocar nada; si cambias la pose, ajusta esos números.
+
 ## Enemigos: comportamiento y biología
 
 Cada enemigo tiene un comportamiento (`behavior` en su EnemyData) basado en su microorganismo, y puede tener **debilidades propias** (`weaknesses`) que ganan sobre la tabla general. Los de suelo bajan de las plataformas si estás abajo y saltan para subir si estás arriba; si no te alcanzan, patrullan. Todos se mueven con inercia (aceleran y frenan), rebotan al caminar, se estiran al saltar, se aplastan al caer y los voladores se inclinan hacia donde van. En el Sandbox, la arena "Arena_Enemigos" trae una oleada por comportamiento para probarlos.

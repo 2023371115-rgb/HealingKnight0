@@ -213,24 +213,44 @@ namespace HealingKnight.EditorTools
             GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
             Transform v = visual.transform;
 
-            // Body: piernas, torso y cabeza (se aplasta al agacharse). Reemplázalo por tus piezas.
+            // Body: se aplasta al agacharse.
             GameObject bodyGo = SetupUtils.Child(v, "Body", Vector3.zero);
             Transform b = bodyGo.transform;
-            SetupUtils.SpriteChild(b, "BackLeg", PlaceholderArt.Square, new Color(0.65f, 0.67f, 0.72f), new Vector3(-0.15f, 0f, 0f), new Vector2(0.25f, 0.45f), -2);
-            SetupUtils.SpriteChild(b, "FrontLeg", PlaceholderArt.Square, new Color(0.85f, 0.87f, 0.9f), new Vector3(0.12f, 0f, 0f), new Vector2(0.25f, 0.45f), 1);
-            SetupUtils.SpriteChild(b, "Torso", PlaceholderArt.Square, new Color(0.92f, 0.93f, 0.96f), new Vector3(0f, 0.4f, 0f), new Vector2(0.75f, 0.6f), 0);
-            SetupUtils.SpriteChild(b, "Emblem", PlaceholderArt.SquareCentered, new Color(0.9f, 0.15f, 0.2f), new Vector3(0.05f, 0.72f, 0f), new Vector2(0.18f, 0.18f), 2);
-            SetupUtils.SpriteChild(b, "Head", PlaceholderArt.CircleBottom, new Color(0.95f, 0.96f, 0.98f), new Vector3(0f, 0.95f, 0f), new Vector2(1.05f, 1.0f), 3);
-            SetupUtils.SpriteChild(b, "Visor", PlaceholderArt.SquareCentered, new Color(0.3f, 0.9f, 1f), new Vector3(0.22f, 1.48f, 0f), new Vector2(0.55f, 0.14f), 4);
+            GameObject armPivot;
+            SpriteRenderer arm;
+            var colorParts = new System.Collections.Generic.List<Object>();
+            SpriteRenderer shieldSprite;
 
-            // Brazo-cañón: gira hacia donde apuntas (8 direcciones). El pivote es el hombro.
-            GameObject armPivot = SetupUtils.Child(v, "ArmPivot", new Vector3(0.1f, config.muzzleHeight, 0f));
-            SpriteRenderer arm = SetupUtils.SpriteChild(armPivot.transform, "ArmCannon", PlaceholderArt.Capsule, Color.white,
-                new Vector3(0.35f, 0f, 0f), new Vector2(0.8f, 0.32f), 5);
+            if (PlayerArt.Available)
+            {
+                // Arte del caballero (Art/Player). Cuerpo + capa de color encima (la pinta el medicamento).
+                SetupUtils.SpriteChild(b, "Cuerpo", PlayerArt.Body, Color.white, Vector3.zero, Vector2.one, 0);
+                SpriteRenderer bodyColor = SetupUtils.SpriteChild(b, "Cuerpo_Color", PlayerArt.BodyColor, Color.white, Vector3.zero, Vector2.one, 1);
+                colorParts.Add(bodyColor);
 
-            // Escudo burbuja (diseño del prototipo): rodea todo el cuerpo.
-            SpriteRenderer shieldSprite = SetupUtils.SpriteChild(v, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
-                new Vector3(0.05f, 0.95f, 0f), new Vector2(2.1f, 2.1f), 8);
+                // Brazo-cañón: gira desde el hombro hacia donde apuntas.
+                armPivot = SetupUtils.Child(v, "ArmPivot", new Vector3(PlayerArt.Shoulder.x, PlayerArt.Shoulder.y, 0f));
+                SetupUtils.SpriteChild(armPivot.transform, "Brazo", PlayerArt.Arm, Color.white, Vector3.zero, Vector2.one, 5);
+                arm = SetupUtils.SpriteChild(armPivot.transform, "Brazo_Color", PlayerArt.ArmColor, Color.white, Vector3.zero, Vector2.one, 6);
+
+                // Escudo burbuja: rodea todo el cuerpo (el caballero mide ~1.95).
+                shieldSprite = SetupUtils.SpriteChild(v, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
+                    new Vector3(0f, 1.0f, 0f), new Vector2(2.4f, 2.4f), 8);
+            }
+            else
+            {
+                // Sin arte: figuras de relleno.
+                SetupUtils.SpriteChild(b, "BackLeg", PlaceholderArt.Square, new Color(0.65f, 0.67f, 0.72f), new Vector3(-0.15f, 0f, 0f), new Vector2(0.25f, 0.45f), -2);
+                SetupUtils.SpriteChild(b, "FrontLeg", PlaceholderArt.Square, new Color(0.85f, 0.87f, 0.9f), new Vector3(0.12f, 0f, 0f), new Vector2(0.25f, 0.45f), 1);
+                SetupUtils.SpriteChild(b, "Torso", PlaceholderArt.Square, new Color(0.92f, 0.93f, 0.96f), new Vector3(0f, 0.4f, 0f), new Vector2(0.75f, 0.6f), 0);
+                SetupUtils.SpriteChild(b, "Head", PlaceholderArt.CircleBottom, new Color(0.95f, 0.96f, 0.98f), new Vector3(0f, 0.95f, 0f), new Vector2(1.05f, 1.0f), 3);
+                SetupUtils.SpriteChild(b, "Visor", PlaceholderArt.SquareCentered, new Color(0.3f, 0.9f, 1f), new Vector3(0.22f, 1.48f, 0f), new Vector2(0.55f, 0.14f), 4);
+                armPivot = SetupUtils.Child(v, "ArmPivot", new Vector3(0.1f, config.muzzleHeight, 0f));
+                arm = SetupUtils.SpriteChild(armPivot.transform, "ArmCannon", PlaceholderArt.Capsule, Color.white,
+                    new Vector3(0.35f, 0f, 0f), new Vector2(0.8f, 0.32f), 5);
+                shieldSprite = SetupUtils.SpriteChild(v, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
+                    new Vector3(0.05f, 0.95f, 0f), new Vector2(2.1f, 2.1f), 8);
+            }
 
             AddMotor(root, v, new Vector2(0.7f, config.standingColliderHeight));
 
@@ -243,6 +263,7 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(shooter, "capsulePrefab", Capsule);
             SetupUtils.SetRef(shooter, "armPivot", armPivot.transform);
             SetupUtils.SetRef(shooter, "tintedArm", arm);
+            if (colorParts.Count > 0) SetupUtils.SetRefArray(shooter, "medicationColorParts", colorParts.ToArray());
             SetupUtils.SetRef(shooter, "fallbackRegionalMedication", data.Antiparasitario);
 
             var bombs = root.AddComponent<PlayerBombs>();
