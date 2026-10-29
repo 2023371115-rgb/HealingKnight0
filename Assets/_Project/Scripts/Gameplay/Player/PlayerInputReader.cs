@@ -11,7 +11,7 @@ namespace HealingKnight.Gameplay.Player
     ///   Mover                          A / D, flechas               Stick izq. / cruceta
     ///   Apuntar libre                  MOVER EL MOUSE               Stick der.
     ///   Apuntar en 8 direcciones*      W (+ A o D), S en el aire    Stick izq. (si no usas el der.)
-    ///   Agacharse                      S                            Abajo
+    ///   Encogerse                      S                            Abajo
     ///   Disparar (mantener)            J / clic izquierdo           X / gatillo der.
     ///   Escudo burbuja (mantener)      K / clic derecho             Gatillo izq.
     ///   Saltar / doble salto           Espacio                      A / LB
@@ -33,7 +33,7 @@ namespace HealingKnight.Gameplay.Player
         private bool mouseAim;
         private InputAction[] directMed;
 
-        /// <summary>Dirección (incluye arriba/abajo para apuntar y agacharse).</summary>
+        /// <summary>Dirección (incluye arriba/abajo para apuntar y encogerse).</summary>
         public Vector2 Move { get; private set; }
         public bool JumpHeld { get; private set; }
         /// <summary>Botón de fijar: quieto y apuntando en 8 direcciones.</summary>

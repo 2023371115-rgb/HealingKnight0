@@ -91,10 +91,10 @@ namespace HealingKnight.Gameplay.Player
             float angle = Mathf.Atan2(aim.y, aim.x * controller.Motor.Facing) * Mathf.Rad2Deg;
             armPivot.localRotation = Quaternion.Euler(0f, 0f, angle);
 
-            // El hombro baja al agacharse (coincide con la altura desde la que sale el disparo).
+            // El brazo cuelga del cuerpo, que ya se encoge entero: aquí el hombro va a su altura normal.
             PlayerConfig c = controller.Config;
             Vector3 p = armPivot.localPosition;
-            armPivot.localPosition = new Vector3(p.x, controller.IsCrouching ? c.crouchMuzzleHeight : c.muzzleHeight, p.z);
+            armPivot.localPosition = new Vector3(p.x, c.muzzleHeight, p.z);
         }
 
         // ---------------------------------------------------------------- medicamentos
@@ -189,13 +189,13 @@ namespace HealingKnight.Gameplay.Player
             if (pool.CountActive >= c.maxActiveCapsules) return false;
 
             CharacterMotor2D motor = controller.Motor;
-            Vector2 shoulder = motor.Position + new Vector2(0f, crouching ? c.crouchMuzzleHeight : c.muzzleHeight);
+            Vector2 shoulder = motor.Position + new Vector2(0f, controller.MuzzleHeight);
             Vector2 dir = aim.sqrMagnitude > 0.01f ? aim.normalized : new Vector2(motor.Facing, 0f);
 
             Projectile capsule = pool.Get();
             capsule.Launch(new ProjectileShot
             {
-                origin = shoulder + dir * c.muzzleForward,
+                origin = shoulder + dir * c.muzzleForward * controller.Size,
                 direction = dir,
                 speed = c.capsuleSpeed,
                 range = c.capsuleRange,

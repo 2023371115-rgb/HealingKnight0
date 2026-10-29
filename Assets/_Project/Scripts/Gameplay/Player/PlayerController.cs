@@ -9,7 +9,7 @@ namespace HealingKnight.Gameplay.Player
 {
     /// <summary>
     /// Cerebro de Healing Knight (estilo Metal Slug): correr a velocidad constante, salto de altura fija,
-    /// agacharse, apuntar en 8 direcciones (diagonal = dos teclas), disparar, cuchillazo automático,
+    /// encogerse, apuntar en 8 direcciones (diagonal = dos teclas), disparar, cuchillazo automático,
     /// bomba de medicamento y escudo burbuja. Cada habilidad vive en su propio componente.
     /// </summary>
     [RequireComponent(typeof(CharacterMotor2D), typeof(PlayerInputReader))]
@@ -18,7 +18,7 @@ namespace HealingKnight.Gameplay.Player
         public enum State { Normal, Hurt, Dead }
 
         [SerializeField] private PlayerConfig config;
-        [Tooltip("Opcional: se aplasta al agacharse (placeholder hasta tener animaciones).")]
+        [Tooltip("El cuerpo que se encoge al presionar abajo (incluye brazo y escudo).")]
         [SerializeField] private Transform bodyVisual;
 
         private CharacterMotor2D motor;
@@ -63,6 +63,16 @@ namespace HealingKnight.Gameplay.Player
         public PlayerHealth Health => health;
         public State CurrentState => state;
         public bool IsCrouching => crouching;
+
+        /// <summary>
+        /// Tamaño actual del caballero (1 = normal). Al presionar abajo se ENCOGE (lore: el nanocaballero cambia de tamaño)
+        /// en vez de aplastarse; pasa suave de un tamaño al otro. El brazo, el escudo y el disparo se encogen con él.
+        /// </summary>
+        public float Size => size;
+        private float size = 1f;
+
+        /// <summary>Altura del hombro ahora mismo (de ahí salen las cápsulas).</summary>
+        public float MuzzleHeight => config.muzzleHeight * size;
         /// <summary>Planeando con caída lenta.</summary>
         public bool IsSlowFalling => slowFalling;
         /// <summary>Fijado en su lugar (botón de Cuphead).</summary>
@@ -131,7 +141,15 @@ namespace HealingKnight.Gameplay.Player
                     break;
             }
 
+            UpdateSize(dt);
             CheckFall();
+        }
+
+        private void UpdateSize(float dt)
+        {
+            float target = crouching ? config.crouchHeightFactor : 1f;
+            size = Mathf.MoveTowards(size, target, config.shrinkSpeed * dt);
+            if (bodyVisual != null) bodyVisual.localScale = bodyVisualBaseScale * size;
         }
 
         private void UpdateNormal()
@@ -140,7 +158,7 @@ namespace HealingKnight.Gameplay.Player
             bool shielding = shield != null && shield.IsActive;
             locked = input.LockHeld && !shielding;
 
-            // Agacharse (solo en el suelo y sin fijar: fijado, S apunta en diagonal abajo).
+            // Encogerse (abajo: solo en el suelo y sin fijar; fijado, S apunta en diagonal abajo).
             SetCrouch(motor.IsGrounded && move.y < -0.5f && !shielding && !locked);
 
             // Hacia dónde mira.
@@ -195,7 +213,7 @@ namespace HealingKnight.Gameplay.Player
                 case AimSource.Mouse:
                 {
                     UnityEngine.Camera cam = UnityEngine.Camera.main;
-                    Vector2 shoulder = Position + new Vector2(0f, crouching ? config.crouchMuzzleHeight : config.muzzleHeight);
+                    Vector2 shoulder = Position + new Vector2(0f, MuzzleHeight);
                     if (cam != null)
                     {
                         Vector3 sp = input.PointerScreenPosition;
@@ -250,10 +268,7 @@ namespace HealingKnight.Gameplay.Player
             crouching = value;
             motor.SetColliderHeight(value ? config.standingColliderHeight * config.crouchHeightFactor : config.standingColliderHeight);
             if (hurtbox != null) hurtbox.SetHeightFactor(value ? config.crouchHeightFactor : 1f);
-            if (bodyVisual != null)
-                bodyVisual.localScale = value
-                    ? new Vector3(bodyVisualBaseScale.x * 1.1f, bodyVisualBaseScale.y * config.crouchHeightFactor, bodyVisualBaseScale.z)
-                    : bodyVisualBaseScale;
+            // El dibujo se encoge poco a poco en UpdateSize.
         }
 
         private void CheckFall()

@@ -44,7 +44,7 @@ namespace HealingKnight.Gameplay.Combat
         private void OnEnable() => all.Add(this);
         private void OnDisable() => all.Remove(this);
 
-        /// <summary>Agacharse: el cuerpo se hace más bajo (los disparos altos pasan por encima).</summary>
+        /// <summary>Encogerse: el cuerpo se hace más bajo (los disparos altos pasan por encima).</summary>
         public void SetHeightFactor(float factor)
         {
             size = new Vector2(baseSize.x, baseSize.y * factor);

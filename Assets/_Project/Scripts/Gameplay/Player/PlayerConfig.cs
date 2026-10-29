@@ -13,7 +13,7 @@ namespace HealingKnight.Gameplay.Player
     {
         [Header("Movimiento (Metal Slug: velocidad constante, sin inercia)")]
         public float runSpeed = 5f;
-        [Tooltip("Velocidad al avanzar agachado.")]
+        [Tooltip("Velocidad al avanzar encogido.")]
         public float crouchSpeed = 1.8f;
         [Tooltip("Control en el aire (0 a 1).")]
         [Range(0f, 1f)] public float airControl = 0.9f;
@@ -40,9 +40,11 @@ namespace HealingKnight.Gameplay.Player
         [Tooltip("Velocidad horizontal en el aire mientras fijas (0 = te quedas en tu X).")]
         public float lockedAirSpeed = 0f;
 
-        [Header("Agacharse")]
-        [Tooltip("Alto del cuerpo agachado respecto al normal.")]
+        [Header("Encogerse (abajo)")]
+        [Tooltip("Tamaño al encogerse (abajo): 0.55 = a poco más de la mitad. También baja el colisionador.")]
         [Range(0.3f, 1f)] public float crouchHeightFactor = 0.55f;
+        [Tooltip("Qué tan rápido se encoge y vuelve a crecer (tamaño por segundo).")]
+        public float shrinkSpeed = 5f;
         public float standingColliderHeight = 1.8f;
 
         [Header("Salud")]
@@ -61,8 +63,9 @@ namespace HealingKnight.Gameplay.Player
         public float capsuleDamage = 10f;
         public float capsuleKnockback = 1.5f;
         public int maxActiveCapsules = 8;
-        [Tooltip("Altura de la boca del cañón (de pie / agachado).")]
+        [Tooltip("Altura del hombro (de ahí sale el disparo). Encogido se multiplica por el tamaño.")]
         public float muzzleHeight = 0.85f;
+        [Tooltip("Ya no se usa: al encogerse, la altura del hombro es muzzleHeight × tamaño.")]
         public float crouchMuzzleHeight = 0.5f;
         public float muzzleForward = 0.7f;
 

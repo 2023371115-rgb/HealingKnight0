@@ -32,7 +32,7 @@ Apuntas **libre con el mouse** (o el stick derecho del control). Si no usas el m
 | Moverse | A / D | Stick izq. / cruceta |
 | Apuntar libre (miras hacia donde apuntas) | Mouse | Stick der. |
 | Apuntar en 8 direcciones | W, W + A/D, S en el aire | Stick izq. |
-| Agacharse | S | Abajo |
+| Encogerse (se hace pequeño y esquiva disparos altos) | S | Abajo |
 | Disparar (mantener = ráfaga). Si un enemigo está pegado, **cuchillazo** automático. Disparar hacia abajo en el aire frena la caída | J / clic izquierdo | X / gatillo der. |
 | Escudo burbuja (mantener) — levántalo justo antes del golpe para hacer **parry** | K / clic derecho | Gatillo izq. |
 | Saltar (altura fija) · **doble salto** en el aire | Espacio | A / LB |
@@ -53,12 +53,18 @@ Está en `Assets/_Project/Art/Player` (esa carpeta no la borra "Regenerar proyec
 
 | Archivo | Qué es |
 |---|---|
-| `Caballero_Cuerpo` | El cuerpo sin el brazo. Pivote entre los pies. |
-| `Caballero_Cuerpo_Color` | Lo que cambia de color en el cuerpo: cresta, ojos, círculo del casco y articulaciones (en blanco). |
-| `Caballero_Brazo` | El brazo con el cañón, horizontal hacia la derecha. Pivote en el hombro: gira para apuntar. |
-| `Caballero_Brazo_Color` | Lo que cambia de color en el cañón (en blanco). |
+El caballero está cortado en piezas, como un muñeco articulado, y se anima por código (`PlayerRigAnimator`): camina balanceando las piernas y doblando las rodillas, recoge las piernas al saltar, las abre al caer y respira quieto. Cada pieza tiene su PNG y su `_Color` (lo que pinta el medicamento, en blanco):
 
-Las piezas `_Color` van encima y `PlayerShooter` les pone el color del medicamento. La importación (Sprite, 850 píxeles por unidad y los pivotes) la deja lista `Editor/PlayerArt.cs` al crear el prefab; ahí están también la posición del hombro y el largo del cañón. Si reemplazas los PNG por otros con el mismo tamaño y pose, no hay que tocar nada; si cambias la pose, ajusta esos números.
+| Pieza | Qué es | Gira en |
+|---|---|---|
+| `Caballero_Torso` | Cabeza, torso y cadera | (fija; sube y baja al caminar) |
+| `Caballero_PiernaAtras_Muslo` / `PiernaFrente_Muslo` | Muslos | La cadera |
+| `Caballero_PiernaAtras_Pie` / `PiernaFrente_Pie` | Rodilla, espinilla y pie | La rodilla |
+| `Caballero_Brazo` | Brazo con el cañón | El hombro (apunta) |
+
+La importación (Sprite, 850 píxeles por unidad y pivotes) y la posición de cada pieza están en `Editor/PlayerArt.cs`. Si redibujas una pieza con el mismo tamaño y pose, no hay que tocar nada. Los ángulos del paso, salto y caída se ajustan en el componente `PlayerRigAnimator` del prefab.
+
+**Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 
 ## Enemigos: comportamiento y biología
 
@@ -162,7 +168,7 @@ Cada carpeta de `Scripts` es un *assembly* (`.asmdef`): compila por separado y n
 - Capas de física: **Ground** (piso y plataformas), **Player**, **Enemy**, **PlayerProjectile**. Los personajes solo chocan con el piso: entre ellos se atraviesan, como en Metal Slug (`PhysicsLayers.cs`).
 - Las **plataformas** son de un solo sentido (`PlatformEffector2D`): se atraviesan saltando desde abajo.
 - Caer a un hueco cuesta vida y te regresa al último suelo seguro. Los enemigos que caen se eliminan.
-- El combate **no** usa colisiones de física: disparos, cuchillo y bombas buscan `Hurtbox` (rectángulos) con matemática simple (`HitMath`). Por eso agacharse esquiva disparos altos y salta por encima de la embestida de la lombriz.
+- El combate **no** usa colisiones de física: disparos, cuchillo y bombas buscan `Hurtbox` (rectángulos) con matemática simple (`HitMath`). Por eso encogerse esquiva disparos altos y salta por encima de la embestida de la lombriz.
 - Apuntado: libre con mouse o stick derecho (`AimMath.Toward`) o en 8 direcciones con teclas (`AimMath.Resolve`). Probado en `Tests/EditMode/Combat2DTests.cs`.
 
 ## Cómo agregar contenido

@@ -4,15 +4,19 @@ using UnityEngine;
 namespace HealingKnight.EditorTools
 {
     /// <summary>
-    /// Arte del caballero (Assets/_Project/Art/Player). Son 4 PNG:
-    ///   Caballero_Cuerpo        cuerpo sin el brazo (pivote: entre los pies)
-    ///   Caballero_Cuerpo_Color  lo que cambia de color en el cuerpo (cresta, ojos, círculo del casco, articulaciones), en blanco
-    ///   Caballero_Brazo         brazo con el cañón, horizontal hacia la derecha (pivote: el hombro, para que gire al apuntar)
-    ///   Caballero_Brazo_Color   lo que cambia de color en el cañón, en blanco
-    /// Las piezas "_Color" van encima y el código les pone el color del medicamento (SpriteRenderer.color).
+    /// Arte del caballero (Assets/_Project/Art/Player), cortado en piezas para animarlo por código
+    /// (como un muñeco articulado). Cada pieza tiene su PNG y su "_Color" (lo que pinta el medicamento, en blanco):
     ///
-    /// Esta clase deja la importación lista sola (Sprite, PPU y pivotes). Si cambias los PNG por otros del mismo
-    /// tamaño y pose, no hay que tocar nada; si cambias la pose, ajusta los números de abajo.
+    ///   Torso                cabeza, torso y cadera          pivote: la cadera (articulación de la pierna de enfrente)
+    ///   PiernaAtras_Muslo    muslo de la pierna de atrás     pivote: la cadera de atrás
+    ///   PiernaAtras_Pie      rodilla, espinilla y pie        pivote: el centro de la rodilla
+    ///   PiernaFrente_Muslo   muslo de la pierna de enfrente  pivote: la cadera
+    ///   PiernaFrente_Pie     rodilla, espinilla y pie        pivote: el centro de la rodilla
+    ///   Brazo                brazo con el cañón              pivote: el hombro (gira al apuntar)
+    ///
+    /// Esta clase deja la importación lista (Sprite, píxeles por unidad y pivotes) y da dónde va cada pieza.
+    /// Las posiciones están en unidades, medidas desde el punto entre los pies.
+    /// Si redibujas una pieza con el mismo tamaño y pose, no hay que tocar nada aquí.
     /// </summary>
     internal static class PlayerArt
     {
@@ -21,22 +25,28 @@ namespace HealingKnight.EditorTools
         /// <summary>Píxeles por unidad: el caballero mide 1645 px de los pies a la punta de la cresta = ~1.95 unidades.</summary>
         public const float PixelsPerUnit = 850f;
 
-        // Pivotes (0..1 dentro de cada imagen, desde la esquina inferior izquierda).
-        private static readonly Vector2 BodyPivot = new Vector2(316f / 849f, 12f / 1663f);
-        private static readonly Vector2 ArmPivot = new Vector2(66.1f / 656f, 117.16f / 219f);
+        public struct Piece
+        {
+            public string file;
+            public Vector2 pivot;     // 0..1 dentro de la imagen, desde abajo a la izquierda
+            public Vector2 position;  // dónde va el pivote, en unidades desde los pies
+            public Piece(string file, Vector2 pivot, Vector2 position) { this.file = file; this.pivot = pivot; this.position = position; }
+        }
 
-        /// <summary>Dónde va el hombro, medido desde el pivote del cuerpo (en unidades).</summary>
-        public static readonly Vector2 Shoulder = new Vector2(-24.9f / PixelsPerUnit, 979.16f / PixelsPerUnit);
+        public static readonly Piece Torso = new Piece("Caballero_Torso", new Vector2(0.3784f, 0.0640f), new Vector2(0.0062f, 0.7662f));
+        public static readonly Piece BackThigh = new Piece("Caballero_PiernaAtras_Muslo", new Vector2(0.5909f, 0.8098f), new Vector2(-0.0813f, 0.7765f));
+        public static readonly Piece BackShin = new Piece("Caballero_PiernaAtras_Pie", new Vector2(0.6486f, 0.8754f), new Vector2(-0.1123f, 0.4683f));
+        public static readonly Piece FrontThigh = new Piece("Caballero_PiernaFrente_Muslo", new Vector2(0.3385f, 0.8317f), new Vector2(0.0062f, 0.7662f));
+        public static readonly Piece FrontShin = new Piece("Caballero_PiernaFrente_Pie", new Vector2(0.3104f, 0.8699f), new Vector2(0.0679f, 0.4548f));
+        public static readonly Piece Arm = new Piece("Caballero_Brazo", new Vector2(66.1f / 656f, 117.16f / 219f), new Vector2(-24.9f / 850f, 979.16f / 850f));
 
         /// <summary>Del hombro a la punta del cañón (en unidades): de ahí salen las cápsulas.</summary>
         public const float CannonLength = 588.9f / PixelsPerUnit;
 
-        public static Sprite Body => Load("Caballero_Cuerpo", BodyPivot);
-        public static Sprite BodyColor => Load("Caballero_Cuerpo_Color", BodyPivot);
-        public static Sprite Arm => Load("Caballero_Brazo", ArmPivot);
-        public static Sprite ArmColor => Load("Caballero_Brazo_Color", ArmPivot);
+        public static bool Available => Sprite(Torso) != null && Sprite(Arm) != null && Sprite(FrontThigh) != null;
 
-        public static bool Available => Body != null && Arm != null;
+        public static Sprite Sprite(Piece p) => Load(p.file, p.pivot);
+        public static Sprite ColorSprite(Piece p) => Load(p.file + "_Color", p.pivot);
 
         private static Sprite Load(string name, Vector2 pivot)
         {

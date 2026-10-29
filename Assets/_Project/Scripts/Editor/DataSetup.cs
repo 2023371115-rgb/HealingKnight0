@@ -159,9 +159,9 @@ namespace HealingKnight.EditorTools
         {
             PlayerConfig = SetupUtils.LoadOrCreate<PlayerConfig>($"{DataFolder}/Player/PlayerConfig.asset", c =>
             {
-                // Altura del hombro del caballero (Art/Player): 1.15 de pie; agachado el cuerpo se aplasta al 55 %.
+                // Altura del hombro del caballero (Art/Player): 1.15. Al encogerse se multiplica por el tamaño (55 %).
                 c.muzzleHeight = 1.15f;
-                c.crouchMuzzleHeight = 0.65f;
+                c.crouchMuzzleHeight = 0.63f;
                 c.muzzleForward = 0.69f; // largo del brazo-cañón: la cápsula sale de la punta
                 c.genericMedications = new List<MedicationData> { Antibiotico, Antiviral, Antiinflamatorio, Antihistaminico };
             });

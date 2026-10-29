@@ -213,7 +213,7 @@ namespace HealingKnight.EditorTools
             GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
             Transform v = visual.transform;
 
-            // Body: se aplasta al agacharse.
+            // Body: se encoge entero al presionar abajo (PlayerController.Size).
             GameObject bodyGo = SetupUtils.Child(v, "Body", Vector3.zero);
             Transform b = bodyGo.transform;
             GameObject armPivot;
@@ -223,19 +223,49 @@ namespace HealingKnight.EditorTools
 
             if (PlayerArt.Available)
             {
-                // Arte del caballero (Art/Player). Cuerpo + capa de color encima (la pinta el medicamento).
-                SetupUtils.SpriteChild(b, "Cuerpo", PlayerArt.Body, Color.white, Vector3.zero, Vector2.one, 0);
-                SpriteRenderer bodyColor = SetupUtils.SpriteChild(b, "Cuerpo_Color", PlayerArt.BodyColor, Color.white, Vector3.zero, Vector2.one, 1);
-                colorParts.Add(bodyColor);
+                // Muñeco articulado: cada pieza con su capa de color encima (la pinta el medicamento).
+                // Orden de dibujo: pierna de atrás < pierna de enfrente < torso < brazo < escudo.
+                SpriteRenderer Piece(Transform parent, PlayerArt.Piece piece, Vector3 localPos, int order)
+                {
+                    SetupUtils.SpriteChild(parent, piece.file, PlayerArt.Sprite(piece), Color.white, localPos, Vector2.one, order);
+                    SpriteRenderer col = SetupUtils.SpriteChild(parent, piece.file + "_Color", PlayerArt.ColorSprite(piece), Color.white, localPos, Vector2.one, order + 1);
+                    colorParts.Add(col);
+                    return col;
+                }
+
+                Transform Joint(Transform parent, string name, Vector2 localPos) =>
+                    SetupUtils.Child(parent, name, new Vector3(localPos.x, localPos.y, 0f)).transform;
+
+                // Piernas: muslo (gira en la cadera) y, colgando de él, rodilla+pie (gira en la rodilla).
+                Transform backThigh = Joint(b, "PiernaAtras", PlayerArt.BackThigh.position);
+                Piece(backThigh, PlayerArt.BackThigh, Vector3.zero, 0);
+                Transform backKnee = Joint(backThigh, "RodillaAtras", PlayerArt.BackShin.position - PlayerArt.BackThigh.position);
+                Piece(backKnee, PlayerArt.BackShin, Vector3.zero, 2);
+
+                Transform frontThigh = Joint(b, "PiernaFrente", PlayerArt.FrontThigh.position);
+                Piece(frontThigh, PlayerArt.FrontThigh, Vector3.zero, 4);
+                Transform frontKnee = Joint(frontThigh, "RodillaFrente", PlayerArt.FrontShin.position - PlayerArt.FrontThigh.position);
+                Piece(frontKnee, PlayerArt.FrontShin, Vector3.zero, 6);
+
+                // Parte de arriba (torso + brazo): sube y baja un poco al caminar.
+                Transform upper = SetupUtils.Child(b, "Arriba", Vector3.zero).transform;
+                Piece(upper, PlayerArt.Torso, new Vector3(PlayerArt.Torso.position.x, PlayerArt.Torso.position.y, 0f), 8);
 
                 // Brazo-cañón: gira desde el hombro hacia donde apuntas.
-                armPivot = SetupUtils.Child(v, "ArmPivot", new Vector3(PlayerArt.Shoulder.x, PlayerArt.Shoulder.y, 0f));
-                SetupUtils.SpriteChild(armPivot.transform, "Brazo", PlayerArt.Arm, Color.white, Vector3.zero, Vector2.one, 5);
-                arm = SetupUtils.SpriteChild(armPivot.transform, "Brazo_Color", PlayerArt.ArmColor, Color.white, Vector3.zero, Vector2.one, 6);
+                armPivot = SetupUtils.Child(upper, "ArmPivot", new Vector3(PlayerArt.Arm.position.x, PlayerArt.Arm.position.y, 0f));
+                SetupUtils.SpriteChild(armPivot.transform, PlayerArt.Arm.file, PlayerArt.Sprite(PlayerArt.Arm), Color.white, Vector3.zero, Vector2.one, 10);
+                arm = SetupUtils.SpriteChild(armPivot.transform, PlayerArt.Arm.file + "_Color", PlayerArt.ColorSprite(PlayerArt.Arm), Color.white, Vector3.zero, Vector2.one, 11);
 
-                // Escudo burbuja: rodea todo el cuerpo (el caballero mide ~1.95).
-                shieldSprite = SetupUtils.SpriteChild(v, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
-                    new Vector3(0f, 1.0f, 0f), new Vector2(2.4f, 2.4f), 8);
+                // Escudo burbuja: dentro de Body para que se encoja junto con el caballero.
+                shieldSprite = SetupUtils.SpriteChild(b, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
+                    new Vector3(0f, 1.0f, 0f), new Vector2(2.4f, 2.4f), 12);
+
+                var rigAnimator = root.AddComponent<PlayerRigAnimator>();
+                SetupUtils.SetRef(rigAnimator, "upper", upper);
+                SetupUtils.SetRef(rigAnimator, "backThigh", backThigh);
+                SetupUtils.SetRef(rigAnimator, "backKnee", backKnee);
+                SetupUtils.SetRef(rigAnimator, "frontThigh", frontThigh);
+                SetupUtils.SetRef(rigAnimator, "frontKnee", frontKnee);
             }
             else
             {
@@ -245,10 +275,10 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SpriteChild(b, "Torso", PlaceholderArt.Square, new Color(0.92f, 0.93f, 0.96f), new Vector3(0f, 0.4f, 0f), new Vector2(0.75f, 0.6f), 0);
                 SetupUtils.SpriteChild(b, "Head", PlaceholderArt.CircleBottom, new Color(0.95f, 0.96f, 0.98f), new Vector3(0f, 0.95f, 0f), new Vector2(1.05f, 1.0f), 3);
                 SetupUtils.SpriteChild(b, "Visor", PlaceholderArt.SquareCentered, new Color(0.3f, 0.9f, 1f), new Vector3(0.22f, 1.48f, 0f), new Vector2(0.55f, 0.14f), 4);
-                armPivot = SetupUtils.Child(v, "ArmPivot", new Vector3(0.1f, config.muzzleHeight, 0f));
+                armPivot = SetupUtils.Child(b, "ArmPivot", new Vector3(0.1f, config.muzzleHeight, 0f));
                 arm = SetupUtils.SpriteChild(armPivot.transform, "ArmCannon", PlaceholderArt.Capsule, Color.white,
                     new Vector3(0.35f, 0f, 0f), new Vector2(0.8f, 0.32f), 5);
-                shieldSprite = SetupUtils.SpriteChild(v, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
+                shieldSprite = SetupUtils.SpriteChild(b, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
                     new Vector3(0.05f, 0.95f, 0f), new Vector2(2.1f, 2.1f), 8);
             }
 
