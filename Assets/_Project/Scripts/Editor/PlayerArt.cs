@@ -52,9 +52,25 @@ namespace HealingKnight.EditorTools
         public static Sprite Sprite(Piece p) => Load(p.file, p.pivot);
         public static Sprite ColorSprite(Piece p) => Load(p.file + "_Color", p.pivot);
 
+        // Cada imagen se carga UNA vez por armado. Las dos piernas usan el mismo dibujo: si se reimportara en la
+        // segunda carga, la primera pierna se quedaría apuntando a la imagen vieja (y no se vería).
+        private static readonly System.Collections.Generic.Dictionary<string, Sprite> cache =
+            new System.Collections.Generic.Dictionary<string, Sprite>();
+
+        /// <summary>Lo llama PrefabSetup antes de armar al caballero.</summary>
+        public static void ClearCache() => cache.Clear();
+
         private static Sprite Load(string name, Vector2 pivot)
         {
             string path = $"{Folder}/{name}.png";
+            if (cache.TryGetValue(path, out Sprite cached) && cached != null) return cached;
+            Sprite sprite = LoadAndConfigure(path, pivot);
+            cache[path] = sprite;
+            return sprite;
+        }
+
+        private static Sprite LoadAndConfigure(string path, Vector2 pivot)
+        {
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer == null) return null;
 
@@ -62,9 +78,9 @@ namespace HealingKnight.EditorTools
             importer.ReadTextureSettings(settings);
             bool needs = importer.textureType != TextureImporterType.Sprite
                          || importer.spriteImportMode != SpriteImportMode.Single
-                         || !Mathf.Approximately(importer.spritePixelsPerUnit, PixelsPerUnit)
+                         || Mathf.Abs(importer.spritePixelsPerUnit - PixelsPerUnit) > 0.01f
                          || settings.spriteAlignment != (int)SpriteAlignment.Custom
-                         || (settings.spritePivot - pivot).sqrMagnitude > 1e-6f;
+                         || (settings.spritePivot - pivot).sqrMagnitude > 1e-4f; // tolera redondeos de Unity
             if (needs)
             {
                 importer.textureType = TextureImporterType.Sprite;

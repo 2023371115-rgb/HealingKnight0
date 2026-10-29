@@ -205,6 +205,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildPlayer()
         {
             PlayerConfig config = data.PlayerConfig;
+            PlayerArt.ClearCache();
             var root = new GameObject("HealingKnight");
             root.layer = PhysicsLayers.Player;
             root.AddComponent<SortingGroup>().sortingOrder = 10;
