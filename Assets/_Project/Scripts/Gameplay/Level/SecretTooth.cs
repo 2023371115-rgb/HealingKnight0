@@ -7,18 +7,18 @@ using UnityEngine;
 namespace HealingKnight.Gameplay.Level
 {
     /// <summary>
-    /// Easter egg del nivel de la Boca: un diente con cara escondido en lo alto.
-    /// Flota y se mece; si el jugador lo toca, brinca, gira, avisa y lo manda al mundo secreto
-    /// (y lo registra como secreto: desde entonces el mundo aparece en el mapa del cuerpo).
-    /// Se puede volver a tocar para regresar a ese mundo cuantas veces quieras.
+    /// Easter egg: un diente con cara escondido en lo alto del Estómago. Es la entrada secreta a la Boca.
+    /// Flota y se mece; si el jugador lo toca, brinca, gira, avisa y lo lleva a la Boca
+    /// (y lo registra como secreto: desde entonces la Boca aparece en el mapa del cuerpo).
+    /// Se puede volver a tocar para ir a la Boca cuantas veces quieras.
     /// </summary>
     public class SecretTooth : MonoBehaviour
     {
-        [SerializeField] private string secretId = "mundo_secreto";
-        [Tooltip("Nivel al que lleva (LevelData con la escena del mundo secreto).")]
+        [SerializeField] private string secretId = "digestivo_boca";
+        [Tooltip("Nivel al que lleva (la Boca).")]
         [SerializeField] private LevelData targetLevel;
-        [SerializeField, TextArea] private string firstMessage = "¡ME ENCONTRASTE! Te abro la puerta a otro mundo...";
-        [SerializeField, TextArea] private string againMessage = "¿Otra vez por aquí? Vámonos.";
+        [SerializeField, TextArea] private string firstMessage = "¡ME ENCONTRASTE! Te llevo a la boca... ¡ahí vivo yo!";
+        [SerializeField, TextArea] private string againMessage = "¿Otra vez por aquí? Vámonos a la boca.";
         [SerializeField] private float radius = 1.1f;
         [SerializeField] private float travelDelay = 2.2f;
         [SerializeField] private Transform visual;

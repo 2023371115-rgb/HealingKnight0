@@ -808,7 +808,7 @@ namespace HealingKnight.EditorTools
             return root;
         }
 
-        /// <summary>Easter egg: el diente con cara (Art/Secreto/Diente_Secreto.png). Mide ~1.6 de alto.</summary>
+        /// <summary>Easter egg: el diente con cara (Art/Secreto/Diente_Secreto.png), la entrada secreta a la Boca. Mide ~1.6 de alto.</summary>
         private GameObject BuildTooth()
         {
             var root = new GameObject("DienteSecreto");
@@ -822,7 +822,7 @@ namespace HealingKnight.EditorTools
             // Brillo detrás para que se note cuando lo encuentras.
             SetupUtils.SpriteChild(visual.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 0.95f, 0.6f, 0.25f), Vector3.zero, new Vector2(2.2f, 2.2f), 4);
             SetupUtils.SetRef(tooth, "visual", visual.transform);
-            SetupUtils.SetRef(tooth, "targetLevel", data.SecretoMundo);
+            SetupUtils.SetRef(tooth, "targetLevel", data.DigestivoBoca);
             return root;
         }
 

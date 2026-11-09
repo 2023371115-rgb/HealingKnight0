@@ -68,7 +68,7 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 ## Easter egg: el diente
 
-En el nivel secreto de la Boca, al final, hay una escalera de muelas (hace falta el doble salto) y arriba flota un diente con cara. Al tocarlo brinca, gira, avisa y te lleva al **mundo secreto** (`Secreto_MundoNuevo`): un adelanto de un planeta vivo invadido por patógenos alienígenas. Desde ese momento ese mundo aparece también en el mapa del cuerpo, dentro del sistema digestivo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.
+En el Estómago, en la plataforma más alta entre la primera y la segunda arena, flota un diente con cara. Es la entrada secreta a la **Boca**: al tocarlo brinca, gira, avisa y te lleva ahí. Desde ese momento la Boca aparece también en el mapa del cuerpo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.
 
 ## Enemigos: comportamiento y biología
 
@@ -118,7 +118,7 @@ Todos los sonidos viven en `Assets/_Project/Audio/Resources/SFX` y el juego los 
 | `Neurona_Carga`, `Neurona_Descarga`, `Neurona_Golpe`, `Neurona_Infecta` | Neuronas: carga y descarga de la roja, golpe e infección de la sana |
 | `Campo_Neuroprotector` | Bomba de anticonvulsivo |
 | `Rabia_Chillido` | La cadena de rabia da la vuelta |
-| `Diente_Secreto` | Tocar el diente secreto de la Boca |
+| `Diente_Secreto` | Tocar el diente secreto del Estómago (lleva a la Boca) |
 | `Ambiente_<Sistema>` (bucle) | Fondo de cada sistema según el nombre de la escena (`Ambiente_Digestivo`, `_Respiratorio`, `_Nervioso`). `Ambiente_<Escena>` (p. ej. `Ambiente_Nervioso_Hipocampo`) le gana para un nivel en particular |
 
 Los sonidos que pasan fuera de la pantalla se oyen más bajo y, si están muy lejos, no suenan. Disparos e impactos: cortos (menos de 0.2 s) y en mono.
