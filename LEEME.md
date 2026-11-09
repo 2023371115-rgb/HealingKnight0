@@ -70,6 +70,8 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 En el Estómago, en la plataforma más alta entre la primera y la segunda arena, flota un diente con cara. Es la entrada secreta a la **Boca**: al tocarlo brinca, gira, avisa y te lleva ahí. Desde ese momento la Boca aparece también en el mapa del cuerpo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.
 
+**Mundo secreto (solo de prueba):** una idea para después, un planeta vivo invadido por patógenos alienígenas. No está en el juego ni en el mapa; solo se abre desde **Healing Knight → Abrir escena → Extra · Mundo secreto (prueba)**.
+
 ## Enemigos: comportamiento y biología
 
 Cada enemigo tiene un comportamiento (`behavior` en su EnemyData) basado en su microorganismo, y puede tener **debilidades propias** (`weaknesses`) que ganan sobre la tabla general. Los de suelo bajan de las plataformas si estás abajo y saltan para subir si estás arriba; si no te alcanzan, patrullan. Todos se mueven con inercia (aceleran y frenan), rebotan al caminar, se estiran al saltar, se aplastan al caer y los voladores se inclinan hacia donde van. En el Sandbox, la arena "Arena_Enemigos" trae una oleada por comportamiento para probarlos.

@@ -88,6 +88,9 @@ namespace HealingKnight.EditorTools
         [MenuItem("Healing Knight/Abrir escena/Nervioso · Hipocampo (jefe rabia)", priority = 35)]
         private static void OpenHipocampo() => Open(SceneSetup.HipocampoPath);
 
+        [MenuItem("Healing Knight/Abrir escena/Extra · Mundo secreto (prueba)", priority = 41)]
+        private static void OpenSecreto() => Open(SceneSetup.SecretoPath);
+
         [MenuItem("Healing Knight/Abrir escena/Sandbox", priority = 40)]
         private static void OpenSandbox() => Open(SceneSetup.SandboxPath);
 

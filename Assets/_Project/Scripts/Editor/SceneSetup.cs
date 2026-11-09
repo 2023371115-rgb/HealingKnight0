@@ -39,6 +39,8 @@ namespace HealingKnight.EditorTools
         public static string DelgadoPath => $"{Folder}/Levels/Digestivo/Digestivo_IntestinoDelgado.unity";
         public static string GruesoPath => $"{Folder}/Levels/Digestivo/Digestivo_IntestinoGrueso.unity";
         public static string BocaPath => $"{Folder}/Levels/Digestivo/Digestivo_Boca.unity";
+        /// <summary>Solo para verlo en el editor: no está en la compilación ni en el mapa.</summary>
+        public static string SecretoPath => $"{Folder}/Extra/Secreto_MundoNuevo.unity";
         public static string SandboxPath => $"{Folder}/Sandbox/Sandbox.unity";
         public static string NarizPath => $"{Folder}/Levels/Respiratorio/Respiratorio_Nariz.unity";
         public static string TraqueaPath => $"{Folder}/Levels/Respiratorio/Respiratorio_Traquea.unity";
@@ -61,6 +63,7 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(MedulaPath, BuildMedula);
             CreateIfMissing(CerebroPath, BuildCerebro);
             CreateIfMissing(HipocampoPath, BuildHipocampo);
+            CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
             EditorBuildSettings.scenes = new[]
@@ -719,6 +722,34 @@ namespace HealingKnight.EditorTools
             Platform(38f, 2.2f, 2f);
             Platform(44f, 3.4f, 2f);
             Platform(50f, 2.2f, 2f);
+        }
+
+        /// <summary>
+        /// Mundo secreto: adelanto de una idea para después (un planeta vivo invadido por patógenos alienígenas).
+        /// NO está en el juego: no aparece en el mapa ni en la compilación. Solo se abre desde el editor:
+        /// Healing Knight → Abrir escena → Extra · Mundo secreto (prueba). Es una arena corta con enemigos que ya existen.
+        /// </summary>
+        private void BuildMundoSecreto()
+        {
+            BuildLevelBase(60f, new LevelStyle
+            {
+                // Planeta vivo: cielo verde azulado profundo, suelo de cristal lila que brilla en turquesa.
+                background = new Color(0.02f, 0.08f, 0.09f),
+                wall = new Color(0.16f, 0.1f, 0.3f),
+                floor = new Color(0.3f, 0.2f, 0.5f),
+                floorEdge = new Color(0.35f, 1f, 0.85f),
+                blob = new Color(0.25f, 0.9f, 0.7f, 0.3f),
+                decor = Decor.Rings,
+                glow = new Color(0.35f, 1f, 0.85f, 1f)
+            }, "¿?¿?¿? Esto no es un cuerpo... es un PLANETA VIVO. Unos patógenos que no son de aquí lo están invadiendo. (Próximamente.)");
+
+            Platform(6f, 2.4f, 2.6f);
+            Arena("Arena_Invasores", 12f, 20f, "Patógenos alienígenas: se parecen a los que ya conoces... pero vienen de otro mundo.",
+                W(0.8f, E(prefabs.Rotavirus, data.Rotavirus, 2), E(prefabs.Polen, data.Polen, 2, SpawnSide.Left)),
+                W(1.0f, E(prefabs.Herpes, data.Herpes, 1), E(prefabs.Neumococo, data.Neumococo, 3, SpawnSide.Both)));
+            Platform(16f, 3.6f, 2.6f);
+            Platform(24f, 2.4f, 2.6f);
+            SetMessage("Fin del adelanto. Gracias por encontrar el diente.", 40f);
         }
 
         // ---------- Niveles del Sistema Respiratorio (GDD: avance por bronquiolos, mucosidad e inflamación) ----------
