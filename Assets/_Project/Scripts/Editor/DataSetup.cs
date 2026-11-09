@@ -22,6 +22,7 @@ namespace HealingKnight.EditorTools
         public EnemyData Poliovirus, Meningococo, Herpes, Rabia, NeuronaHiperexcitada, RabiaJefe, RabiaVirion;
         public GameCatalog Catalog;
         public LevelData DigestivoEstomago, DigestivoDelgado, DigestivoGrueso, DigestivoBoca;
+        public LevelData SecretoMundo;
         public LevelData RespiratorioNariz, RespiratorioTraquea, RespiratorioPulmones;
         public LevelData NerviosoMedula, NerviosoCerebro, NerviosoHipocampo;
 
@@ -617,10 +618,20 @@ namespace HealingKnight.EditorTools
                 UnityEditor.EditorUtility.SetDirty(DigestivoBoca);
             }
 
+            // Easter egg: el diente con cara de la Boca lleva a un mundo que no es un cuerpo (adelanto del siguiente juego).
+            SecretoMundo = Level("Digestivo", "98_Mundo_Secreto", "mundo_secreto", "¿Mundo nuevo?", "Secreto_MundoNuevo", false,
+                "Un planeta vivo invadido por patógenos alienígenas. Lo abrió un diente muy raro.");
+            if (!SecretoMundo.hidden)
+            {
+                SecretoMundo.hidden = true;
+                SecretoMundo.secretId = "mundo_secreto";
+                UnityEditor.EditorUtility.SetDirty(SecretoMundo);
+            }
+
             SystemData digestivo = MakeSystem("Digestivo", "digestivo", "Sistema Digestivo", "I", Antiparasitario,
                 new Color(0.95f, 0.45f, 0.55f), new Vector2(0.5f, 0.3f),
                 "Los patógenos se ingirieron en cápsulas y se instalaron aquí primero.",
-                DigestivoEstomago, DigestivoDelgado, DigestivoGrueso, DigestivoBoca);
+                DigestivoEstomago, DigestivoDelgado, DigestivoGrueso, DigestivoBoca, SecretoMundo);
 
             RespiratorioNariz = PlayableLevel("Respiratorio", "01_Nariz", "respiratorio_nariz", "Nariz", "Respiratorio_Nariz", false,
                 "Rinovirus, polen y S. aureus. Conoce el Mucolítico: disuelve la mucosidad.");

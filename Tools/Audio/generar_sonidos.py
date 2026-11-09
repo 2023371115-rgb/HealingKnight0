@@ -190,6 +190,9 @@ SONIDOS = {
     "Neurona_Infecta":          {"dur": 0.80, "caida": 1.2, "capas": [
         {"onda": "saw", "f0": 600, "f1": 180, "curva": 0.7, "vol": 1, "vibrato": [9, 40]},
         {"ruido": True, "suave": 1, "vol": 0.5, "chispas": 0.8}]},
+    "Diente_Secreto":           {"dur": 1.30, "caida": 1.1, "capas": [   # easter egg: ¡ding! + risita
+        {"onda": "sine", "f0": 1318, "f1": 1318, "vol": 0.8}, {"onda": "sine", "f0": 1976, "f1": 1976, "vol": 0.5, "desde": 0.07},
+        {"onda": "square", "f0": 520, "f1": 700, "vol": 0.35, "golpes": [0.11, 6], "desde": 0.35, "vibrato": [9, 30]}]},
     "Campo_Neuroprotector":     {"dur": 1.20, "caida": 1.3, "ataque": 0.05, "capas": [
         {"onda": "sine", "f0": 880, "f1": 880, "vol": 1, "tremolo": [6, 0.5]}, {"onda": "sine", "f0": 1320, "f1": 1330, "vol": 0.6},
         {"onda": "sine", "f0": 440, "f1": 440, "vol": 0.6}]},

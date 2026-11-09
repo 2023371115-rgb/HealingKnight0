@@ -66,6 +66,10 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 **Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 
+## Easter egg: el diente
+
+En el nivel secreto de la Boca, al final, hay una escalera de muelas (hace falta el doble salto) y arriba flota un diente con cara. Al tocarlo brinca, gira, avisa y te lleva al **mundo secreto** (`Secreto_MundoNuevo`): un adelanto de un planeta vivo invadido por patógenos alienígenas. Desde ese momento ese mundo aparece también en el mapa del cuerpo, dentro del sistema digestivo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.
+
 ## Enemigos: comportamiento y biología
 
 Cada enemigo tiene un comportamiento (`behavior` en su EnemyData) basado en su microorganismo, y puede tener **debilidades propias** (`weaknesses`) que ganan sobre la tabla general. Los de suelo bajan de las plataformas si estás abajo y saltan para subir si estás arriba; si no te alcanzan, patrullan. Todos se mueven con inercia (aceleran y frenan), rebotan al caminar, se estiran al saltar, se aplastan al caer y los voladores se inclinan hacia donde van. En el Sandbox, la arena "Arena_Enemigos" trae una oleada por comportamiento para probarlos.
@@ -114,6 +118,7 @@ Todos los sonidos viven en `Assets/_Project/Audio/Resources/SFX` y el juego los 
 | `Neurona_Carga`, `Neurona_Descarga`, `Neurona_Golpe`, `Neurona_Infecta` | Neuronas: carga y descarga de la roja, golpe e infección de la sana |
 | `Campo_Neuroprotector` | Bomba de anticonvulsivo |
 | `Rabia_Chillido` | La cadena de rabia da la vuelta |
+| `Diente_Secreto` | Tocar el diente secreto de la Boca |
 | `Ambiente_<Sistema>` (bucle) | Fondo de cada sistema según el nombre de la escena (`Ambiente_Digestivo`, `_Respiratorio`, `_Nervioso`). `Ambiente_<Escena>` (p. ej. `Ambiente_Nervioso_Hipocampo`) le gana para un nivel en particular |
 
 Los sonidos que pasan fuera de la pantalla se oyen más bajo y, si están muy lejos, no suenan. Disparos e impactos: cortos (menos de 0.2 s) y en mono.

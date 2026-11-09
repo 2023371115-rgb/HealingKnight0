@@ -32,6 +32,7 @@ namespace HealingKnight.EditorTools
         public LightningStorm Storm;
         public AcidPool Acid;
         public SecretPassage Secret;
+        public SecretTooth Tooth;
 
         private readonly DataSetup data;
 
@@ -101,6 +102,7 @@ namespace HealingKnight.EditorTools
             RabiaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Rabia_Hipocampo.prefab", BuildRabiesBoss);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
+            Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
 
             Acid = LoadOrBuild<AcidPool>($"{Folder}/Hazards/AcidPool.prefab", BuildAcid);
         }
@@ -804,6 +806,48 @@ namespace HealingKnight.EditorTools
                 Vector3.zero, new Vector2(0.6f, 1.3f), -5);
             SetupUtils.SetRef(secret, "glow", glow);
             return root;
+        }
+
+        /// <summary>Easter egg: el diente con cara (Art/Secreto/Diente_Secreto.png). Mide ~1.6 de alto.</summary>
+        private GameObject BuildTooth()
+        {
+            var root = new GameObject("DienteSecreto");
+            var tooth = root.AddComponent<SecretTooth>();
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Sprite art = LoadArtSprite("Assets/_Project/Art/Secreto/Diente_Secreto.png", 400f, new Vector2(0.5f, 0.5f));
+            if (art != null)
+                SetupUtils.SpriteChild(visual.transform, "Diente", art, Color.white, Vector3.zero, Vector2.one, 5);
+            else
+                SetupUtils.SpriteChild(visual.transform, "Diente", PlaceholderArt.Circle, new Color(1f, 0.92f, 0.7f), Vector3.zero, new Vector2(1f, 1.3f), 5);
+            // Brillo detrás para que se note cuando lo encuentras.
+            SetupUtils.SpriteChild(visual.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 0.95f, 0.6f, 0.25f), Vector3.zero, new Vector2(2.2f, 2.2f), 4);
+            SetupUtils.SetRef(tooth, "visual", visual.transform);
+            SetupUtils.SetRef(tooth, "targetLevel", data.SecretoMundo);
+            return root;
+        }
+
+        /// <summary>Importa un PNG como Sprite con su tamaño y pivote (solo cambia la importación si hace falta).</summary>
+        private static Sprite LoadArtSprite(string path, float pixelsPerUnit, Vector2 pivot)
+        {
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return null;
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            if (importer.textureType != TextureImporterType.Sprite || Mathf.Abs(importer.spritePixelsPerUnit - pixelsPerUnit) > 0.01f
+                || settings.spriteAlignment != (int)SpriteAlignment.Custom || (settings.spritePivot - pivot).sqrMagnitude > 1e-4f)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = pixelsPerUnit;
+                importer.mipmapEnabled = false;
+                importer.alphaIsTransparency = true;
+                importer.ReadTextureSettings(settings);
+                settings.spriteAlignment = (int)SpriteAlignment.Custom;
+                settings.spritePivot = pivot;
+                importer.SetTextureSettings(settings);
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         // ---------- Peligros ----------
