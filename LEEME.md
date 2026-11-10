@@ -94,8 +94,8 @@ arriba del piso y debajo de cada plataforma; las paredes de huecos y lagos lleva
 
 El Estómago tiene tres partes que suben de dificultad:
 1. **Inicio seco** (tutorial).
-2. **Lago de ácido:** el piso seguro es la capa de moco (franja brillante); el ácido llena cavidades HUNDIDAS en el
-   piso (`basins` en el `LevelStyle`) y los huecos están llenos de ácido casi hasta el borde.
+2. **Lagos de ácido:** dos lagos hondos y largos (`basins` en el `LevelStyle`, 1.2 de hondo) que se cruzan
+   brincando sobre la comida que flota. Solo hay dos bancos de moco (zona segura) y ya no hay huecos al vacío.
    Biología: el moco es lo que protege al estómago de su propio ácido, y ahí vive la H. pylori.
 3. **Alberca de marea:** el final del nivel es una alberca honda que siempre tiene ácido (`tidePool` en el
    `LevelStyle`). No hay plataformas: solo comida flotando. Cuando retumba, el ácido sube y la comida sube contigo.

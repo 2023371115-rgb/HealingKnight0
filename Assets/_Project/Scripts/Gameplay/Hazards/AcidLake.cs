@@ -45,14 +45,18 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private string firstWarning = "¡CONTRACCIÓN! El ácido va a subir: ¡quédate sobre la comida!";
 
         [Header("Aspecto")]
-        [SerializeField] private Color deep = new Color(0.1f, 0.32f, 0.04f, 0.9f);
-        [SerializeField] private Color middle = new Color(0.24f, 0.6f, 0.07f, 0.82f);
-        [SerializeField] private Color surface = new Color(0.45f, 0.88f, 0.12f, 0.88f);
-        [SerializeField] private Color crest = new Color(0.8f, 1f, 0.45f, 1f);
+        [Tooltip("Color en lo hondo (más opaco).")]
+        [SerializeField] private Color deep = new Color(0.12f, 0.24f, 0.05f, 0.93f);
+        [Tooltip("Color justo bajo la superficie (más transparente: se alcanza a ver lo que está hundido).")]
+        [SerializeField] private Color surface = new Color(0.52f, 0.74f, 0.2f, 0.58f);
+        [Tooltip("Línea brillante de la superficie, burbujas y vapor.")]
+        [SerializeField] private Color crest = new Color(0.86f, 0.95f, 0.58f, 0.9f);
+        [Tooltip("Qué tan hondo (unidades) llega el degradado de claro a oscuro.")]
+        [SerializeField] private float gradientDepth = 1.4f;
         [Tooltip("Enfrente de los personajes (0-12) para que se vean hundidos; detrás de las plataformas no importa (quedan más arriba).")]
         [SerializeField] private int sortingOrder = 30;
         [Tooltip("Ancho de cada columna de la ola (más chico = ola más suave, más grande = más pixel art).")]
-        [SerializeField] private float columnWidth = 0.2f;
+        [SerializeField] private float columnWidth = 0.0625f;
 
         private enum Phase { Waiting, Dry, Warning, Rising, Holding, Falling }
 
@@ -63,7 +67,8 @@ namespace HealingKnight.Gameplay.Hazards
         private float damageTimer;
         private bool warnedOnce;
 
-        private SpriteRenderer body, depthShade;
+        private SpriteRenderer body, deepFill, glint;
+        private Sprite gradient;
         private SpriteRenderer[] columns, crests;
         private Bubble[] bubbles;
         private float seed;
@@ -218,19 +223,21 @@ namespace HealingKnight.Gameplay.Hazards
         {
             EnsureSprites();
 
-            body = Make("Liquido", square, middle, sortingOrder);
-            depthShade = Make("Profundo", square, deep, sortingOrder);
+            gradient = MakeGradient(surface, deep);
+            body = Make("Liquido", gradient, Color.white, sortingOrder);
+            deepFill = Make("Hondo", square, deep, sortingOrder);
+            glint = Make("Reflejo", square, new Color(crest.r, crest.g, crest.b, 0.16f), sortingOrder + 1);
 
             int count = Mathf.Max(2, Mathf.CeilToInt(width / columnWidth));
             columns = new SpriteRenderer[count];
             crests = new SpriteRenderer[count];
             for (int i = 0; i < count; i++)
             {
-                columns[i] = Make("Ola", square, surface, sortingOrder + 1);
+                columns[i] = Make("Ola", square, new Color(surface.r, surface.g, surface.b, surface.a * 0.9f), sortingOrder + 1);
                 crests[i] = Make("Cresta", square, crest, sortingOrder + 2);
             }
 
-            int bubbleCount = Mathf.Clamp(Mathf.RoundToInt(width * 1.2f), 4, 60);
+            int bubbleCount = Mathf.Clamp(Mathf.RoundToInt(width * 0.6f), 3, 30);
             bubbles = new Bubble[bubbleCount];
             for (int i = 0; i < bubbleCount; i++)
             {
@@ -251,15 +258,32 @@ namespace HealingKnight.Gameplay.Hazards
             return r;
         }
 
-        /// <summary>Altura de la ola en x (local), en unidades; escalonada para que se vea pixel art.</summary>
+        /// <summary>Altura de la ola en x (local), en unidades. Ondas lentas y suaves (líquido espeso),
+        /// redondeadas a 1/64 de unidad para que coincidan con los pixeles del tejido.</summary>
         private float Wave(float x, float t)
         {
-            float a = 0.05f + 0.1f * agitation;
-            float h = Mathf.Sin(x * 1.7f + t * 2.3f + seed) * 0.55f
-                      + Mathf.Sin(x * 3.9f - t * 3.1f + seed * 2f) * 0.3f
-                      + Mathf.Sin(x * 0.6f + t * 1.1f) * 0.15f;
+            float a = 0.025f + 0.07f * agitation;
+            float h = Mathf.Sin(x * 1.3f + t * 1.6f + seed) * 0.6f
+                      + Mathf.Sin(x * 2.9f - t * 2.2f + seed * 2f) * 0.25f
+                      + Mathf.Sin(x * 0.45f + t * 0.8f) * 0.15f;
             h = (h * 0.5f + 0.5f) * a;
-            return Mathf.Round(h * 32f) / 32f;
+            return Mathf.Round(h * 64f) / 64f;
+        }
+
+        /// <summary>Degradado vertical: claro y transparente arriba, oscuro y opaco abajo.</summary>
+        private static Sprite MakeGradient(Color top, Color bottom)
+        {
+            const int n = 32;
+            var tex = new Texture2D(1, n) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            var pixels = new Color[n];
+            for (int y = 0; y < n; y++)
+            {
+                float k = y / (float)(n - 1); // 0 abajo, 1 arriba
+                pixels[y] = Color.Lerp(bottom, top, k * k);
+            }
+            tex.SetPixels(pixels);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, 1, n), new Vector2(0.5f, 0.5f), n);
         }
 
         private void UpdateVisual(float dt)
@@ -278,15 +302,25 @@ namespace HealingKnight.Gameplay.Hazards
             float left = -width * 0.5f;
             float tremble = phase == Phase.Warning ? Mathf.Sin(t * 60f) * 0.02f : 0f;
 
-            // Cuerpo: del fondo hasta la superficie. Abajo más oscuro (se ve hondo).
+            // Cuerpo: degradado desde la superficie hasta 'gradientDepth' abajo; más abajo, color hondo parejo.
             float bodyTop = level;
             float bodyBottom = -0.05f;
-            body.transform.localPosition = new Vector3(0f, (bodyTop + bodyBottom) * 0.5f, 0f);
-            body.transform.localScale = new Vector3(width, bodyTop - bodyBottom, 1f);
-            float shadeTop = bodyBottom + (bodyTop - bodyBottom) * 0.55f;
-            depthShade.enabled = level > 0.35f;
-            depthShade.transform.localPosition = new Vector3(0f, (shadeTop + bodyBottom) * 0.5f, 0f);
-            depthShade.transform.localScale = new Vector3(width, shadeTop - bodyBottom, 1f);
+            float gradBottom = Mathf.Max(bodyBottom, bodyTop - gradientDepth);
+            // Se escala según el tamaño real del sprite del degradado.
+            Vector2 gs = gradient.bounds.size;
+            body.transform.localPosition = new Vector3(0f, (bodyTop + gradBottom) * 0.5f, 0f);
+            body.transform.localScale = new Vector3(width / gs.x, (bodyTop - gradBottom) / gs.y, 1f);
+            bool hasDeep = gradBottom > bodyBottom + 0.01f;
+            deepFill.enabled = hasDeep;
+            if (hasDeep)
+            {
+                deepFill.transform.localPosition = new Vector3(0f, (gradBottom + bodyBottom) * 0.5f, 0f);
+                deepFill.transform.localScale = new Vector3(width, gradBottom - bodyBottom + 0.01f, 1f);
+            }
+            // Reflejo de luz que se mueve despacio bajo la superficie.
+            float g = Mathf.Sin(t * 0.7f + seed) * 0.03f;
+            glint.transform.localPosition = new Vector3(0f, level - 0.14f + g, 0f);
+            glint.transform.localScale = new Vector3(width - 0.1f, 0.05f, 1f);
 
             float colW = width / columns.Length;
             for (int i = 0; i < columns.Length; i++)
@@ -298,10 +332,10 @@ namespace HealingKnight.Gameplay.Hazards
                 h *= edge;
                 // Columna: de un poco abajo de la superficie hasta la cresta de la ola.
                 float top = level + h;
-                columns[i].transform.localPosition = new Vector3(x, level + (h - 0.1f) * 0.5f, 0f);
-                columns[i].transform.localScale = new Vector3(colW + 0.002f, h + 0.1f, 1f);
-                crests[i].transform.localPosition = new Vector3(x, top - 0.02f, 0f);
-                crests[i].transform.localScale = new Vector3(colW + 0.002f, 0.04f, 1f);
+                columns[i].transform.localPosition = new Vector3(x, level + (h - 0.06f) * 0.5f, 0f);
+                columns[i].transform.localScale = new Vector3(colW + 0.002f, h + 0.06f, 1f);
+                crests[i].transform.localPosition = new Vector3(x, top - 0.016f, 0f);
+                crests[i].transform.localScale = new Vector3(colW + 0.002f, 0.032f, 1f);
             }
 
 
@@ -318,7 +352,7 @@ namespace HealingKnight.Gameplay.Hazards
                 // Vapor: sube por encima del ácido y se desvanece.
                 b.y += b.speed * 0.5f * dt;
                 float life = Mathf.Clamp01((b.y - level) / 1.4f);
-                r.color = new Color(crest.r, crest.g, crest.b, 0.12f * (1f - life));
+                r.color = new Color(crest.r, crest.g, crest.b, 0.07f * (1f - life));
                 float s = b.size * (1.5f + life * 2f);
                 r.transform.localScale = new Vector3(s, s, 1f);
                 r.transform.localPosition = new Vector3(b.x + Mathf.Sin(t * 1.5f + b.size * 30f) * 0.15f, b.y, 0f);
@@ -345,7 +379,7 @@ namespace HealingKnight.Gameplay.Hazards
                 b.y = surfaceHere;
                 b.popTimer = 0.12f;
             }
-            r.color = new Color(crest.r, crest.g, crest.b, 0.75f);
+            r.color = new Color(crest.r, crest.g, crest.b, 0.45f);
             r.transform.localScale = new Vector3(b.size, b.size, 1f);
             r.transform.localPosition = new Vector3(b.x + Mathf.Sin(t * 4f + b.size * 50f) * 0.03f, b.y, 0f);
         }
@@ -366,7 +400,7 @@ namespace HealingKnight.Gameplay.Hazards
         private void SetVisible(bool on)
         {
             if (body.enabled == on) return;
-            body.enabled = on; depthShade.enabled = on;
+            body.enabled = on; deepFill.enabled = on; glint.enabled = on;
             for (int i = 0; i < columns.Length; i++) { columns[i].enabled = on; crests[i].enabled = on; }
             for (int i = 0; i < bubbles.Length; i++) bubbles[i].renderer.enabled = on;
         }
