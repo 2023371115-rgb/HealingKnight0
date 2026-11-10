@@ -66,6 +66,28 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 **Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 
+## Ácido del Estómago (lago y marea)
+
+El Estómago tiene tres partes que suben de dificultad:
+1. **Inicio seco** (tutorial).
+2. **Lago de ácido:** el piso seguro es la capa de moco (franja rosa pálido); el ácido se junta entre los bancos.
+   Biología: el moco es lo que protege al estómago de su propio ácido, y ahí vive la H. pylori.
+3. **Marea:** en la última arena el estómago se contrae. Retumba y tiembla la cámara (aviso), el ácido sube,
+   se queda unos segundos y baja. Hay que estar en una plataforma.
+
+El ácido se dibuja y anima por código (`Hazards/AcidLake.cs`): olas pixeleadas, cresta brillante, burbujas que
+revientan y vapor. No necesita arte. Daña si tienes los pies dentro (saltando por encima no); el escudo no protege.
+A los enemigos no les hace nada (la H. pylori neutraliza el ácido con ureasa).
+
+En `SceneSetup`:
+- `Lake(desdeX, hastaX)` pone un lago fijo.
+- `Tide(desdeX, hastaX, altura)` pone una marea; las plataformas deben quedar más altas que `altura`.
+- `MucusLayer(desdeX, hastaX)` dibuja la capa de moco.
+
+En la escena puedes ajustar a mano cada lago: colores, ancho de columna de la ola (más grande = más pixel art),
+daño y los tiempos de la marea (seco, aviso, subida, espera, bajada). Sirve igual para la bilis del intestino
+cambiando los colores.
+
 ## Fondos de nivel (imagen)
 
 El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pixel art, 1672×941).

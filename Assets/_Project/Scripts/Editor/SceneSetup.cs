@@ -612,6 +612,41 @@ namespace HealingKnight.EditorTools
             return arena;
         }
 
+        /// <summary>Lago de ácido sobre el piso, de 'fromX' a 'toX' (animado por código, ver AcidLake).</summary>
+        private AcidLake Lake(float fromX, float toX, float level = 0.22f)
+        {
+            var go = new GameObject("LagoAcido");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3((fromX + toX) * 0.5f, FloorY, 0f);
+            var lake = go.AddComponent<AcidLake>();
+            lake.Configure(toX - fromX, level, false, 0f);
+            return lake;
+        }
+
+        /// <summary>Marea de ácido: seco, aviso (retumbo), sube hasta 'high', baja. Pon plataformas arriba de 'high'.</summary>
+        private AcidLake Tide(float fromX, float toX, float high)
+        {
+            AcidLake lake = Lake(fromX, toX, 0f);
+            lake.name = "MareaAcido";
+            lake.Configure(toX - fromX, 0f, true, high);
+            return lake;
+        }
+
+        /// <summary>Capa de moco sobre el piso (zona segura: el moco protege al estómago de su propio ácido).</summary>
+        private void MucusLayer(float fromX, float toX)
+        {
+            var color = new Color(1f, 0.86f, 0.88f, 0.3f);
+            SetupUtils.SpriteChild(environment, "Moco", PlaceholderArt.Square, color,
+                new Vector3((fromX + toX) * 0.5f, FloorY + 0.02f, 0f), new Vector2(toX - fromX, 0.16f), -98);
+            var random = new System.Random((int)(fromX * 10f));
+            for (float x = fromX + 0.8f; x < toX - 0.8f; x += 2f + (float)random.NextDouble() * 2.5f)
+            {
+                float w = 1.2f + (float)random.NextDouble() * 1.2f;
+                SetupUtils.SpriteChild(environment, "MocoBulto", PlaceholderArt.Circle, new Color(1f, 0.86f, 0.88f, 0.22f),
+                    new Vector3(x, FloorY + 0.05f, 0f), new Vector2(w, 0.45f), -98);
+            }
+        }
+
         /// <summary>Pasaje secreto; 'groundY' = piso o plataforma donde está.</summary>
         private void Tooth(float x, float groundY)
         {
@@ -644,6 +679,12 @@ namespace HealingKnight.EditorTools
             }, "NODO: Estás en el estómago. Muévete con A/D, salta con K o Espacio. Apunta con W (W + A/D = diagonal).",
                 new Vector2(31f, 2.5f), new Vector2(65.5f, 2.5f));
 
+            // El nivel tiene tres partes que suben de dificultad:
+            //  1) Inicio seco (tutorial).
+            //  2) Lago de ácido: el piso seguro es la capa de moco; el ácido se junta entre los bancos de moco.
+            //  3) Marea: el estómago se contrae y el ácido sube y baja por toda la última arena.
+
+            // ----- 1) Inicio seco -----
             // Plataformas para practicar el salto y el disparo hacia abajo.
             Platform(0f, 2.2f, 3f);
             Platform(4.5f, 3.6f, 2.5f);
@@ -654,28 +695,38 @@ namespace HealingKnight.EditorTools
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 1)),
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 2)));
 
-            Acid(27.5f);
+            // ----- 2) Lago de ácido entre bancos de moco -----
+            MucusLayer(22.5f, 68f);
+            Lake(23.5f, 27.5f);
+            Lake(28.8f, 31f);           // termina en el primer hueco (31 a 33.5)
+            Lake(34.5f, 38.5f);
+            Platform(35.5f, 2.2f, 3f);
 
             // Easter egg en la plataforma más alta, entre la primera y la segunda arena: el diente con cara.
             // Al tocarlo se desbloquea la Boca (nivel secreto) y te lleva ahí.
-            Platform(35.5f, 2.2f, 3f);
             Platform(39f, 4.2f, 2.5f);
             Tooth(39.3f, 4.2f);
 
             Arena("Arena_2_Escudo", 44f, 18f,
-                "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L.",
+                "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L. Ojo con el ácido del centro.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 1, SpawnSide.Left)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 3, SpawnSide.Both)));
+            Lake(48.5f, 51.5f);
             Platform(50f, 2.4f, 4f);
 
-            Acid(62f);
+            Lake(59.5f, 63f);           // luego el segundo hueco (65.5 a 68)
 
-            Arena("Arena_3_Acido", 72f, 20f, "Ácido gástrico: sáltalo. El escudo no te protege.",
+            // ----- 3) Marea de ácido (contracciones) -----
+            Tide(68f, 90f, 1.3f);
+            Arena("Arena_3_Marea", 72f, 20f,
+                "Contracción del estómago: cuando retumbe, el ácido sube. ¡Súbete a una plataforma! El escudo no te protege.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 3)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)));
-            Acid(80f);
+            Platform(70.5f, 2.2f, 2.5f);
             Platform(75f, 2.2f, 3f);
-            Platform(85f, 2.2f, 3f);
+            Platform(79.5f, 3.3f, 3f);
+            Platform(84.5f, 2.2f, 3f);
+            Platform(88f, 2.4f, 2.5f);
         }
 
         private void BuildDelgado()
