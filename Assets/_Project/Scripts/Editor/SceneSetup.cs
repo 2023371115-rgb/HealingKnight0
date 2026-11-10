@@ -182,7 +182,98 @@ namespace HealingKnight.EditorTools
             /// cavidad. Si hay alguno, los huecos también se llenan de ácido animado (en vez del líquido fijo).
             /// </summary>
             public Vector2[] basins;
+            /// <summary>
+            /// Arte pixel del piso y las plataformas (Art/Tejidos/Tejido_&lt;nombre&gt;_Piso/_Relleno/_Plataforma.png,
+            /// los genera Tools/Art/generar_tejido.py). Vacío o sin PNG = bloques de color de siempre.
+            /// </summary>
+            public string tissue;
         }
+
+        private const string TissueFolder = "Assets/_Project/Art/Tejidos";
+        private const float TissuePixelsPerUnit = 64f;
+        private static readonly Dictionary<string, Sprite> tissueCache = new Dictionary<string, Sprite>();
+        private Sprite tissueFloor, tissueFill, tissuePlatform, softShadow, verticalShadow;
+
+        /// <summary>
+        /// Carga un PNG de Art/Tejidos listo para repetirse (drawMode Tiled): Sprite, malla completa (FullRect),
+        /// sin mipmaps; 'pixelArt' = filtro Point (nítido), si no Bilinear (sombras suaves).
+        /// 'border' = píxeles de las orillas que NO se repiten (izq, abajo, der, arriba), para las puntas de las plataformas.
+        /// Se carga una vez por armado (si se reimporta dos veces, la primera referencia se pierde).
+        /// </summary>
+        private static Sprite LoadTissue(string file, Vector2 pivot, Vector4 border, bool pixelArt = true)
+        {
+            string path = $"{TissueFolder}/{file}.png";
+            if (tissueCache.TryGetValue(path, out Sprite cached) && cached != null) return cached;
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return null;
+
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            FilterMode filter = pixelArt ? FilterMode.Point : FilterMode.Bilinear;
+            bool needs = importer.textureType != TextureImporterType.Sprite
+                         || importer.filterMode != filter
+                         || Mathf.Abs(importer.spritePixelsPerUnit - TissuePixelsPerUnit) > 0.01f
+                         || settings.spriteMeshType != SpriteMeshType.FullRect
+                         || settings.spriteAlignment != (int)SpriteAlignment.Custom
+                         || (settings.spritePivot - pivot).sqrMagnitude > 1e-4f
+                         || importer.spriteBorder != border;
+            if (needs)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = TissuePixelsPerUnit;
+                importer.filterMode = filter;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Repeat;
+                importer.alphaIsTransparency = true;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.spriteBorder = border;
+                importer.ReadTextureSettings(settings);
+                settings.spriteMeshType = SpriteMeshType.FullRect;
+                settings.spriteAlignment = (int)SpriteAlignment.Custom;
+                settings.spritePivot = pivot;
+                importer.SetTextureSettings(settings);
+                importer.SaveAndReimport();
+            }
+            Sprite sprite = AssetDatabase.LoadAssetAtPath<Sprite>(path);
+            tissueCache[path] = sprite;
+            return sprite;
+        }
+
+        /// <summary>Prepara el arte de tejido del nivel (si tiene). Lo llama BuildLevelBase.</summary>
+        private void LoadLevelTissue(string name)
+        {
+            tissueCache.Clear();
+            tissueFloor = tissueFill = tissuePlatform = null;
+            var top = new Vector2(0.5f, 1f);
+            if (!string.IsNullOrEmpty(name))
+            {
+                tissueFloor = LoadTissue($"Tejido_{name}_Piso", top, Vector4.zero);
+                tissueFill = LoadTissue($"Tejido_{name}_Relleno", top, Vector4.zero);
+                tissuePlatform = LoadTissue($"Tejido_{name}_Plataforma", top, new Vector4(24f, 0f, 24f, 0f));
+                if (tissueFloor == null || tissueFill == null) tissueFloor = tissueFill = null;
+            }
+            softShadow = LoadTissue("Sombra_Suave", new Vector2(0.5f, 0.5f), Vector4.zero, false);
+            verticalShadow = LoadTissue("Sombra_Vertical", new Vector2(0.5f, 0f), Vector4.zero, false);
+        }
+
+        /// <summary>Sprite que se REPITE (no se estira) para cubrir 'size'. El pivote del sprite decide dónde queda.</summary>
+        private static SpriteRenderer TiledChild(Transform parent, string name, Sprite sprite, Vector3 localPosition, Vector2 size, int order, Color color)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(parent, false);
+            go.transform.localPosition = localPosition;
+            var sr = go.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.drawMode = SpriteDrawMode.Tiled;
+            sr.tileMode = SpriteTileMode.Continuous;
+            sr.size = size;
+            sr.color = color;
+            sr.sortingOrder = order;
+            return sr;
+        }
+
+        private static readonly Color ShadowColor = new Color(0.06f, 0f, 0.03f, 1f);
 
         private const float BasinDepth = 0.6f;
         /// <summary>Huecos y lagos hundidos del nivel actual (para no poner moco encima de ellos).</summary>
@@ -238,6 +329,7 @@ namespace HealingKnight.EditorTools
             float endX = startX + length;
 
             environment = new GameObject("Environment").transform;
+            LoadLevelTissue(style.tissue);
             Sprite backdrop = LoadBackdrop(style.backdrop);
             if (backdrop != null)
             {
@@ -270,6 +362,15 @@ namespace HealingKnight.EditorTools
                 segmentStart = Mathf.Max(segmentStart, cut.x + cut.y);
             }
             FloorSegment($"Floor_{index}", segmentStart, endX + 15f);
+
+            // Sombra de contacto: el fondo se oscurece justo arriba del piso (el piso deja de verse "pegado").
+            if (tissueFloor != null && verticalShadow != null)
+            {
+                Vector2 aoSize = verticalShadow.bounds.size;
+                var aoColor = new Color(ShadowColor.r, ShadowColor.g, ShadowColor.b, 0.6f);
+                SetupUtils.SpriteChild(environment, "SombraPiso", verticalShadow, aoColor,
+                    new Vector3(startX + length * 0.5f, FloorY - 0.05f, 0f), new Vector2((length + 30f) / aoSize.x, 1.7f / aoSize.y), -160); // opaca abajo
+            }
 
             bool animatedAcid = style.basins != null && style.basins.Length > 0;
             if (animatedAcid)
@@ -510,10 +611,33 @@ namespace HealingKnight.EditorTools
             box.size = new Vector2(width, depth);
             box.offset = new Vector2(0f, -depth * 0.5f);
 
+            if (tissueFloor != null)
+            {
+                TissueGround(go.transform, width, depth, Color.white);
+                return;
+            }
             SetupUtils.SpriteChild(go.transform, "Fill", PlaceholderArt.Square, currentStyle.floor,
                 new Vector3(0f, -depth, 0f), new Vector2(width, depth), -100);
             SetupUtils.SpriteChild(go.transform, "Edge", PlaceholderArt.Square, currentStyle.floorEdge,
                 new Vector3(0f, -0.2f, 0f), new Vector2(width, 0.2f), -99);
+        }
+
+        /// <summary>Piso de tejido: franja de arriba (pliegue con poros) + relleno, y paredes oscuras en las orillas.</summary>
+        private void TissueGround(Transform parent, float width, float depth, Color tint, bool edgeShadows = true)
+        {
+            float strip = tissueFloor.bounds.size.y;
+            TiledChild(parent, "Tejido", tissueFloor, Vector3.zero, new Vector2(width, strip), -99, tint);
+            TiledChild(parent, "Relleno", tissueFill, new Vector3(0f, -strip + 0.01f, 0f), new Vector2(width, depth + 2f - strip), -100, tint);
+            // Orillas (paredes de los huecos y lagos): sombra hacia adentro para que se vea el grosor.
+            // (empieza abajo del borde de arriba, para no oscurecer donde se pisa)
+            if (edgeShadows && softShadow != null)
+            {
+                Vector2 edgeSize = softShadow.bounds.size;
+                var edgeColor = new Color(ShadowColor.r, ShadowColor.g, ShadowColor.b, 0.55f);
+                for (int side = -1; side <= 1; side += 2)
+                    SetupUtils.SpriteChild(parent, "SombraOrilla", softShadow, edgeColor,
+                        new Vector3(side * width * 0.5f, -0.45f - depth * 0.5f, 0f), new Vector2(0.7f / edgeSize.x, depth / edgeSize.y), -98);
+            }
         }
 
         /// <summary>Plataforma de un solo sentido: se atraviesa saltando desde abajo y se pisa desde arriba.</summary>
@@ -533,10 +657,26 @@ namespace HealingKnight.EditorTools
             effector.useOneWay = true;
             effector.surfaceArc = 160f;
 
-            SetupUtils.SpriteChild(go.transform, "Sprite", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.1f),
-                new Vector3(0f, -thickness, 0f), new Vector2(width, thickness), -90);
-            SetupUtils.SpriteChild(go.transform, "Edge", PlaceholderArt.Square, currentStyle.floorEdge,
-                new Vector3(0f, -0.12f, 0f), new Vector2(width, 0.12f), -89);
+            bool tissue = tissuePlatform != null;
+            if (tissue)
+            {
+                // Trozo de pliegue de tejido (las puntas no se repiten) y su sombra sobre el fondo.
+                float tissueHeight = tissuePlatform.bounds.size.y;
+                TiledChild(go.transform, "Tejido", tissuePlatform, Vector3.zero, new Vector2(width + 0.3f, tissueHeight), -90, Color.white);
+                if (softShadow != null)
+                {
+                    Vector2 shadowSize = softShadow.bounds.size;
+                    SetupUtils.SpriteChild(go.transform, "Sombra", softShadow, new Color(ShadowColor.r, ShadowColor.g, ShadowColor.b, 0.5f),
+                        new Vector3(0.15f, -tissueHeight * 0.75f, 0f), new Vector2((width * 1.25f) / shadowSize.x, 1.2f / shadowSize.y), -160);
+                }
+            }
+            else
+            {
+                SetupUtils.SpriteChild(go.transform, "Sprite", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.1f),
+                    new Vector3(0f, -thickness, 0f), new Vector2(width, thickness), -90);
+                SetupUtils.SpriteChild(go.transform, "Edge", PlaceholderArt.Square, currentStyle.floorEdge,
+                    new Vector3(0f, -0.12f, 0f), new Vector2(width, 0.12f), -89);
+            }
 
             if (currentStyle.platformStems)
             {
@@ -554,15 +694,18 @@ namespace HealingKnight.EditorTools
             if (currentStyle.drip.a > 0f)
             {
                 // Plataforma de carne tipo hongo: borde redondeado y gotas colgando.
-                SetupUtils.SpriteChild(go.transform, "Tapa", PlaceholderArt.Circle, Color.Lerp(currentStyle.floor, Color.white, 0.12f),
-                    new Vector3(0f, -0.18f, 0f), new Vector2(width + 0.4f, 0.5f), -91);
-                int drips = Mathf.Max(2, Mathf.RoundToInt(width / 0.8f));
+                if (!tissue)
+                    SetupUtils.SpriteChild(go.transform, "Tapa", PlaceholderArt.Circle, Color.Lerp(currentStyle.floor, Color.white, 0.12f),
+                        new Vector3(0f, -0.18f, 0f), new Vector2(width + 0.4f, 0.5f), -91);
+                // Con tejido: menos gotas y desde más abajo (el tejido cuelga más que el bloque).
+                float dripTop = tissue ? 0.42f : thickness;
+                int drips = Mathf.Max(tissue ? 1 : 2, Mathf.RoundToInt(width / (tissue ? 1.4f : 0.8f)));
                 for (int i = 0; i < drips; i++)
                 {
                     float x = -width * 0.5f + (i + 0.5f) * width / drips + ((i * 37) % 10 - 5) * 0.02f;
                     float len = 0.25f + (i % 3) * 0.18f;
                     SetupUtils.SpriteChild(go.transform, "Gota" + i, PlaceholderArt.Capsule, currentStyle.drip,
-                        new Vector3(x, -thickness - len * 0.5f + 0.05f, 0f), new Vector2(len, 0.14f), -88)
+                        new Vector3(x, -dripTop - len * 0.5f + 0.05f, 0f), new Vector2(len, 0.14f), -88)
                         .transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
                 }
             }
@@ -645,8 +788,10 @@ namespace HealingKnight.EditorTools
             var box = go.AddComponent<BoxCollider2D>();
             box.size = new Vector2(width, 4f);
             box.offset = new Vector2(0f, -2f);
-            SetupUtils.SpriteChild(go.transform, "Fill", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.35f),
-                new Vector3(0f, -4f, 0f), new Vector2(width, 4f), -100);
+            if (tissueFloor != null) TissueGround(go.transform, width, 4f, new Color(0.7f, 0.7f, 0.7f, 1f), false);
+            else
+                SetupUtils.SpriteChild(go.transform, "Fill", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.35f),
+                    new Vector3(0f, -4f, 0f), new Vector2(width, 4f), -100);
             Lake(fromX, fromX + width, BasinDepth - 0.12f, FloorY - BasinDepth);
         }
 
@@ -732,6 +877,7 @@ namespace HealingKnight.EditorTools
                 blob = new Color(0.55f, 0.15f, 0.22f, 0.6f),
                 decor = Decor.Veins,
                 backdrop = "Fondo_Estomago", // pixel art; si se borra el PNG vuelven las venas de placeholder
+                tissue = "Estomago",         // piso y plataformas de tejido pixel art (Art/Tejidos)
                 // Lagos de ácido hundidos entre los bancos de moco (x = inicio, ancho).
                 basins = new[]
                 {

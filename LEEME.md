@@ -66,6 +66,19 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 **Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 
+## Piso y plataformas de tejido (pixel art)
+
+En el Estómago el piso y las plataformas ya no son bloques de color: son pliegues de tejido en pixel art con la
+misma paleta del fondo (poros, borde de moco húmedo, gotas colgando) y sombras de contacto (el fondo se oscurece
+arriba del piso y debajo de cada plataforma; las paredes de huecos y lagos llevan sombra).
+
+- Las imágenes están en `Assets/_Project/Art/Tejidos/` y las genera `Tools/Art/generar_tejido.py`
+  (`python generar_tejido.py`). Se repiten sin cortes: Unity las usa con *Draw Mode = Tiled*.
+- La plataforma tiene puntas fijas (24 px a cada lado) y el centro se repite: sirve para cualquier ancho.
+- Para otro órgano: agrega una paleta en `PALETAS` del script, genera, y en el `LevelStyle` de ese nivel pon
+  `tissue = "Nombre"`. Si dibujas tú los PNG, respeta los nombres y tamaños (piso 128×64, relleno 64×64,
+  plataforma 112×44) y que se repitan sin cortes a los lados.
+
 ## Ácido del Estómago (lago y marea)
 
 El Estómago tiene tres partes que suben de dificultad:
