@@ -78,6 +78,9 @@ namespace HealingKnight.Gameplay.Hazards
         private static Sprite square, circle;
 
         public float SurfaceY => transform.position.y + level;
+        /// <summary>Altura del ácido sobre el fondo del lago (0 = seco).</summary>
+        public float Level => level;
+        public float Width => width;
         public bool IsHigh => tide && (phase == Phase.Rising || phase == Phase.Holding);
 
         /// <summary>Daño por tick (0 = solo se ve; por ejemplo en un hueco, donde la caída ya cuesta vida).</summary>

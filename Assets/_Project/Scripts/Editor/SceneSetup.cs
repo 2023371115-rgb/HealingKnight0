@@ -200,9 +200,9 @@ namespace HealingKnight.EditorTools
         /// 'border' = píxeles de las orillas que NO se repiten (izq, abajo, der, arriba), para las puntas de las plataformas.
         /// Se carga una vez por armado (si se reimporta dos veces, la primera referencia se pierde).
         /// </summary>
-        private static Sprite LoadTissue(string file, Vector2 pivot, Vector4 border, bool pixelArt = true)
+        private static Sprite LoadTissue(string file, Vector2 pivot, Vector4 border, bool pixelArt = true, string folder = TissueFolder)
         {
-            string path = $"{TissueFolder}/{file}.png";
+            string path = $"{folder}/{file}.png";
             if (tissueCache.TryGetValue(path, out Sprite cached) && cached != null) return cached;
             var importer = AssetImporter.GetAtPath(path) as TextureImporter;
             if (importer == null) return null;
@@ -329,6 +329,7 @@ namespace HealingKnight.EditorTools
             float endX = startX + length;
 
             environment = new GameObject("Environment").transform;
+            currentLakes.Clear();
             LoadLevelTissue(style.tissue);
             Sprite backdrop = LoadBackdrop(style.backdrop);
             if (backdrop != null)
@@ -540,7 +541,8 @@ namespace HealingKnight.EditorTools
                     break;
             }
 
-            if (style.drip.a > 0f)
+            // Con fondo de imagen no van las gotas del techo ni la bruma: el dibujo ya trae su ambiente.
+            if (style.drip.a > 0f && backdrop == null)
             {
                 // Gotas que escurren de la orilla del piso hacia los huecos y del borde de la pared.
                 for (float x = startX - 5f; x < endX + 10f; x += 1.5f + (float)random.NextDouble() * 2f)
@@ -554,7 +556,7 @@ namespace HealingKnight.EditorTools
             if (style.glow.a > 0f)
             {
                 // Bruma de color abajo y luz al final del nivel (como el arte de referencia).
-                for (float x = startX - 5f; x < endX + 10f; x += 6f)
+                for (float x = startX - 5f; x < endX + 10f && backdrop == null; x += 6f)
                     SetupUtils.SpriteChild(environment, "Bruma", PlaceholderArt.Circle, new Color(style.glow.r, style.glow.g, style.glow.b, 0.08f),
                         new Vector3(x, FloorY + 1.2f, 0f), new Vector2(9f, 3.5f), -145);
                 SetupUtils.SpriteChild(environment, "LuzSalida", PlaceholderArt.Circle, new Color(style.glow.r, style.glow.g, style.glow.b, 0.35f),
@@ -691,7 +693,7 @@ namespace HealingKnight.EditorTools
                     new Vector3(0f, -0.2f, 0f), new Vector2(width + 0.3f, 0.55f), -91);
             }
 
-            if (currentStyle.drip.a > 0f)
+            if (currentStyle.drip.a > 0f && !tissue) // el tejido ya trae sus gotas de moco dibujadas
             {
                 // Plataforma de carne tipo hongo: borde redondeado y gotas colgando.
                 if (!tissue)
@@ -779,6 +781,60 @@ namespace HealingKnight.EditorTools
         }
 
         /// <summary>Lago hundido: piso más bajo (sólido) con ácido hasta casi el borde.</summary>
+        private const string FoodFolder = "Assets/_Project/Art/Comida";
+        /// <summary>Lagos de ácido del nivel actual (para poner comida flotando en ellos).</summary>
+        private readonly List<AcidLake> currentLakes = new List<AcidLake>();
+
+        private AcidLake LakeAt(float x)
+        {
+            foreach (AcidLake lake in currentLakes)
+            {
+                if (lake == null) continue;
+                if (Mathf.Abs(x - lake.transform.position.x) <= lake.Width * 0.5f) return lake;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Comida a medio digerir que flota en el ácido (Art/Comida/Comida_&lt;nombre&gt;.png) y sirve de plataforma.
+        /// 'topFraction' = a qué altura del dibujo está la parte que se pisa (0..1 desde abajo).
+        /// Descansa en el piso o el fondo del lago donde está, y sube si sube el ácido (marea).
+        /// </summary>
+        private void Food(string name, float x, float topFraction)
+        {
+            Sprite sprite = LoadTissue($"Comida_{name}", new Vector2(0.5f, 0f), Vector4.zero, true, FoodFolder);
+            if (sprite == null) return;
+            AcidLake lake = LakeAt(x);
+            float restY = lake != null ? lake.transform.position.y : FloorY;
+            Vector2 size = sprite.bounds.size;
+
+            var root = new GameObject($"Comida_{name}");
+            root.transform.SetParent(environment, false);
+            root.transform.position = new Vector3(x, restY, 0f);
+
+            var art = new GameObject("Dibujo");
+            art.transform.SetParent(root.transform, false);
+            var sr = art.AddComponent<SpriteRenderer>();
+            sr.sprite = sprite;
+            sr.sortingOrder = -5; // detrás de los personajes y del ácido (así se ve hundida)
+            sr.color = new Color(0.92f, 0.86f, 0.86f, 1f); // un poco apagada: ya va a medio digerir
+
+            const float thickness = 0.3f;
+            var floor = new GameObject("Piso");
+            floor.transform.SetParent(root.transform, false);
+            floor.transform.localPosition = new Vector3(0f, size.y * topFraction, 0f);
+            floor.layer = PhysicsLayers.Ground;
+            var box = floor.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(size.x * 0.8f, thickness);
+            box.offset = new Vector2(0f, -thickness * 0.5f);
+            box.usedByEffector = true;
+            var effector = floor.AddComponent<PlatformEffector2D>();
+            effector.useOneWay = true;
+            effector.surfaceArc = 160f;
+
+            root.AddComponent<FloatingFood>().Configure(lake, restY, size.y, size.y * topFraction, size.x * 0.8f, art.transform);
+        }
+
         private void Basin(float fromX, float width)
         {
             var go = new GameObject("FondoLago");
@@ -792,7 +848,7 @@ namespace HealingKnight.EditorTools
             else
                 SetupUtils.SpriteChild(go.transform, "Fill", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.35f),
                     new Vector3(0f, -4f, 0f), new Vector2(width, 4f), -100);
-            Lake(fromX, fromX + width, BasinDepth - 0.12f, FloorY - BasinDepth);
+            currentLakes.Add(Lake(fromX, fromX + width, BasinDepth - 0.12f, FloorY - BasinDepth));
         }
 
         /// <summary>Hueco lleno de ácido casi hasta el borde. No daña aparte: caer al hueco ya cuesta vida.</summary>
@@ -819,6 +875,7 @@ namespace HealingKnight.EditorTools
             AcidLake lake = Lake(fromX, toX, 0f);
             lake.name = "MareaAcido";
             lake.Configure(toX - fromX, 0f, true, high);
+            currentLakes.Add(lake);
             return lake;
         }
 
@@ -912,6 +969,9 @@ namespace HealingKnight.EditorTools
             // ----- 2) Lago de ácido entre bancos de moco -----
             MucusLayer(22.5f, 68f);
             Platform(35.5f, 2.2f, 3f);
+            // Comida a medio digerir en los lagos: islas para cruzar sin pisar el ácido.
+            Food("Dona", 25.5f, 0.85f);
+            Food("Manzana", 36.6f, 0.72f);
 
             // Easter egg en la plataforma más alta, entre la primera y la segunda arena: el diente con cara.
             // Al tocarlo se desbloquea la Boca (nivel secreto) y te lleva ahí.
@@ -926,16 +986,20 @@ namespace HealingKnight.EditorTools
 
 
             // ----- 3) Marea de ácido (contracciones) -----
-            Tide(68f, 90f, 1.3f);
+            Food("Hamburguesa", 61.25f, 0.97f);
+
+            Tide(68f, 90f, 1.5f);
             Arena("Arena_3_Marea", 72f, 20f,
                 "Contracción del estómago: cuando retumbe, el ácido sube. ¡Súbete a una plataforma! El escudo no te protege.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 3)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)));
-            Platform(70.5f, 2.2f, 2.5f);
-            Platform(75f, 2.2f, 3f);
+            // Comida que sube con la marea (súbete encima) y dos pliegues fijos más altos.
+            Food("Dona", 71f, 0.85f);
+            Food("Hamburguesa", 75.5f, 0.97f);
             Platform(79.5f, 3.3f, 3f);
-            Platform(84.5f, 2.2f, 3f);
-            Platform(88f, 2.4f, 2.5f);
+            Food("Manzana", 82.2f, 0.72f);
+            Food("Salchicha", 85.6f, 0.75f);
+            Platform(88.5f, 2.4f, 2.2f);
         }
 
         private void BuildDelgado()

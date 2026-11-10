@@ -183,6 +183,8 @@ namespace HealingKnight.Gameplay.Enemies
                 return;
             }
 
+            if (playerAvailable && motor != null && !IsFlying && (state == State.Approach || state == State.Idle)) Unstick(player, dt);
+
             switch (state)
             {
                 case State.Idle:
@@ -334,6 +336,44 @@ namespace HealingKnight.Gameplay.Enemies
             return Physics2D.Raycast(origin, Vector2.down, 1.0f, groundMask).collider != null;
         }
 
+        /// <summary>¿Hay una pared (orilla de un lago hundido, un escalón) pegada a los pies en esa dirección?</summary>
+        private bool WallAhead(int dir)
+        {
+            Bounds b = motor.Collider.bounds;
+            Vector2 origin = new Vector2(b.center.x, b.min.y + 0.15f);
+            RaycastHit2D hit = Physics2D.Raycast(origin, new Vector2(dir, 0f), b.extents.x + 0.45f, groundMask);
+            return hit.collider != null && Mathf.Abs(hit.normal.x) > 0.5f;
+        }
+
+        private float stuckTimer, stuckAnchorX;
+
+        /// <summary>
+        /// Si lleva un rato sin avanzar junto a una pared baja (por ejemplo, cayó a un lago de ácido hundido),
+        /// brinca hacia el jugador para salir. Los que se quedan quietos a propósito, lejos de paredes, no brincan.
+        /// </summary>
+        private void Unstick(PlayerController player, float dt)
+        {
+            if (!Grounded || Mathf.Abs(Position.x - stuckAnchorX) > 0.35f)
+            {
+                stuckTimer = 0f;
+                stuckAnchorX = Position.x;
+                return;
+            }
+            stuckTimer += dt;
+            if (stuckTimer < 0.8f || jumpCooldown > 0f) return;
+
+            int dir = player.Position.x >= Position.x ? 1 : -1;
+            if (!WallAhead(dir))
+            {
+                if (!WallAhead(-dir)) { stuckTimer = 0f; return; }
+                dir = -dir; // la pared está del otro lado: sale por ahí
+            }
+            motor.Jump(1.5f, 0.34f);
+            motor.SetHorizontalVelocity(dir * Mathf.Max(3f, data.moveSpeed));
+            jumpCooldown = 0.8f;
+            stuckTimer = 0f;
+        }
+
         /// <summary>Si se deja caer por esa orilla, ¿cae en piso (y no en un hueco)?</summary>
         private bool SafeDrop(int dir)
         {
@@ -375,6 +415,13 @@ namespace HealingKnight.Gameplay.Enemies
                         vx = GroundAhead(-dir) ? -dir * speed * 0.45f : 0f;
                     }
                 }
+            }
+
+            // Pared baja enfrente (orilla de un lago de ácido): la brinca.
+            if (vx != 0f && Grounded && jumpCooldown <= 0f && WallAhead(vx > 0f ? 1 : -1))
+            {
+                motor.Jump(1.4f, 0.32f);
+                jumpCooldown = 0.6f;
             }
 
             // Saltar para subir a la plataforma donde estás.

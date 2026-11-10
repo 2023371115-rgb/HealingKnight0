@@ -16,11 +16,11 @@ SALIDA = os.path.join(AQUI, "..", "..", "Assets", "_Project", "Art", "Tejidos")
 # Paleta: del más oscuro al más claro. Mismo tono que el fondo, un poco más claro y saturado para resaltar.
 PALETAS = {
     "Estomago": {
-        "contorno": (28, 5, 13),
-        "rampa": [(52, 11, 24), (74, 18, 33), (98, 26, 43), (124, 36, 54), (152, 50, 66), (184, 72, 84)],
-        "brillo": (232, 150, 156),
-        "moco": (214, 112, 122),
-        "relleno": [(34, 7, 17), (44, 10, 21), (55, 13, 26)],
+        "contorno": (32, 6, 15),
+        "rampa": [(62, 13, 28), (88, 21, 38), (116, 30, 50), (146, 42, 63), (178, 58, 77), (212, 84, 97)],
+        "brillo": (246, 172, 172),
+        "moco": (234, 132, 138),
+        "relleno": [(40, 8, 20), (53, 12, 26), (66, 16, 32)],
     }
 }
 

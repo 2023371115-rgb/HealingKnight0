@@ -66,6 +66,17 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 **Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 
+## Comida flotante (Estómago)
+
+En los lagos y en la marea hay comida a medio digerir (dona, manzana, salchicha, hamburguesa) que sirve de
+plataforma: en los lagos son islas para cruzar sin pisar el ácido, y en la marea **suben con el ácido** y te llevan
+encima. Los PNG están en `Assets/_Project/Art/Comida/` (`Comida_<Nombre>.png`, fondo transparente, pixel art a
+64 píxeles por unidad). En `SceneSetup`: `Food("Dona", x, alturaDelPiso)` donde la altura es la fracción del dibujo
+(0 = abajo, 1 = arriba) en la que se pisa. Si la x cae dentro de un lago o una marea, flota en él.
+
+Para agregar otra comida: dibuja o genera el PNG con fondo transparente (que no sea el cuadriculado pintado),
+guárdalo en esa carpeta y agrega una línea `Food(...)`.
+
 ## Piso y plataformas de tejido (pixel art)
 
 En el Estómago el piso y las plataformas ya no son bloques de color: son pliegues de tejido en pixel art con la
