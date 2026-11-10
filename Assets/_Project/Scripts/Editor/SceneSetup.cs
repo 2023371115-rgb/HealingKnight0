@@ -177,7 +177,16 @@ namespace HealingKnight.EditorTools
             /// adornos de placeholder y se desliza lento con la cámara (LevelBackdrop). Si no existe, se usa lo de siempre.
             /// </summary>
             public string backdrop;
+            /// <summary>
+            /// Lagos de ácido HUNDIDOS en el piso (x = inicio, y = ancho): el piso baja un poco y el ácido llena la
+            /// cavidad. Si hay alguno, los huecos también se llenan de ácido animado (en vez del líquido fijo).
+            /// </summary>
+            public Vector2[] basins;
         }
+
+        private const float BasinDepth = 0.6f;
+        /// <summary>Huecos y lagos hundidos del nivel actual (para no poner moco encima de ellos).</summary>
+        private List<Vector2> currentCuts = new List<Vector2>();
 
         private const string BackdropFolder = "Assets/_Project/Art/Fondos";
 
@@ -246,21 +255,35 @@ namespace HealingKnight.EditorTools
                     new Vector3(startX + length * 0.5f, FloorY, 0f), new Vector2(length + 30f, 10f), -200);
             }
 
-            // Piso por tramos (los huecos quedan entre tramos).
+            // Piso por tramos (los huecos y los lagos hundidos quedan entre tramos).
             var sorted = new List<Vector2>(pits ?? new Vector2[0]);
             sorted.Sort((a, b) => a.x.CompareTo(b.x));
+            var cuts = new List<Vector2>(sorted);
+            if (style.basins != null) cuts.AddRange(style.basins);
+            cuts.Sort((a, b) => a.x.CompareTo(b.x));
+            currentCuts = cuts;
             float segmentStart = startX - 15f;
             int index = 0;
-            foreach (Vector2 pit in sorted)
+            foreach (Vector2 cut in cuts)
             {
-                FloorSegment($"Floor_{index++}", segmentStart, pit.x);
-                segmentStart = pit.x + pit.y;
+                FloorSegment($"Floor_{index++}", segmentStart, cut.x);
+                segmentStart = Mathf.Max(segmentStart, cut.x + cut.y);
             }
             FloorSegment($"Floor_{index}", segmentStart, endX + 15f);
 
+            bool animatedAcid = style.basins != null && style.basins.Length > 0;
+            if (animatedAcid)
+            {
+                foreach (Vector2 basin in style.basins) Basin(basin.x, basin.y);
+            }
+
             if (style.pitLiquid.a > 0f)
             {
-                foreach (Vector2 pit in sorted) PitLiquid(pit.x, pit.y);
+                foreach (Vector2 pit in sorted)
+                {
+                    if (animatedAcid) PitAcid(pit.x, pit.y);
+                    else PitLiquid(pit.x, pit.y);
+                }
             }
 
             var random = new System.Random(length.GetHashCode());
@@ -612,12 +635,34 @@ namespace HealingKnight.EditorTools
             return arena;
         }
 
-        /// <summary>Lago de ácido sobre el piso, de 'fromX' a 'toX' (animado por código, ver AcidLake).</summary>
-        private AcidLake Lake(float fromX, float toX, float level = 0.22f)
+        /// <summary>Lago hundido: piso más bajo (sólido) con ácido hasta casi el borde.</summary>
+        private void Basin(float fromX, float width)
+        {
+            var go = new GameObject("FondoLago");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(fromX + width * 0.5f, FloorY - BasinDepth, 0f);
+            go.layer = PhysicsLayers.Ground;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(width, 4f);
+            box.offset = new Vector2(0f, -2f);
+            SetupUtils.SpriteChild(go.transform, "Fill", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.35f),
+                new Vector3(0f, -4f, 0f), new Vector2(width, 4f), -100);
+            Lake(fromX, fromX + width, BasinDepth - 0.12f, FloorY - BasinDepth);
+        }
+
+        /// <summary>Hueco lleno de ácido casi hasta el borde. No daña aparte: caer al hueco ya cuesta vida.</summary>
+        private void PitAcid(float fromX, float width)
+        {
+            const float depth = 3f;
+            Lake(fromX, fromX + width, depth - 0.18f, FloorY - depth).SetDamage(0f);
+        }
+
+        /// <summary>Lago de ácido de 'fromX' a 'toX' (animado por código, ver AcidLake). 'bottomY' = fondo del lago.</summary>
+        private AcidLake Lake(float fromX, float toX, float level = 0.22f, float bottomY = FloorY)
         {
             var go = new GameObject("LagoAcido");
             go.transform.SetParent(environment, false);
-            go.transform.position = new Vector3((fromX + toX) * 0.5f, FloorY, 0f);
+            go.transform.position = new Vector3((fromX + toX) * 0.5f, bottomY, 0f);
             var lake = go.AddComponent<AcidLake>();
             lake.Configure(toX - fromX, level, false, 0f);
             return lake;
@@ -635,15 +680,30 @@ namespace HealingKnight.EditorTools
         /// <summary>Capa de moco sobre el piso (zona segura: el moco protege al estómago de su propio ácido).</summary>
         private void MucusLayer(float fromX, float toX)
         {
-            var color = new Color(1f, 0.86f, 0.88f, 0.3f);
-            SetupUtils.SpriteChild(environment, "Moco", PlaceholderArt.Square, color,
-                new Vector3((fromX + toX) * 0.5f, FloorY + 0.02f, 0f), new Vector2(toX - fromX, 0.16f), -98);
-            var random = new System.Random((int)(fromX * 10f));
-            for (float x = fromX + 0.8f; x < toX - 0.8f; x += 2f + (float)random.NextDouble() * 2.5f)
+            // Solo sobre el piso seco: se parte en tramos alrededor de los huecos y lagos.
+            float start = fromX;
+            foreach (Vector2 cut in currentCuts)
             {
-                float w = 1.2f + (float)random.NextDouble() * 1.2f;
-                SetupUtils.SpriteChild(environment, "MocoBulto", PlaceholderArt.Circle, new Color(1f, 0.86f, 0.88f, 0.22f),
-                    new Vector3(x, FloorY + 0.05f, 0f), new Vector2(w, 0.45f), -98);
+                if (cut.x + cut.y <= start || cut.x >= toX) continue;
+                if (cut.x > start) MucusStrip(start, cut.x);
+                start = Mathf.Max(start, cut.x + cut.y);
+            }
+            if (start < toX) MucusStrip(start, toX);
+        }
+
+        private void MucusStrip(float fromX, float toX)
+        {
+            if (toX - fromX < 0.2f) return;
+            // Capa brillante y húmeda, del mismo tono que la piel pero más clara (no gris).
+            Color tone = Color.Lerp(currentStyle.floorEdge, Color.white, 0.35f);
+            SetupUtils.SpriteChild(environment, "Moco", PlaceholderArt.Square, new Color(tone.r, tone.g, tone.b, 0.45f),
+                new Vector3((fromX + toX) * 0.5f, FloorY + 0.03f, 0f), new Vector2(toX - fromX, 0.08f), -98);
+            var random = new System.Random((int)(fromX * 10f));
+            for (float x = fromX + 0.5f; x < toX - 0.5f; x += 1.2f + (float)random.NextDouble() * 1.8f)
+            {
+                float w = 0.4f + (float)random.NextDouble() * 0.6f;
+                SetupUtils.SpriteChild(environment, "MocoBrillo", PlaceholderArt.Capsule, new Color(1f, 1f, 1f, 0.3f),
+                    new Vector3(x, FloorY + 0.05f, 0f), new Vector2(w, 0.06f), -97);
             }
         }
 
@@ -672,6 +732,14 @@ namespace HealingKnight.EditorTools
                 blob = new Color(0.55f, 0.15f, 0.22f, 0.6f),
                 decor = Decor.Veins,
                 backdrop = "Fondo_Estomago", // pixel art; si se borra el PNG vuelven las venas de placeholder
+                // Lagos de ácido hundidos entre los bancos de moco (x = inicio, ancho).
+                basins = new[]
+                {
+                    new Vector2(23.5f, 4f), new Vector2(28.8f, 2.2f), // el segundo termina en el primer hueco
+                    new Vector2(34.5f, 4f),
+                    new Vector2(48.5f, 3f),                         // en medio de la arena del escudo
+                    new Vector2(59.5f, 3.5f)
+                },
                 detail = new Color(0.15f, 0.55f, 0.6f, 0.7f),
                 pitLiquid = new Color(0.5f, 1f, 0.15f, 1f),
                 drip = new Color(0.55f, 1f, 0.2f, 0.9f),
@@ -697,9 +765,6 @@ namespace HealingKnight.EditorTools
 
             // ----- 2) Lago de ácido entre bancos de moco -----
             MucusLayer(22.5f, 68f);
-            Lake(23.5f, 27.5f);
-            Lake(28.8f, 31f);           // termina en el primer hueco (31 a 33.5)
-            Lake(34.5f, 38.5f);
             Platform(35.5f, 2.2f, 3f);
 
             // Easter egg en la plataforma más alta, entre la primera y la segunda arena: el diente con cara.
@@ -711,10 +776,8 @@ namespace HealingKnight.EditorTools
                 "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L. Ojo con el ácido del centro.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 1, SpawnSide.Left)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 3, SpawnSide.Both)));
-            Lake(48.5f, 51.5f);
             Platform(50f, 2.4f, 4f);
 
-            Lake(59.5f, 63f);           // luego el segundo hueco (65.5 a 68)
 
             // ----- 3) Marea de ácido (contracciones) -----
             Tide(68f, 90f, 1.3f);

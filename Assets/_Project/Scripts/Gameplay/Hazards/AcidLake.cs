@@ -17,7 +17,9 @@ namespace HealingKnight.Gameplay.Hazards
     /// la cámara como aviso, el ácido sube hasta 'highLevel', se queda un rato y vuelve a bajar.
     /// La marea arranca cuando el jugador se acerca.
     ///
-    /// El objeto se coloca a la altura del piso, en el centro del lago.
+    /// El objeto se coloca en el FONDO del lago (piso de la fosa), en el centro. En el Estómago los lagos están
+    /// hundidos en el piso: la superficie queda un poco abajo del borde, como un líquido dentro de una cavidad.
+    /// Se dibuja ENFRENTE de los personajes y semitransparente, para que se vean hundidos (pies dentro del ácido).
     /// Los enemigos no se dañan: la H. pylori neutraliza el ácido a su alrededor (ureasa), así sobrevive en el estómago.
     /// </summary>
     public class AcidLake : MonoBehaviour
@@ -43,10 +45,12 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private string firstWarning = "¡CONTRACCIÓN! El ácido va a subir: ¡a las plataformas!";
 
         [Header("Aspecto")]
-        [SerializeField] private Color deep = new Color(0.16f, 0.45f, 0.05f, 0.93f);
-        [SerializeField] private Color surface = new Color(0.42f, 0.92f, 0.12f, 0.97f);
-        [SerializeField] private Color crest = new Color(0.82f, 1f, 0.5f, 1f);
-        [SerializeField] private int sortingOrder = -95;
+        [SerializeField] private Color deep = new Color(0.1f, 0.32f, 0.04f, 0.9f);
+        [SerializeField] private Color middle = new Color(0.24f, 0.6f, 0.07f, 0.82f);
+        [SerializeField] private Color surface = new Color(0.45f, 0.88f, 0.12f, 0.88f);
+        [SerializeField] private Color crest = new Color(0.8f, 1f, 0.45f, 1f);
+        [Tooltip("Enfrente de los personajes (0-12) para que se vean hundidos; detrás de las plataformas no importa (quedan más arriba).")]
+        [SerializeField] private int sortingOrder = 30;
         [Tooltip("Ancho de cada columna de la ola (más chico = ola más suave, más grande = más pixel art).")]
         [SerializeField] private float columnWidth = 0.2f;
 
@@ -59,7 +63,7 @@ namespace HealingKnight.Gameplay.Hazards
         private float damageTimer;
         private bool warnedOnce;
 
-        private SpriteRenderer body, glow;
+        private SpriteRenderer body, depthShade;
         private SpriteRenderer[] columns, crests;
         private Bubble[] bubbles;
         private float seed;
@@ -75,6 +79,9 @@ namespace HealingKnight.Gameplay.Hazards
 
         public float SurfaceY => transform.position.y + level;
         public bool IsHigh => tide && (phase == Phase.Rising || phase == Phase.Holding);
+
+        /// <summary>Daño por tick (0 = solo se ve; por ejemplo en un hueco, donde la caída ya cuesta vida).</summary>
+        public void SetDamage(float perTick) => damagePerTick = perTick;
 
         public void Configure(float lakeWidth, float low, bool isTide, float high)
         {
@@ -180,7 +187,7 @@ namespace HealingKnight.Gameplay.Hazards
         private void UpdateDamage(float dt)
         {
             PlayerController player = PlayerController.Current;
-            if (player == null || !player.Health.IsAlive || level < 0.05f) { damageTimer = 0f; return; }
+            if (player == null || !player.Health.IsAlive || level < 0.05f || damagePerTick <= 0f) { damageTimer = 0f; return; }
 
             Vector2 feet = player.Position;
             Vector2 c = transform.position;
@@ -208,8 +215,8 @@ namespace HealingKnight.Gameplay.Hazards
         {
             EnsureSprites();
 
-            glow = Make("Brillo", circle, new Color(surface.r, surface.g, surface.b, 0.16f), sortingOrder - 1);
-            body = Make("Fondo", square, deep, sortingOrder);
+            body = Make("Liquido", square, middle, sortingOrder);
+            depthShade = Make("Profundo", square, deep, sortingOrder);
 
             int count = Mathf.Max(2, Mathf.CeilToInt(width / columnWidth));
             columns = new SpriteRenderer[count];
@@ -268,30 +275,32 @@ namespace HealingKnight.Gameplay.Hazards
             float left = -width * 0.5f;
             float tremble = phase == Phase.Warning ? Mathf.Sin(t * 60f) * 0.02f : 0f;
 
-            // Cuerpo: del fondo (un poco bajo el piso, para tapar el borde) hasta la superficie.
+            // Cuerpo: del fondo hasta la superficie. Abajo más oscuro (se ve hondo).
             float bodyTop = level;
-            float bodyBottom = -0.15f;
+            float bodyBottom = -0.05f;
             body.transform.localPosition = new Vector3(0f, (bodyTop + bodyBottom) * 0.5f, 0f);
             body.transform.localScale = new Vector3(width, bodyTop - bodyBottom, 1f);
+            float shadeTop = bodyBottom + (bodyTop - bodyBottom) * 0.55f;
+            depthShade.enabled = level > 0.35f;
+            depthShade.transform.localPosition = new Vector3(0f, (shadeTop + bodyBottom) * 0.5f, 0f);
+            depthShade.transform.localScale = new Vector3(width, shadeTop - bodyBottom, 1f);
 
             float colW = width / columns.Length;
             for (int i = 0; i < columns.Length; i++)
             {
                 float x = left + colW * (i + 0.5f);
-                float h = 0.06f + Wave(x, t) + tremble;
+                float h = 0.04f + Wave(x, t) + tremble;
                 // Orillas: la ola baja suavemente para no verse cortada.
                 float edge = Mathf.Clamp01(Mathf.Min(i + 0.5f, columns.Length - i - 0.5f) / 2f);
                 h *= edge;
                 // Columna: de un poco abajo de la superficie hasta la cresta de la ola.
                 float top = level + h;
-                columns[i].transform.localPosition = new Vector3(x, level + (h - 0.12f) * 0.5f, 0f);
-                columns[i].transform.localScale = new Vector3(colW + 0.002f, h + 0.12f, 1f);
-                crests[i].transform.localPosition = new Vector3(x, top - 0.03f, 0f);
-                crests[i].transform.localScale = new Vector3(colW + 0.002f, 0.06f, 1f);
+                columns[i].transform.localPosition = new Vector3(x, level + (h - 0.1f) * 0.5f, 0f);
+                columns[i].transform.localScale = new Vector3(colW + 0.002f, h + 0.1f, 1f);
+                crests[i].transform.localPosition = new Vector3(x, top - 0.02f, 0f);
+                crests[i].transform.localScale = new Vector3(colW + 0.002f, 0.04f, 1f);
             }
 
-            glow.transform.localPosition = new Vector3(0f, level + 0.2f, 0f);
-            glow.transform.localScale = new Vector3(width * 1.15f, 0.9f + level * 0.6f, 1f);
 
             for (int i = 0; i < bubbles.Length; i++) UpdateBubble(ref bubbles[i], dt, t);
         }
@@ -306,7 +315,7 @@ namespace HealingKnight.Gameplay.Hazards
                 // Vapor: sube por encima del ácido y se desvanece.
                 b.y += b.speed * 0.5f * dt;
                 float life = Mathf.Clamp01((b.y - level) / 1.4f);
-                r.color = new Color(surface.r, surface.g, surface.b, 0.22f * (1f - life));
+                r.color = new Color(crest.r, crest.g, crest.b, 0.12f * (1f - life));
                 float s = b.size * (1.5f + life * 2f);
                 r.transform.localScale = new Vector3(s, s, 1f);
                 r.transform.localPosition = new Vector3(b.x + Mathf.Sin(t * 1.5f + b.size * 30f) * 0.15f, b.y, 0f);
@@ -342,7 +351,7 @@ namespace HealingKnight.Gameplay.Hazards
         {
             float margin = Mathf.Min(0.3f, width * 0.2f);
             b.x = Random.Range(-width * 0.5f + margin, width * 0.5f - margin);
-            b.size = Random.Range(0.08f, 0.2f);
+            b.size = Random.Range(0.06f, 0.14f);
             b.speed = Random.Range(0.4f, 1.1f);
             b.popTimer = 0f;
             // Nacen dentro del ácido (nunca debajo del piso, donde se verían encima de él).
@@ -354,7 +363,7 @@ namespace HealingKnight.Gameplay.Hazards
         private void SetVisible(bool on)
         {
             if (body.enabled == on) return;
-            body.enabled = on; glow.enabled = on;
+            body.enabled = on; depthShade.enabled = on;
             for (int i = 0; i < columns.Length; i++) { columns[i].enabled = on; crests[i].enabled = on; }
             for (int i = 0; i < bubbles.Length; i++) bubbles[i].renderer.enabled = on;
         }
