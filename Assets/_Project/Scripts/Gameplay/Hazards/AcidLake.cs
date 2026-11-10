@@ -26,7 +26,7 @@ namespace HealingKnight.Gameplay.Hazards
     {
         [Header("Tamaño")]
         [SerializeField] private float width = 6f;
-        [Tooltip("Altura de la superficie sobre el piso cuando está tranquilo (con marea: 0 = seco).")]
+        [Tooltip("Altura de la superficie sobre el fondo cuando está tranquilo (con marea: el nivel más bajo; 0 = se seca).")]
         [SerializeField] private float lowLevel = 0.22f;
 
         [Header("Daño")]
@@ -42,7 +42,7 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private float holdTime = 3.5f;
         [SerializeField] private float fallTime = 1.6f;
         [TextArea]
-        [SerializeField] private string firstWarning = "¡CONTRACCIÓN! El ácido va a subir: ¡a las plataformas!";
+        [SerializeField] private string firstWarning = "¡CONTRACCIÓN! El ácido va a subir: ¡quédate sobre la comida!";
 
         [Header("Aspecto")]
         [SerializeField] private Color deep = new Color(0.1f, 0.32f, 0.04f, 0.9f);
@@ -97,7 +97,7 @@ namespace HealingKnight.Gameplay.Hazards
         private void Start()
         {
             seed = transform.position.x * 0.37f;
-            level = tide ? 0f : lowLevel;
+            level = lowLevel;
             phase = tide ? Phase.Waiting : Phase.Holding;
             BuildVisual();
             SfxLoop.Attach(gameObject, "Acido_Burbujeo", tide ? 0.35f : 0.5f, width * 0.5f, width * 0.5f + 7f);
@@ -123,22 +123,22 @@ namespace HealingKnight.Gameplay.Hazards
                 case Phase.Waiting:
                     PlayerController player = PlayerController.Current;
                     if (player != null && player.Position.x > transform.position.x - width * 0.5f - 3f) Enter(Phase.Dry);
-                    level = 0f; agitation = 0.1f;
+                    level = lowLevel; agitation = 0.15f;
                     break;
 
-                case Phase.Dry:
-                    level = 0f; agitation = 0.1f;
+                case Phase.Dry: // nivel bajo (con lowLevel = 0 se seca por completo)
+                    level = lowLevel; agitation = 0.15f;
                     if (phaseTimer >= dryTime) Enter(Phase.Warning);
                     break;
 
                 case Phase.Warning:
-                    level = Mathf.Lerp(0f, 0.12f, phaseTimer / warningTime); // asoma un poquito
+                    level = Mathf.Lerp(lowLevel, lowLevel + 0.12f, phaseTimer / warningTime); // se infla un poquito
                     agitation = 0.4f + 0.6f * (phaseTimer / warningTime);
                     if (phaseTimer >= warningTime) Enter(Phase.Rising);
                     break;
 
                 case Phase.Rising:
-                    level = Mathf.Lerp(0.12f, highLevel, Mathf.SmoothStep(0f, 1f, phaseTimer / riseTime));
+                    level = Mathf.Lerp(lowLevel + 0.12f, highLevel, Mathf.SmoothStep(0f, 1f, phaseTimer / riseTime));
                     agitation = 1f;
                     if (phaseTimer >= riseTime) Enter(Phase.Holding);
                     break;
@@ -149,7 +149,7 @@ namespace HealingKnight.Gameplay.Hazards
                     break;
 
                 case Phase.Falling:
-                    level = Mathf.Lerp(highLevel, 0f, Mathf.SmoothStep(0f, 1f, phaseTimer / fallTime));
+                    level = Mathf.Lerp(highLevel, lowLevel, Mathf.SmoothStep(0f, 1f, phaseTimer / fallTime));
                     agitation = 0.4f;
                     if (phaseTimer >= fallTime) Enter(Phase.Dry);
                     break;

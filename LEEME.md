@@ -97,8 +97,8 @@ El Estómago tiene tres partes que suben de dificultad:
 2. **Lago de ácido:** el piso seguro es la capa de moco (franja brillante); el ácido llena cavidades HUNDIDAS en el
    piso (`basins` en el `LevelStyle`) y los huecos están llenos de ácido casi hasta el borde.
    Biología: el moco es lo que protege al estómago de su propio ácido, y ahí vive la H. pylori.
-3. **Marea:** en la última arena el estómago se contrae. Retumba y tiembla la cámara (aviso), el ácido sube,
-   se queda unos segundos y baja. Hay que estar en una plataforma.
+3. **Alberca de marea:** el final del nivel es una alberca honda que siempre tiene ácido (`tidePool` en el
+   `LevelStyle`). No hay plataformas: solo comida flotando. Cuando retumba, el ácido sube y la comida sube contigo.
 
 El ácido se dibuja y anima por código (`Hazards/AcidLake.cs`): olas pixeleadas, cresta brillante, burbujas que
 revientan y vapor. No necesita arte. Daña si tienes los pies dentro (saltando por encima no); el escudo no protege.
@@ -107,7 +107,8 @@ A los enemigos no les hace nada (la H. pylori neutraliza el ácido con ureasa).
 En `SceneSetup`:
 - `basins = new[] { new Vector2(inicio, ancho), ... }` en el `LevelStyle`: lagos hundidos en el piso.
 - `Lake(desdeX, hastaX)` pone un lago sobre el piso (sin hundir).
-- `Tide(desdeX, hastaX, altura)` pone una marea; las plataformas deben quedar más altas que `altura`.
+- `tidePool = new Vector4(inicio, ancho, hondo, alturaMaxima)` en el `LevelStyle`: alberca de marea que nunca se seca.
+- `Tide(desdeX, hastaX, altura)` pone una marea sobre el piso que sí se seca.
 - `MucusLayer(desdeX, hastaX)` dibuja la capa de moco.
 
 En la escena puedes ajustar a mano cada lago: colores, ancho de columna de la ola (más grande = más pixel art),

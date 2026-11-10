@@ -183,6 +183,11 @@ namespace HealingKnight.EditorTools
             /// </summary>
             public Vector2[] basins;
             /// <summary>
+            /// Alberca de marea al final del nivel: x = inicio, y = ancho, z = hondo, w = hasta dónde sube el ácido
+            /// SOBRE el piso. Siempre tiene ácido (nunca se seca); solo se cruza sobre la comida que flota.
+            /// </summary>
+            public Vector4 tidePool;
+            /// <summary>
             /// Arte pixel del piso y las plataformas (Art/Tejidos/Tejido_&lt;nombre&gt;_Piso/_Relleno/_Plataforma.png,
             /// los genera Tools/Art/generar_tejido.py). Vacío o sin PNG = bloques de color de siempre.
             /// </summary>
@@ -353,6 +358,7 @@ namespace HealingKnight.EditorTools
             sorted.Sort((a, b) => a.x.CompareTo(b.x));
             var cuts = new List<Vector2>(sorted);
             if (style.basins != null) cuts.AddRange(style.basins);
+            if (style.tidePool.y > 0f) cuts.Add(new Vector2(style.tidePool.x, style.tidePool.y));
             cuts.Sort((a, b) => a.x.CompareTo(b.x));
             currentCuts = cuts;
             float segmentStart = startX - 15f;
@@ -377,6 +383,15 @@ namespace HealingKnight.EditorTools
             if (animatedAcid)
             {
                 foreach (Vector2 basin in style.basins) Basin(basin.x, basin.y);
+            }
+            if (style.tidePool.y > 0f)
+            {
+                Vector4 t = style.tidePool;
+                BasinFloor(t.x, t.y, t.z);
+                AcidLake tide = Lake(t.x, t.x + t.y, t.z - 0.15f, FloorY - t.z);
+                tide.name = "MareaAcido";
+                tide.Configure(t.y, t.z - 0.15f, true, t.z + t.w);
+                currentLakes.Add(tide);
             }
 
             if (style.pitLiquid.a > 0f)
@@ -837,9 +852,16 @@ namespace HealingKnight.EditorTools
 
         private void Basin(float fromX, float width)
         {
+            BasinFloor(fromX, width, BasinDepth);
+            currentLakes.Add(Lake(fromX, fromX + width, BasinDepth - 0.12f, FloorY - BasinDepth));
+        }
+
+        /// <summary>Piso hundido (fondo de un lago o de la alberca de marea).</summary>
+        private void BasinFloor(float fromX, float width, float depth)
+        {
             var go = new GameObject("FondoLago");
             go.transform.SetParent(environment, false);
-            go.transform.position = new Vector3(fromX + width * 0.5f, FloorY - BasinDepth, 0f);
+            go.transform.position = new Vector3(fromX + width * 0.5f, FloorY - depth, 0f);
             go.layer = PhysicsLayers.Ground;
             var box = go.AddComponent<BoxCollider2D>();
             box.size = new Vector2(width, 4f);
@@ -848,7 +870,6 @@ namespace HealingKnight.EditorTools
             else
                 SetupUtils.SpriteChild(go.transform, "Fill", PlaceholderArt.Square, Color.Lerp(currentStyle.floor, Color.black, 0.35f),
                     new Vector3(0f, -4f, 0f), new Vector2(width, 4f), -100);
-            currentLakes.Add(Lake(fromX, fromX + width, BasinDepth - 0.12f, FloorY - BasinDepth));
         }
 
         /// <summary>Hueco lleno de ácido casi hasta el borde. No daña aparte: caer al hueco ya cuesta vida.</summary>
@@ -936,19 +957,22 @@ namespace HealingKnight.EditorTools
                 backdrop = "Fondo_Estomago", // pixel art; si se borra el PNG vuelven las venas de placeholder
                 tissue = "Estomago",         // piso y plataformas de tejido pixel art (Art/Tejidos)
                 // Lagos de ácido hundidos entre los bancos de moco (x = inicio, ancho).
+                // Casi todo el piso de la parte 2 es ácido; quedan bancos de moco cortos entre lagos.
                 basins = new[]
                 {
-                    new Vector2(23.5f, 4f), new Vector2(28.8f, 2.2f), // el segundo termina en el primer hueco
-                    new Vector2(34.5f, 4f),
-                    new Vector2(48.5f, 3f),                         // en medio de la arena del escudo
-                    new Vector2(59.5f, 3.5f)
+                    new Vector2(22.5f, 5.5f), new Vector2(29f, 2f),   // el segundo termina en el primer hueco
+                    new Vector2(34.2f, 5.8f),
+                    new Vector2(42f, 3.5f), new Vector2(47f, 5f), new Vector2(53.5f, 4f), // arena del escudo
+                    new Vector2(58.5f, 5.5f)
                 },
+                // Parte 3: alberca honda de 67 a 89, siempre con ácido; sube hasta 1.5 sobre el piso.
+                tidePool = new Vector4(67f, 22f, 1.2f, 1.5f),
                 detail = new Color(0.15f, 0.55f, 0.6f, 0.7f),
                 pitLiquid = new Color(0.5f, 1f, 0.15f, 1f),
                 drip = new Color(0.55f, 1f, 0.2f, 0.9f),
                 glow = new Color(0.45f, 1f, 0.2f, 1f)
             }, "NODO: Estás en el estómago. Muévete con A/D, salta con K o Espacio. Apunta con W (W + A/D = diagonal).",
-                new Vector2(31f, 2.5f), new Vector2(65.5f, 2.5f));
+                new Vector2(31f, 2.5f));
 
             // El nivel tiene tres partes que suben de dificultad:
             //  1) Inicio seco (tutorial).
@@ -966,12 +990,12 @@ namespace HealingKnight.EditorTools
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 1)),
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 2)));
 
-            // ----- 2) Lago de ácido entre bancos de moco -----
-            MucusLayer(22.5f, 68f);
-            Platform(35.5f, 2.2f, 3f);
+            // ----- 2) Lagos de ácido entre bancos de moco -----
+            MucusLayer(22.5f, 67f);
             // Comida a medio digerir en los lagos: islas para cruzar sin pisar el ácido.
-            Food("Dona", 25.5f, 0.85f);
-            Food("Manzana", 36.6f, 0.72f);
+            Food("Dona", 25.2f, 0.85f);
+            Platform(35.5f, 2.2f, 3f);
+            Food("Manzana", 37.6f, 0.72f);
 
             // Easter egg en la plataforma más alta, entre la primera y la segunda arena: el diente con cara.
             // Al tocarlo se desbloquea la Boca (nivel secreto) y te lleva ahí.
@@ -979,27 +1003,26 @@ namespace HealingKnight.EditorTools
             Tooth(39.3f, 4.2f);
 
             Arena("Arena_2_Escudo", 44f, 18f,
-                "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L. Ojo con el ácido del centro.",
+                "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L. Pelea sobre la comida y los bancos de moco.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 1, SpawnSide.Left)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 3, SpawnSide.Both)));
-            Platform(50f, 2.4f, 4f);
-
-
-            // ----- 3) Marea de ácido (contracciones) -----
+            Food("Hamburguesa", 43.75f, 0.97f);
+            Food("Salchicha", 49.5f, 0.75f);
+            Platform(50f, 3.4f, 3f);
+            Food("Dona", 55.5f, 0.85f);
             Food("Hamburguesa", 61.25f, 0.97f);
 
-            Tide(68f, 90f, 1.5f);
-            Arena("Arena_3_Marea", 72f, 20f,
-                "Contracción del estómago: cuando retumbe, el ácido sube. ¡Súbete a una plataforma! El escudo no te protege.",
+            // ----- 3) Alberca de marea: solo ácido y comida flotando -----
+            Arena("Arena_3_Marea", 72f, 17f,
+                "Contracción del estómago: el ácido nunca baja del todo. Brinca de comida en comida; cuando retumbe, el ácido sube y la comida flota contigo. El escudo no te protege.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 3)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)));
-            // Comida que sube con la marea (súbete encima) y dos pliegues fijos más altos.
-            Food("Dona", 71f, 0.85f);
-            Food("Hamburguesa", 75.5f, 0.97f);
-            Platform(79.5f, 3.3f, 3f);
-            Food("Manzana", 82.2f, 0.72f);
-            Food("Salchicha", 85.6f, 0.75f);
-            Platform(88.5f, 2.4f, 2.2f);
+            Food("Dona", 69f, 0.85f);
+            Food("Hamburguesa", 72.6f, 0.97f);
+            Food("Manzana", 76f, 0.72f);
+            Food("Salchicha", 79.8f, 0.75f);
+            Food("Dona", 83.4f, 0.85f);
+            Food("Hamburguesa", 87f, 0.97f);
         }
 
         private void BuildDelgado()
