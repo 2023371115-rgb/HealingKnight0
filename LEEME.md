@@ -66,6 +66,22 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 **Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
 
+## Fondos de nivel (imagen)
+
+El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pixel art, 1672×941).
+Reemplaza la pared y los adornos de placeholder y se desliza lento con la cámara (`LevelBackdrop`): al inicio del
+nivel se ve el lado izquierdo de la imagen y al final el derecho, así parece que está muy lejos.
+
+Para ponerle fondo a otro nivel:
+1. Guarda el PNG en `Art/Fondos/` (por ejemplo `Fondo_Intestino.png`). Ideal: más ancho que 16:9 (≈ 2:1) y sin
+   cosas que parezcan plataformas; tonos oscuros/apagados para que el caballero y los enemigos resalten.
+2. En `SceneSetup`, en el `LevelStyle` de ese nivel, agrega `backdrop = "Fondo_Intestino"`.
+3. *Healing Knight → Crear/Regenerar proyecto base*.
+
+El importador lo deja solo en Sprite, filtro Point (pixel art nítido) y tamaño ≈ 1.2 veces el alto de la pantalla.
+En la escena, el objeto `Environment/Fondo` tiene opciones para ajustar a mano: cuánto se desliza, subirlo o bajarlo
+y cuánto se queda atrás cuando la cámara sube. Si borras el PNG, el nivel vuelve a su fondo de placeholder.
+
 ## Easter egg: el diente
 
 En el Estómago, en la plataforma más alta entre la primera y la segunda arena, flota un diente con cara. Es la entrada secreta a la **Boca**: al tocarlo brinca, gira, avisa y te lleva ahí. Desde ese momento la Boca aparece también en el mapa del cuerpo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.

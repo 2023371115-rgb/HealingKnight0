@@ -154,7 +154,7 @@ namespace HealingKnight.EditorTools
             if (intensityProp != null && intensityProp.CanWrite) intensityProp.SetValue(light, 1f);
         }
 
-        private enum Decor { Blobs, Rings, Alveoli, Veins, Villi, Folds, Neurons }
+        private enum Decor { Blobs, Rings, Alveoli, Veins, Villi, Folds, Neurons, None }
 
         private struct LevelStyle
         {
@@ -172,6 +172,44 @@ namespace HealingKnight.EditorTools
             public Color detail;
             /// <summary>Las plataformas tienen tallo hasta el piso (tejido nervioso tipo hongo).</summary>
             public bool platformStems;
+            /// <summary>
+            /// Imagen de fondo (nombre del PNG en Art/Fondos, sin ".png"). Si existe, reemplaza la pared y los
+            /// adornos de placeholder y se desliza lento con la cámara (LevelBackdrop). Si no existe, se usa lo de siempre.
+            /// </summary>
+            public string backdrop;
+        }
+
+        private const string BackdropFolder = "Assets/_Project/Art/Fondos";
+
+        /// <summary>
+        /// Los fondos son pixel art: filtro Point (sin difuminar), sin compresión y con píxeles por unidad tal que
+        /// la imagen mida 1.2 veces el alto de la pantalla (10.8 unidades). LevelBackdrop igual lo reescala si hace falta.
+        /// </summary>
+        private static Sprite LoadBackdrop(string name)
+        {
+            if (string.IsNullOrEmpty(name)) return null;
+            string path = $"{BackdropFolder}/{name}.png";
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return null;
+
+            importer.GetSourceTextureWidthAndHeight(out int width, out int height);
+            float ppu = height / (10.8f * 1.2f);
+            if (importer.textureType != TextureImporterType.Sprite
+                || importer.filterMode != FilterMode.Point
+                || Mathf.Abs(importer.spritePixelsPerUnit - ppu) > 0.01f
+                || importer.textureCompression != TextureImporterCompression.Uncompressed)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = ppu;
+                importer.filterMode = FilterMode.Point;
+                importer.mipmapEnabled = false;
+                importer.wrapMode = TextureWrapMode.Clamp;
+                importer.maxTextureSize = 4096;
+                importer.textureCompression = TextureImporterCompression.Uncompressed;
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
         }
 
         private const float FloorY = 0f;   // la parte de arriba del piso
@@ -191,8 +229,22 @@ namespace HealingKnight.EditorTools
             float endX = startX + length;
 
             environment = new GameObject("Environment").transform;
-            SetupUtils.SpriteChild(environment, "BackWall", PlaceholderArt.Square, style.wall,
-                new Vector3(startX + length * 0.5f, FloorY, 0f), new Vector2(length + 30f, 10f), -200);
+            Sprite backdrop = LoadBackdrop(style.backdrop);
+            if (backdrop != null)
+            {
+                var back = new GameObject("Fondo");
+                back.transform.SetParent(environment, false);
+                var renderer = back.AddComponent<SpriteRenderer>();
+                renderer.sprite = backdrop;
+                renderer.sortingOrder = -300;
+                back.AddComponent<LevelBackdrop>().Configure(startX, endX);
+                style.decor = Decor.None; // la imagen ya trae su decorado
+            }
+            else
+            {
+                SetupUtils.SpriteChild(environment, "BackWall", PlaceholderArt.Square, style.wall,
+                    new Vector3(startX + length * 0.5f, FloorY, 0f), new Vector2(length + 30f, 10f), -200);
+            }
 
             // Piso por tramos (los huecos quedan entre tramos).
             var sorted = new List<Vector2>(pits ?? new Vector2[0]);
@@ -348,6 +400,9 @@ namespace HealingKnight.EditorTools
                             }
                         }
                     }
+                    break;
+
+                case Decor.None: // fondo de imagen: sin adornos
                     break;
 
                 default:
@@ -581,6 +636,7 @@ namespace HealingKnight.EditorTools
                 floorEdge = new Color(0.95f, 0.45f, 0.55f),
                 blob = new Color(0.55f, 0.15f, 0.22f, 0.6f),
                 decor = Decor.Veins,
+                backdrop = "Fondo_Estomago", // pixel art; si se borra el PNG vuelven las venas de placeholder
                 detail = new Color(0.15f, 0.55f, 0.6f, 0.7f),
                 pitLiquid = new Color(0.5f, 1f, 0.15f, 1f),
                 drip = new Color(0.55f, 1f, 0.2f, 0.9f),
