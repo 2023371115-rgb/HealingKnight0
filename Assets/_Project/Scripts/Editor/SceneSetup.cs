@@ -66,7 +66,8 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
-            EditorBuildSettings.scenes = new[]
+            // Se registran SIEMPRE (aunque una escena haya fallado), solo las que existen en disco.
+            var scenes = new[]
             {
                 new EditorBuildSettingsScene(MainMenuPath, true),
                 new EditorBuildSettingsScene(BodyMapPath, true),
@@ -82,7 +83,13 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(HipocampoPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
+            EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
+            if (failed.Count > 0)
+                Debug.LogError($"[Healing Knight] {failed.Count} escena(s) no se pudieron armar: {string.Join(", ", failed)}. " +
+                               "El error de cada una está arriba en la consola (el primero en rojo con 'Falló al armar').");
         }
+
+        private readonly List<string> failed = new List<string>();
 
         private void CreateIfMissing(string path, System.Action build)
         {
@@ -97,7 +104,16 @@ namespace HealingKnight.EditorTools
             data.Run();
             prefabs.Run();
 
-            build();
+            try
+            {
+                build();
+            }
+            catch (System.Exception e)
+            {
+                // Un error en un nivel no debe impedir que se armen los demás ni que se registren en la compilación.
+                Debug.LogError($"[Healing Knight] Falló al armar {Path.GetFileNameWithoutExtension(path)}: {e}");
+                failed.Add(Path.GetFileNameWithoutExtension(path));
+            }
             EditorSceneManager.SaveScene(scene, path);
             created.Add(path);
         }
@@ -387,7 +403,7 @@ namespace HealingKnight.EditorTools
 
             // Líquido animado en huecos: si hay lagos o si el nivel usa el arte de tejido nuevo.
             bool animatedAcid = (style.basins != null && style.basins.Length > 0) || tissueFloor != null;
-            if (animatedAcid)
+            if (style.basins != null)
             {
                 foreach (Vector2 basin in style.basins) Basin(basin.x, basin.y);
             }
