@@ -131,6 +131,11 @@ al centro agregada) e Intestino grueso (`Fondo_Grueso`, la imagen original pasad
 (`tissue = "Estomago" / "Delgado" / "Grueso"`) y su líquido: ácido verde, bilis amarilla y líquido turbio olivo
 (`liquidDeep/liquidSurface/liquidOutline/liquidCrest` en el `LevelStyle`).
 
+Respiratorio (morados fríos, como los colores originales de esos niveles): Nariz (`Fondo_Nariz`, ciruela, moco
+amarillo lima), Tráquea (`Fondo_Traquea`, índigo, moco azulado) y Pulmones (`Fondo_Pulmones`, noche índigo, líquido
+turquesa). A los tres se les bajó un poco la saturación y el brillo, con bruma al centro y orillas más oscuras, para que
+no compitan con la acción. Con fondo pintado ya no se dibujan los cilios de relleno sobre el piso.
+
 Para ponerle fondo a otro nivel:
 1. Guarda el PNG en `Art/Fondos/` (por ejemplo `Fondo_Intestino.png`). Ideal: más ancho que 16:9 (≈ 2:1) y sin
    cosas que parezcan plataformas; tonos oscuros/apagados para que el caballero y los enemigos resalten.

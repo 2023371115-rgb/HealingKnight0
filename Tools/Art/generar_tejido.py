@@ -57,6 +57,42 @@ PALETAS = {
         "relleno_mancha": (78, 38, 64),
         "moco": (214, 186, 104),
     },
+    # Nariz: ciruela y magenta, con moco amarillo lima.
+    "Nariz": {
+        "contorno": (40, 10, 38),
+        "cuerpo": (150, 56, 132),
+        "labio": (196, 96, 176),
+        "brillo": (240, 172, 226),
+        "mancha": (112, 38, 98),
+        "sombra": (122, 42, 108),
+        "relleno": (84, 28, 78),
+        "relleno_mancha": (66, 20, 62),
+        "moco": (206, 226, 120),
+    },
+    # Tráquea: índigo y violeta, con moco claro azulado.
+    "Traquea": {
+        "contorno": (26, 16, 56),
+        "cuerpo": (112, 80, 168),
+        "labio": (156, 132, 220),
+        "brillo": (206, 196, 246),
+        "mancha": (84, 58, 134),
+        "sombra": (92, 64, 144),
+        "relleno": (64, 44, 108),
+        "relleno_mancha": (50, 34, 90),
+        "moco": (170, 230, 242),
+    },
+    # Pulmones: índigo profundo con alvéolos lavanda y brillo turquesa.
+    "Pulmones": {
+        "contorno": (20, 14, 48),
+        "cuerpo": (104, 74, 156),
+        "labio": (178, 146, 224),
+        "brillo": (224, 204, 248),
+        "mancha": (78, 54, 124),
+        "sombra": (86, 60, 132),
+        "relleno": (54, 38, 96),
+        "relleno_mancha": (42, 30, 80),
+        "moco": (150, 240, 236),
+    },
 }
 
 

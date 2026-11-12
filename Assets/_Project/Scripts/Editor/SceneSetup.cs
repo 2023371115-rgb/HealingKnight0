@@ -587,7 +587,7 @@ namespace HealingKnight.EditorTools
                     new Vector3(endX + 2f, FloorY + 3.5f, 0f), new Vector2(1.6f, 5f), -139);
             }
 
-            if (style.cilia)
+            if (style.cilia && tissueFloor == null) // con fondo pintado los cilios ya vienen dibujados
             {
                 // Cilios a lo largo del piso.
                 for (float x = startX - 10f; x < endX + 12f; x += 0.45f)
@@ -1197,7 +1197,14 @@ namespace HealingKnight.EditorTools
                 blob = new Color(0.7f, 0.32f, 0.58f, 0.35f),
                 decor = Decor.Blobs,
                 glow = RespGlow,
-                cilia = true
+                cilia = true,
+                backdrop = "Fondo_Nariz",    // pintura estilo caricatura (cornetes, pelos y moco)
+                tissue = "Nariz",            // tejido ciruela-magenta
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // los huecos llevan líquido animado: moco
+                liquidDeep = new Color(0.42f, 0.5f, 0.12f, 0.95f),
+                liquidSurface = new Color(0.8f, 0.88f, 0.36f, 0.85f),
+                liquidOutline = new Color(0.22f, 0.26f, 0.06f, 1f),
+                liquidCrest = new Color(0.95f, 1f, 0.7f, 0.95f)
             }, "NODO: Sistema respiratorio. Entraste por la nariz. Tu cápsula regional ahora es el MUCOLÍTICO.",
                 new Vector2(26f, 3f), new Vector2(44f, 3f));
 
@@ -1243,7 +1250,14 @@ namespace HealingKnight.EditorTools
                 blob = new Color(0.6f, 0.52f, 0.85f, 0.3f), // anillos de cartílago
                 decor = Decor.Rings,
                 glow = RespGlow,
-                cilia = true
+                cilia = true,
+                backdrop = "Fondo_Traquea",  // pintura estilo caricatura (anillos de cartílago y cilios)
+                tissue = "Traquea",          // tejido índigo-violeta
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // huecos con moco claro azulado
+                liquidDeep = new Color(0.2f, 0.32f, 0.55f, 0.95f),
+                liquidSurface = new Color(0.55f, 0.82f, 0.95f, 0.8f),
+                liquidOutline = new Color(0.1f, 0.14f, 0.32f, 1f),
+                liquidCrest = new Color(0.85f, 0.97f, 1f, 0.95f)
             }, "NODO: Tráquea. Detectamos tos ferina: Bordetella pertussis. Antibiótico.",
                 new Vector2(31f, 4f), new Vector2(44.5f, 5f), new Vector2(76f, 3f));
 
@@ -1290,7 +1304,14 @@ namespace HealingKnight.EditorTools
                 blob = new Color(0.85f, 0.7f, 0.95f, 0.28f), // alvéolos
                 decor = Decor.Alveoli,
                 glow = new Color(0.55f, 1f, 0.95f, 1f),
-                cilia = true
+                cilia = true,
+                backdrop = "Fondo_Pulmones", // pintura estilo caricatura (bronquiolos y alvéolos de noche)
+                tissue = "Pulmones",         // tejido índigo con lavanda
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // huecos con líquido turquesa (edema)
+                liquidDeep = new Color(0.08f, 0.32f, 0.4f, 0.95f),
+                liquidSurface = new Color(0.4f, 0.9f, 0.9f, 0.8f),
+                liquidOutline = new Color(0.04f, 0.14f, 0.2f, 1f),
+                liquidCrest = new Color(0.8f, 1f, 0.98f, 0.95f)
             }, "NODO: Pulmones. La infección se asentó en los bronquiolos. Cada tramo está bloqueado: elimina al grupo y despeja el paso.",
                 new Vector2(30f, 4f), new Vector2(45f, 4.5f), new Vector2(76f, 4.5f));
 
