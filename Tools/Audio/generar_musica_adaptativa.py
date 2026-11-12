@@ -1,5 +1,7 @@
 """
 Música ADAPTATIVA de Healing Knight (sintetizador + secuenciador hecho con numpy y scipy).
+Versión 4: la estructura de la v2 integrada al juego + el motor de sonido de la v3 del equipo
+(sierras de verdad, filtro resonante del acid, pads supersaw, lead de trance, pluck y reese con filtro).
 
 Cada nivel tiene su canción, separada en 6 CAPAS que duran exactamente lo mismo y se tocan a la vez.
 El juego (Scripts/Gameplay/Audio/AdaptiveMusic.cs) sube y baja cada capa según lo que pasa:
@@ -37,7 +39,9 @@ from dataclasses import dataclass
 from pathlib import Path
 
 import numpy as np
-from scipy.signal import butter, sosfilt
+from functools import lru_cache
+
+from scipy.signal import butter, lfilter, sosfilt
 
 SR = 44100                       # muestras por segundo
 AQUI = Path(__file__).resolve().parent
@@ -74,15 +78,15 @@ class Nivel:
 NIVELES = {
     "Digestivo_Boca":             Nivel(120, 45, DORICO,           [0, 3, 4, 0], [0, 2, 4, 2, 1, 0], [0, 4, 7, 10, 12, 14], "minimal"),
     "Digestivo_Estomago":         Nivel(126, 38, FRIGIO,           [0, 1, 5, 4], [0, 2, 1, 4, 3, 1], [0, 3, 7, 10, 13, 15], "acid"),
-    "Digestivo_IntestinoDelgado": Nivel(122, 45, DORICO,           [0, 3, 1, 4], [0, 4, 5, 2, 3, 6], [1, 4, 6, 9, 12, 14], "minimal"),
+    "Digestivo_IntestinoDelgado": Nivel(125, 45, DORICO,           [0, 3, 1, 4], [0, 4, 5, 2, 3, 6], [1, 4, 6, 9, 12, 14], "minimal"),
     "Digestivo_IntestinoGrueso":  Nivel(132, 36, LOCRIO,           [0, 5, 1, 4], [0, 4, 1, 0, 5, 2], [0, 5, 8, 11, 14, 15], "industrial"),
     "Digestivo_Jefe":             Nivel(142, 38, FRIGIO_DOMINANTE, [0, 1, 0, 4], [0, 1, 4, 6, 5, 1], [0, 2, 5, 8, 10, 14], "industrial"),
-    "Respiratorio_Nariz":         Nivel(112, 50, LIDIO,            [0, 1, 4, 3], [4, 5, 6, 3, 2, 1], [0, 4, 7, 9, 12, 15], "air"),
+    "Respiratorio_Nariz":         Nivel(132, 50, LIDIO,            [0, 1, 4, 3], [4, 5, 6, 3, 2, 1], [0, 4, 7, 9, 12, 15], "air"),
     "Respiratorio_Traquea":       Nivel(134, 43, DORICO,           [0, 4, 3, 1], [0, 2, 4, 5, 4, 2], [0, 3, 6, 8, 11, 14], "trance"),
     "Respiratorio_Pulmones":      Nivel(138, 45, MENOR,            [0, 5, 2, 6], [0, 4, 7, 6, 4, 2], [0, 2, 6, 9, 12, 14], "trance"),
     "Respiratorio_Jefe":          Nivel(148, 41, FRIGIO_DOMINANTE, [0, 4, 1, 6], [0, 4, 1, 6, 3, 1], [0, 1, 4, 7, 10, 13], "psy"),
     "Nervioso_Medula":            Nivel(168, 40, DORICO,           [0, 3, 0, 6], [0, 2, 0, 4, 3, 5], [0, 3, 5, 8, 11, 14], "break"),
-    "Nervioso_Hipocampo":         Nivel(160, 46, MENOR,            [0, 2, 5, 3], [4, 7, 6, 2, 3, 1], [0, 4, 6, 10, 12, 15], "liquid"),
+    "Nervioso_Hipocampo":         Nivel(172, 46, MENOR,            [0, 2, 5, 3], [4, 7, 6, 2, 3, 1], [0, 4, 6, 10, 12, 15], "liquid"),
     "Nervioso_Cerebro":           Nivel(174, 40, FRIGIO,           [0, 5, 2, 4], [0, 4, 1, 5, 3, 6], [0, 2, 7, 9, 11, 15], "neuro"),
     "Nervioso_Jefe":              Nivel(180, 40, LOCRIO_TENSO,     [0, 1, 4, 6], [0, 4, 6, 1, 5, 0], [0, 1, 5, 8, 12, 14], "neuro"),
 }
@@ -105,30 +109,68 @@ def envolvente(t, ataque=0.012, salida=0.12):
     return np.minimum(1, t / ataque) * np.minimum(1, np.maximum(0, (t[-1] - t) / salida))
 
 
-def tono(midi, duracion, tipo):
-    """Una nota con distintos 'instrumentos' hechos de ondas."""
+def sierra(fase, f):
+    """Onda de sierra sin "aliasing": suma de armónicos (1, 1/2, 1/3...) hasta antes de lo que el oído escucha."""
+    armonicos = max(1, min(40, int(19000 / f)))
+    return sum(np.sin(k * fase) / k for k in range(1, armonicos + 1)) * (-2 / np.pi)
+
+
+def filtro_resonante(x, corte, q):
+    """Pasa bajos con resonancia cuyo corte cambia en el tiempo ('corte' es un arreglo por muestra).
+    Se recalcula cada 128 muestras: así se hace el "wah" del bajo acid y el temblor del reese."""
+    y = np.zeros_like(x)
+    estado = np.zeros(2)
+    for i in range(0, len(x), 128):
+        w = 2 * np.pi * np.clip(corte[min(i + 64, len(x) - 1)], 40, 16000) / SR
+        c = np.cos(w)
+        alfa = np.sin(w) / (2 * q)
+        b = np.array([(1 - c) / 2, 1 - c, (1 - c) / 2]) / (1 + alfa)
+        a = np.array([1, -2 * c / (1 + alfa), (1 - alfa) / (1 + alfa)])
+        y[i:i + 128], estado = lfilter(b, a, x[i:i + 128], zi=estado)
+    return y
+
+
+@lru_cache(maxsize=512)
+def _tono(midi, duracion, tipo, variante):
+    """Una nota con distintos 'instrumentos'. Se guarda en memoria: las notas repetidas no se recalculan."""
     t = np.arange(max(2, round(duracion * SR))) / SR
-    fase = 2 * np.pi * hz(midi) * t
-    if tipo == "pad":          # acorde suave: varios armónicos y una voz un poco desafinada (coro)
-        x = sum(np.sin(fase * k + v) / k ** 1.5 for k, v in [(1, .1), (2, .8), (3, 1.3), (4, .4)]) * .45
-        x += np.sin(fase * 1.004) * .25
-        e = envolvente(t, .3, .35)
-    elif tipo == "campana":    # FM: una onda modula a otra y suena metálica, como campanita
+    f = hz(midi)
+    fase = 2 * np.pi * f * t
+    if tipo in ("pad", "lead"):
+        # Supersaw: 7 sierras un poquito desafinadas entre sí (el sonido típico del trance)
+        x = sum(sierra(fase * (1 + v * .004) + v * .71, f * (1 + v * .004)) for v in range(-3, 4)) / 7
+        if tipo == "pad":
+            x, e = filtro(x, 2200), envolvente(t, .25, .25)
+        else:
+            x, e = filtro(x, 6200), envolvente(t, .012, .09)
+    elif tipo == "acid":
+        # Bajo acid (estilo TB-303): sierra + filtro resonante que se abre al tocar y se cierra rápido
+        corte = 180 + (1600 + variante * 360) * np.exp(-t * 15)
+        x = np.tanh(filtro_resonante(sierra(fase, f), corte, 5.5) * 3)
+        e = envolvente(t, .003, .025)
+    elif tipo == "reese":
+        # Bajo reese (neurofunk): dos sierras desafinadas con un filtro que "tiembla", más un sub redondo
+        x = sierra(fase * .992, f * .992) + sierra(fase * 1.008, f * 1.008)
+        corte = 220 + (900 + variante * 180) * (0.5 + 0.5 * np.sin(2 * np.pi * (4 + variante) * t)) ** 2
+        x = np.tanh(filtro_resonante(x, corte, 2.4) * 3) * .65 + np.sin(fase) * .4
+        e = envolvente(t, .006, .035)
+    elif tipo == "campana":
+        # FM: una onda modula a otra y suena metálica, como campanita
         x = np.sin(fase + 1.8 * np.exp(-t * 7) * np.sin(fase * 2.01)) * .7
         e = envolvente(t, .005, .08) * np.exp(-t * 3)
-    elif tipo == "acid":       # muchos armónicos que se apagan rápido + saturación = bajo "ácido"
-        armonicos = min(24, int(19000 / hz(midi)))
-        x = sum(np.sin(fase * k) * np.exp(-t * k * 3) / k for k in range(1, armonicos + 1))
-        x = np.tanh(x * 1.8) * .65
-        e = envolvente(t, .006, .035)
-    elif tipo == "reese":      # dos ondas casi iguales que "pelean" entre sí: bajo eléctrico de neurofunk
-        x = np.sin(fase) * .5 + np.tanh(2 * (np.sin(fase * 1.008 + 2 * np.sin(fase * 2)) +
-                                             np.sin(fase * .992 + 1.5 * np.sin(fase * 3)))) * .35
-        e = envolvente(t, .012, .045)
-    else:                      # "sub": bajo redondo
+    elif tipo == "pluck":
+        # Cuerda pulsada: sierra filtrada que se apaga rápido
+        x = filtro(sierra(fase, f), 2500)
+        e = envolvente(t, .003, .04) * np.exp(-t * 9)
+    else:
+        # "sub": bajo redondo
         x = np.sin(fase) * .75 + np.sin(fase * 2) * .2
         e = envolvente(t, .008, .06)
     return (x * e).astype("float32")
+
+
+def tono(midi, duracion, tipo, variante=0):
+    return _tono(int(midi), round(float(duracion), 6), tipo, int(variante))
 
 
 def tambor(tipo, rng):
@@ -185,7 +227,15 @@ def componer(nombre, nivel, compases):
     def nota(grado):
         return nivel.tonica + nivel.escala[grado % 7] + 12 * (grado // 7)
 
-    bombos_de_todo = []   # para el "bombeo" (sidechain) del bajo y los acordes
+    sistema = nombre.split("_")[0]
+    # Instrumento de la melodía según el sistema: pluck (digestivo), lead de trance (respiratorio), campana (nervioso)
+    melodia = {"Digestivo": "pluck", "Respiratorio": "lead"}.get(sistema, "campana")
+    trance = nivel.estilo in ("trance", "psy")
+
+    def variante():
+        return int(rng.integers(0, 4))   # cada nota de acid/reese abre el filtro un poco distinto
+
+    bombos_de_todo = []   # para el "bombeo" (sidechain)
 
     for c in range(compases):
         inicio = c * 16
@@ -216,10 +266,10 @@ def componer(nombre, nivel, compases):
                 continue        # la primera sección deja huecos: respira
             grado = nivel.motivo[(j + (1 if c % 4 == 3 else 0)) % len(nivel.motivo)]
             m = nota(acorde + grado) + 24
-            p.poner("Melodia", tono(m, p.paso * (3.5 if aireado else 2.2), "campana"), inicio + s, .13, -.35 if j % 2 else .35)
+            p.poner("Melodia", tono(m, p.paso * (3.5 if aireado else 2.2), melodia), inicio + s, .13, -.35 if j % 2 else .35)
             if seccion != 1 or j % 2 == 0:
                 riff = "reese" if rapido else "acid"
-                p.poner("Combate", tono(m - (12 if seccion < 2 else 24), p.paso * 1.6, riff), inicio + s, .08)
+                p.poner("Combate", tono(m - (12 if seccion < 2 else 24), p.paso * 1.6, riff, variante()), inicio + s, .08)
 
         # --- Bajo
         if rapido:
@@ -233,8 +283,8 @@ def componer(nombre, nivel, compases):
         for j, s in enumerate(pasos_bajo):
             grado = acorde + (4 if j == len(pasos_bajo) - 1 and c % 2 else 0)
             m = nota(grado) - (12 if nivel.tonica >= 45 else 0)
-            instrumento = "reese" if rapido else "acid" if (acido or pesado) else "sub"
-            p.poner("Bajo", tono(m, p.paso * (1.7 if rapido or aireado else .85), instrumento), inicio + s, .28)
+            instrumento = "reese" if rapido else "acid" if (acido or pesado) else "pluck" if trance else "sub"
+            p.poner("Bajo", tono(m, p.paso * (1.7 if rapido or aireado else .85), instrumento, variante()), inicio + s, .28)
 
         # --- Percusión
         bombos = [0, 10] if rapido else [0, 8] if aireado else [0, 4, 8, 12]
@@ -266,16 +316,16 @@ def componer(nombre, nivel, compases):
         x = p.capas[capa]
         p.capas[capa] = x + np.roll(x[:, ::-1], round(p.paso * 3 * SR), axis=0) * .22 + np.roll(x, round(p.paso * 6 * SR), axis=0) * .10
 
-    # --- Bombeo: el bajo y los acordes bajan un poco con cada bombo (aunque la percusión esté apagada se nota el pulso)
+    # --- Bombeo: bajo, acordes y melodía bajan con cada bombo (más hondo en trance, como en la v3 del equipo)
     if not aireado:
         env = np.ones(p.n, np.float32)
-        largo = int(.18 * SR)
-        curva = 1 - .35 * np.exp(-np.arange(largo) / SR / .07)
+        largo = int(.22 * SR)
+        curva = 1 - (.48 if trance else .28) * np.exp(-np.arange(largo) / SR / .065)
         for s in bombos_de_todo:
             i = round(s * p.paso * SR)
             idx = (i + np.arange(largo)) % p.n
             env[idx] = np.minimum(env[idx], curva)
-        for capa in ("Bajo", "Armonia"):
+        for capa in ("Bajo", "Armonia", "Melodia"):
             p.capas[capa] *= env[:, None]
 
     # --- Balance: cada capa a su volumen; luego todo junto que no pase de 0.9 (con todas encendidas)

@@ -1,9 +1,9 @@
 {
   "level": "Digestivo_IntestinoDelgado",
-  "bpm": 122,
+  "bpm": 125,
   "bars": 32,
   "sampleRate": 44100,
-  "samples": 2776131,
+  "samples": 2709504,
   "layers": [
     "Ambiente",
     "Armonia",

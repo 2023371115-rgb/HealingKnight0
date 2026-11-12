@@ -229,7 +229,9 @@ La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
 
 - Archivos: `Assets/_Project/Audio/Resources/MusicAdaptive/<NombreDeLaEscena>/` con `Ambiente, Armonia, Melodia,
   Bajo, Percusion, Combate, Victoria` (y `Entrada` en las de jefe) + `manifest.json` (BPM, compases, largo).
-- Los genera `Tools/Audio/generar_musica_adaptativa.py` (`--todos`, o `--nivel Digestivo_Estomago --preview`
+- Los genera `Tools/Audio/generar_musica_adaptativa.py` (v4: estructura integrada al juego + motor de sonido de la v3 del
+  equipo: acid con filtro resonante, pads supersaw, lead de trance, pluck y reese; melodía con pluck en el digestivo,
+  lead en el respiratorio y campanas en el nervioso) (`--todos`, o `--nivel Digestivo_Estomago --preview`
   para oír la mezcla completa en `Tools/Audio/preview/`). Cada capa queda a un volumen fijo para que ninguna tape a
   las demás, y todas juntas nunca pasan de 0.9.
 - **Para Victor:** si hace su música, que exporte cada canción en esas 6 capas (mismo largo exacto, en loop) con los
