@@ -93,6 +93,42 @@ PALETAS = {
         "relleno_mancha": (42, 30, 80),
         "moco": (150, 240, 236),
     },
+    # Médula: índigo-violeta con brillo turquesa (líquido cefalorraquídeo).
+    "Medula": {
+        "contorno": (14, 12, 44),
+        "cuerpo": (84, 62, 160),
+        "labio": (130, 120, 220),
+        "brillo": (150, 236, 246),
+        "mancha": (62, 44, 126),
+        "sombra": (66, 48, 132),
+        "relleno": (40, 30, 92),
+        "relleno_mancha": (30, 22, 76),
+        "moco": (110, 226, 240),
+    },
+    # Hipocampo: magenta-orquídea con destellos dorados (memorias).
+    "Hipocampo": {
+        "contorno": (40, 8, 46),
+        "cuerpo": (156, 48, 140),
+        "labio": (206, 96, 186),
+        "brillo": (255, 210, 150),
+        "mancha": (116, 32, 106),
+        "sombra": (126, 36, 114),
+        "relleno": (78, 22, 78),
+        "relleno_mancha": (62, 16, 64),
+        "moco": (255, 196, 110),
+    },
+    # Cerebro: índigo profundo con orilla azul y destellos dorados.
+    "Cerebro": {
+        "contorno": (14, 10, 40),
+        "cuerpo": (92, 56, 160),
+        "labio": (130, 110, 220),
+        "brillo": (120, 200, 250),
+        "mancha": (68, 40, 128),
+        "sombra": (72, 44, 136),
+        "relleno": (44, 26, 92),
+        "relleno_mancha": (34, 20, 76),
+        "moco": (255, 208, 110),
+    },
 }
 
 

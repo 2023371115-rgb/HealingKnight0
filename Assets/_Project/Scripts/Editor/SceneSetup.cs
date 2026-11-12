@@ -718,7 +718,7 @@ namespace HealingKnight.EditorTools
                     new Vector3(0f, -0.12f, 0f), new Vector2(width, 0.12f), -89);
             }
 
-            if (currentStyle.platformStems)
+            if (currentStyle.platformStems && !tissue) // con tejido nuevo la plataforma flota (sin tallo de relleno)
             {
                 // Tejido nervioso tipo hongo: borde redondeado y tallo hasta el piso.
                 float stemHeight = topY - FloorY + 3f;
@@ -1430,6 +1430,13 @@ namespace HealingKnight.EditorTools
                 detail = new Color(0.35f, 0.65f, 1f, 0.7f),
                 glow = new Color(0.85f, 0.55f, 1f, 1f),
                 platformStems = true
+                ,backdrop = "Fondo_Hipocampo", // pintura estilo caricatura (neuronas y burbujas de memoria)
+                tissue = "Hipocampo",         // tejido magenta-orquídea con destellos dorados
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // huecos con líquido dorado (memorias)
+                liquidDeep = new Color(0.45f, 0.22f, 0.08f, 0.95f),
+                liquidSurface = new Color(0.98f, 0.72f, 0.3f, 0.82f),
+                liquidOutline = new Color(0.22f, 0.06f, 0.12f, 1f),
+                liquidCrest = new Color(1f, 0.92f, 0.65f, 0.95f)
             }, "NODO: Hipocampo, el centro de la memoria. Algo viene corriendo por los nervios...",
                 new Vector2(20f, 3.5f));
 
@@ -1487,6 +1494,13 @@ namespace HealingKnight.EditorTools
                 decor = Decor.Rings,
                 glow = new Color(0.65f, 0.45f, 1f, 1f),
                 platformStems = true
+                ,backdrop = "Fondo_Medula",  // pintura estilo caricatura (fibras con mielina y vértebras)
+                tissue = "Medula",            // tejido índigo con brillo turquesa
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // huecos con líquido cefalorraquídeo turquesa
+                liquidDeep = new Color(0.06f, 0.24f, 0.42f, 0.95f),
+                liquidSurface = new Color(0.3f, 0.82f, 0.92f, 0.8f),
+                liquidOutline = new Color(0.03f, 0.08f, 0.2f, 1f),
+                liquidCrest = new Color(0.75f, 1f, 1f, 0.95f)
             }, "NODO: Sistema nervioso. Entraste por la médula espinal: la infección sube hacia el cerebro.",
                 new Vector2(30f, 3.5f), new Vector2(44f, 4f), new Vector2(78f, 3.5f));
 
@@ -1532,6 +1546,13 @@ namespace HealingKnight.EditorTools
                 detail = new Color(0.35f, 0.65f, 1f, 0.7f),
                 glow = new Color(0.75f, 0.5f, 1f, 1f), // luz del hipocampo al final
                 platformStems = true
+                ,backdrop = "Fondo_Cerebro",  // pintura estilo caricatura (circunvoluciones y red de neuronas)
+                tissue = "Cerebro",           // tejido índigo con orilla azul
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // huecos con líquido magenta
+                liquidDeep = new Color(0.3f, 0.06f, 0.36f, 0.95f),
+                liquidSurface = new Color(0.86f, 0.36f, 0.82f, 0.8f),
+                liquidOutline = new Color(0.12f, 0.03f, 0.16f, 1f),
+                liquidCrest = new Color(1f, 0.8f, 0.96f, 0.95f)
             }, "NODO: Cerebro. Protege las neuronas azules: los disparos ENEMIGOS las dañan y las infectan. Las tuyas las atraviesan.",
                 new Vector2(29f, 4f), new Vector2(70f, 4f), new Vector2(84f, 4f));
 

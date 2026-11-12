@@ -136,6 +136,11 @@ amarillo lima), Tráquea (`Fondo_Traquea`, índigo, moco azulado) y Pulmones (`F
 turquesa). A los tres se les bajó un poco la saturación y el brillo, con bruma al centro y orillas más oscuras, para que
 no compitan con la acción. Con fondo pintado ya no se dibujan los cilios de relleno sobre el piso.
 
+Nervioso (violeta oscuro con un acento de luz por nivel): Médula (`Fondo_Medula`, turquesa; líquido cefalorraquídeo),
+Hipocampo (`Fondo_Hipocampo`, magenta con memorias de colores; líquido dorado) y Cerebro (`Fondo_Cerebro`, índigo con
+sinapsis doradas; líquido magenta). Mismo filtro ligero que el respiratorio. Con tejido nuevo las plataformas ya no
+llevan el tallo de relleno.
+
 Para ponerle fondo a otro nivel:
 1. Guarda el PNG en `Art/Fondos/` (por ejemplo `Fondo_Intestino.png`). Ideal: más ancho que 16:9 (≈ 2:1) y sin
    cosas que parezcan plataformas; tonos oscuros/apagados para que el caballero y los enemigos resalten.
