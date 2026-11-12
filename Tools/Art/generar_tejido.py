@@ -95,10 +95,11 @@ PALETAS = {
     },
     # Médula: índigo-violeta con brillo turquesa (líquido cefalorraquídeo).
     "Medula": {
-        "contorno": (14, 12, 44),
-        "cuerpo": (84, 62, 160),
-        "labio": (130, 120, 220),
-        "brillo": (150, 236, 246),
+        # Borde de arriba turquesa: así las plataformas no se confunden con las fibras lavanda del fondo.
+        "contorno": (8, 8, 32),
+        "cuerpo": (78, 56, 150),
+        "labio": (70, 210, 228),
+        "brillo": (210, 255, 255),
         "mancha": (62, 44, 126),
         "sombra": (66, 48, 132),
         "relleno": (40, 30, 92),
