@@ -70,25 +70,30 @@ La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada ha
 
 En los lagos y en la marea hay comida a medio digerir (dona, manzana, salchicha, hamburguesa) que sirve de
 plataforma: en los lagos son islas para cruzar sin pisar el ácido, y en la marea **suben con el ácido** y te llevan
-encima. Los PNG están en `Assets/_Project/Art/Comida/` (`Comida_<Nombre>.png`, fondo transparente, pixel art a
-64 píxeles por unidad). En `SceneSetup`: `Food("Dona", x, alturaDelPiso)` donde la altura es la fracción del dibujo
+encima. Los PNG están en `Assets/_Project/Art/Comida/` (`Comida_<Nombre>.png`, fondo transparente, estilo caricatura a
+256 píxeles por unidad); los dibuja `Tools/Art/generar_comida.py`. En `SceneSetup`: `Food("Dona", x, alturaDelPiso)` donde la altura es la fracción del dibujo
 (0 = abajo, 1 = arriba) en la que se pisa. Si la x cae dentro de un lago o una marea, flota en él.
 
 Para agregar otra comida: dibuja o genera el PNG con fondo transparente (que no sea el cuadriculado pintado),
 guárdalo en esa carpeta y agrega una línea `Food(...)`.
 
-## Piso y plataformas de tejido (pixel art)
+## Estilo de arte: caricatura (tipo Hora de Aventura)
 
-En el Estómago el piso y las plataformas ya no son bloques de color: son pliegues de tejido en pixel art con la
-misma paleta del fondo (poros, borde de moco húmedo, gotas colgando) y sombras de contacto (el fondo se oscurece
+El juego ya no usa pixel art: colores planos, contorno grueso oscuro (el mismo tono en todo), formas redondas,
+brillos ovalados y manchitas. Lo que se dibuje nuevo (enemigos, objetos) debe seguir esas reglas para que combine.
+
+## Piso y plataformas de tejido
+
+En el Estómago el piso y las plataformas ya no son bloques de color: son tejido estilo caricatura con la
+misma paleta del fondo (contorno grueso, labio claro, manchas, brillos y gotas de moco) y sombras de contacto (el fondo se oscurece
 arriba del piso y debajo de cada plataforma; las paredes de huecos y lagos llevan sombra).
 
 - Las imágenes están en `Assets/_Project/Art/Tejidos/` y las genera `Tools/Art/generar_tejido.py`
   (`python generar_tejido.py`). Se repiten sin cortes: Unity las usa con *Draw Mode = Tiled*.
-- La plataforma tiene puntas fijas (24 px a cada lado) y el centro se repite: sirve para cualquier ancho.
+- La plataforma tiene puntas fijas (96 px a cada lado) y el centro se repite: sirve para cualquier ancho.
 - Para otro órgano: agrega una paleta en `PALETAS` del script, genera, y en el `LevelStyle` de ese nivel pon
-  `tissue = "Nombre"`. Si dibujas tú los PNG, respeta los nombres y tamaños (piso 128×64, relleno 64×64,
-  plataforma 112×44) y que se repitan sin cortes a los lados.
+  `tissue = "Nombre"`. Si dibujas tú los PNG, respeta los nombres y tamaños (256 píxeles = 1 unidad: piso 512×256,
+  relleno 256×256, plataforma 448×176 con puntas de 96 px) y que se repitan sin cortes a los lados.
 
 ## Ácido del Estómago (lago y marea)
 
@@ -100,8 +105,8 @@ El Estómago tiene tres partes que suben de dificultad:
 3. **Alberca de marea:** el final del nivel es una alberca honda que siempre tiene ácido (`tidePool` en el
    `LevelStyle`). No hay plataformas: solo comida flotando. Cuando retumba, el ácido sube y la comida sube contigo.
 
-El ácido se dibuja y anima por código (`Hazards/AcidLake.cs`): olas pixeleadas, cresta brillante, burbujas que
-revientan y vapor. No necesita arte. Daña si tienes los pies dentro (saltando por encima no); el escudo no protege.
+El ácido se dibuja y anima por código (`Hazards/AcidLake.cs`): verde plano con contorno oscuro en la superficie,
+olas suaves, brillo, burbujas que revientan y vapor. No necesita arte. Daña si tienes los pies dentro (saltando por encima no); el escudo no protege.
 A los enemigos no les hace nada (la H. pylori neutraliza el ácido con ureasa).
 
 En `SceneSetup`:
@@ -117,7 +122,7 @@ cambiando los colores.
 
 ## Fondos de nivel (imagen)
 
-El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pixel art, 1672×941).
+El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pintura estilo caricatura, 1672×941).
 Reemplaza la pared y los adornos de placeholder y se desliza lento con la cámara (`LevelBackdrop`): al inicio del
 nivel se ve el lado izquierdo de la imagen y al final el derecho, así parece que está muy lejos.
 
@@ -127,7 +132,7 @@ Para ponerle fondo a otro nivel:
 2. En `SceneSetup`, en el `LevelStyle` de ese nivel, agrega `backdrop = "Fondo_Intestino"`.
 3. *Healing Knight → Crear/Regenerar proyecto base*.
 
-El importador lo deja solo en Sprite, filtro Point (pixel art nítido) y tamaño ≈ 1.2 veces el alto de la pantalla.
+El importador lo deja solo en Sprite, filtro Bilinear (pintura lisa) y tamaño ≈ 1.2 veces el alto de la pantalla.
 En la escena, el objeto `Environment/Fondo` tiene opciones para ajustar a mano: cuánto se desliza, subirlo o bajarlo
 y cuánto se queda atrás cuando la cámara sube. Si borras el PNG, el nivel vuelve a su fondo de placeholder.
 

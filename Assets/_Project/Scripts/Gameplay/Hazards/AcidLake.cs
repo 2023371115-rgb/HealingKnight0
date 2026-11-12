@@ -45,12 +45,15 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private string firstWarning = "¡CONTRACCIÓN! El ácido va a subir: ¡quédate sobre la comida!";
 
         [Header("Aspecto")]
+        // Estilo caricatura: verde plano y brillante, contorno oscuro grueso en la superficie, burbujas claras.
         [Tooltip("Color en lo hondo (más opaco).")]
-        [SerializeField] private Color deep = new Color(0.12f, 0.24f, 0.05f, 0.93f);
-        [Tooltip("Color justo bajo la superficie (más transparente: se alcanza a ver lo que está hundido).")]
-        [SerializeField] private Color surface = new Color(0.52f, 0.74f, 0.2f, 0.58f);
-        [Tooltip("Línea brillante de la superficie, burbujas y vapor.")]
-        [SerializeField] private Color crest = new Color(0.86f, 0.95f, 0.58f, 0.9f);
+        [SerializeField] private Color deep = new Color(0.22f, 0.52f, 0.12f, 0.95f);
+        [Tooltip("Color justo bajo la superficie (un poco transparente: se alcanza a ver lo que está hundido).")]
+        [SerializeField] private Color surface = new Color(0.52f, 0.86f, 0.22f, 0.8f);
+        [Tooltip("Contorno de la superficie (mismo tono oscuro que el contorno del tejido, pero verde).")]
+        [SerializeField] private Color outline = new Color(0.12f, 0.26f, 0.08f, 1f);
+        [Tooltip("Brillo bajo la superficie, burbujas y vapor.")]
+        [SerializeField] private Color crest = new Color(0.82f, 1f, 0.55f, 0.95f);
         [Tooltip("Qué tan hondo (unidades) llega el degradado de claro a oscuro.")]
         [SerializeField] private float gradientDepth = 1.4f;
         [Tooltip("Enfrente de los personajes (0-12) para que se vean hundidos; detrás de las plataformas no importa (quedan más arriba).")]
@@ -226,7 +229,7 @@ namespace HealingKnight.Gameplay.Hazards
             gradient = MakeGradient(surface, deep);
             body = Make("Liquido", gradient, Color.white, sortingOrder);
             deepFill = Make("Hondo", square, deep, sortingOrder);
-            glint = Make("Reflejo", square, new Color(crest.r, crest.g, crest.b, 0.16f), sortingOrder + 1);
+            glint = Make("Reflejo", square, new Color(crest.r, crest.g, crest.b, 0.55f), sortingOrder + 1);
 
             int count = Mathf.Max(2, Mathf.CeilToInt(width / columnWidth));
             columns = new SpriteRenderer[count];
@@ -234,7 +237,7 @@ namespace HealingKnight.Gameplay.Hazards
             for (int i = 0; i < count; i++)
             {
                 columns[i] = Make("Ola", square, new Color(surface.r, surface.g, surface.b, surface.a * 0.9f), sortingOrder + 1);
-                crests[i] = Make("Cresta", square, crest, sortingOrder + 2);
+                crests[i] = Make("Contorno", square, outline, sortingOrder + 2);
             }
 
             int bubbleCount = Mathf.Clamp(Mathf.RoundToInt(width * 0.6f), 3, 30);
@@ -262,12 +265,11 @@ namespace HealingKnight.Gameplay.Hazards
         /// redondeadas a 1/64 de unidad para que coincidan con los pixeles del tejido.</summary>
         private float Wave(float x, float t)
         {
-            float a = 0.025f + 0.07f * agitation;
+            float a = 0.03f + 0.08f * agitation;
             float h = Mathf.Sin(x * 1.3f + t * 1.6f + seed) * 0.6f
                       + Mathf.Sin(x * 2.9f - t * 2.2f + seed * 2f) * 0.25f
                       + Mathf.Sin(x * 0.45f + t * 0.8f) * 0.15f;
-            h = (h * 0.5f + 0.5f) * a;
-            return Mathf.Round(h * 64f) / 64f;
+            return (h * 0.5f + 0.5f) * a;
         }
 
         /// <summary>Degradado vertical: claro y transparente arriba, oscuro y opaco abajo.</summary>
@@ -319,8 +321,8 @@ namespace HealingKnight.Gameplay.Hazards
             }
             // Reflejo de luz que se mueve despacio bajo la superficie.
             float g = Mathf.Sin(t * 0.7f + seed) * 0.03f;
-            glint.transform.localPosition = new Vector3(0f, level - 0.14f + g, 0f);
-            glint.transform.localScale = new Vector3(width - 0.1f, 0.05f, 1f);
+            glint.transform.localPosition = new Vector3(0f, level - 0.13f + g, 0f);
+            glint.transform.localScale = new Vector3(width - 0.3f, 0.045f, 1f);
 
             float colW = width / columns.Length;
             for (int i = 0; i < columns.Length; i++)
@@ -334,8 +336,8 @@ namespace HealingKnight.Gameplay.Hazards
                 float top = level + h;
                 columns[i].transform.localPosition = new Vector3(x, level + (h - 0.06f) * 0.5f, 0f);
                 columns[i].transform.localScale = new Vector3(colW + 0.002f, h + 0.06f, 1f);
-                crests[i].transform.localPosition = new Vector3(x, top - 0.016f, 0f);
-                crests[i].transform.localScale = new Vector3(colW + 0.002f, 0.032f, 1f);
+                crests[i].transform.localPosition = new Vector3(x, top - 0.025f, 0f);
+                crests[i].transform.localScale = new Vector3(colW + 0.002f, 0.05f, 1f);
             }
 
 
@@ -367,7 +369,7 @@ namespace HealingKnight.Gameplay.Hazards
                 float k = 1f - b.popTimer / 0.12f;
                 float s = b.size * (1f + k * 1.2f);
                 r.transform.localScale = new Vector3(s, s, 1f);
-                r.color = new Color(crest.r, crest.g, crest.b, 0.9f * (1f - k));
+                r.color = new Color(crest.r, crest.g, crest.b, 0.85f * (1f - k));
                 if (b.popTimer <= 0f) Respawn(ref b, false);
                 return;
             }
@@ -379,7 +381,7 @@ namespace HealingKnight.Gameplay.Hazards
                 b.y = surfaceHere;
                 b.popTimer = 0.12f;
             }
-            r.color = new Color(crest.r, crest.g, crest.b, 0.45f);
+            r.color = new Color(crest.r, crest.g, crest.b, 0.85f);
             r.transform.localScale = new Vector3(b.size, b.size, 1f);
             r.transform.localPosition = new Vector3(b.x + Mathf.Sin(t * 4f + b.size * 50f) * 0.03f, b.y, 0f);
         }
@@ -426,7 +428,7 @@ namespace HealingKnight.Gameplay.Hazards
                     {
                         float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
                         float d = Mathf.Sqrt(dx * dx + dy * dy);
-                        pixels[y * n + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - d) * 3f));
+                        pixels[y * n + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - d) * 16f)); // orilla nítida (caricatura)
                     }
                 tex.SetPixels(pixels);
                 tex.Apply();

@@ -195,17 +195,17 @@ namespace HealingKnight.EditorTools
         }
 
         private const string TissueFolder = "Assets/_Project/Art/Tejidos";
-        private const float TissuePixelsPerUnit = 64f;
+        private const float TissuePixelsPerUnit = 256f; // arte de caricatura en alta resolución (Tools/Art)
         private static readonly Dictionary<string, Sprite> tissueCache = new Dictionary<string, Sprite>();
         private Sprite tissueFloor, tissueFill, tissuePlatform, softShadow, verticalShadow;
 
         /// <summary>
-        /// Carga un PNG de Art/Tejidos listo para repetirse (drawMode Tiled): Sprite, malla completa (FullRect),
-        /// sin mipmaps; 'pixelArt' = filtro Point (nítido), si no Bilinear (sombras suaves).
+        /// Carga un PNG de Art/Tejidos listo para repetirse (drawMode Tiled): Sprite, malla completa (FullRect).
+        /// 'pixelArt' = filtro Point sin mipmaps; si no, Trilinear con mipmaps (dibujo liso que se ve chico en pantalla).
         /// 'border' = píxeles de las orillas que NO se repiten (izq, abajo, der, arriba), para las puntas de las plataformas.
         /// Se carga una vez por armado (si se reimporta dos veces, la primera referencia se pierde).
         /// </summary>
-        private static Sprite LoadTissue(string file, Vector2 pivot, Vector4 border, bool pixelArt = true, string folder = TissueFolder)
+        private static Sprite LoadTissue(string file, Vector2 pivot, Vector4 border, bool pixelArt = false, string folder = TissueFolder)
         {
             string path = $"{folder}/{file}.png";
             if (tissueCache.TryGetValue(path, out Sprite cached) && cached != null) return cached;
@@ -214,21 +214,22 @@ namespace HealingKnight.EditorTools
 
             var settings = new TextureImporterSettings();
             importer.ReadTextureSettings(settings);
-            FilterMode filter = pixelArt ? FilterMode.Point : FilterMode.Bilinear;
+            FilterMode filter = pixelArt ? FilterMode.Point : FilterMode.Trilinear;
             bool needs = importer.textureType != TextureImporterType.Sprite
                          || importer.filterMode != filter
                          || Mathf.Abs(importer.spritePixelsPerUnit - TissuePixelsPerUnit) > 0.01f
                          || settings.spriteMeshType != SpriteMeshType.FullRect
                          || settings.spriteAlignment != (int)SpriteAlignment.Custom
                          || (settings.spritePivot - pivot).sqrMagnitude > 1e-4f
-                         || importer.spriteBorder != border;
+                         || importer.spriteBorder != border
+                         || importer.mipmapEnabled == pixelArt;
             if (needs)
             {
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = TissuePixelsPerUnit;
                 importer.filterMode = filter;
-                importer.mipmapEnabled = false;
+                importer.mipmapEnabled = !pixelArt;
                 importer.wrapMode = TextureWrapMode.Repeat;
                 importer.alphaIsTransparency = true;
                 importer.textureCompression = TextureImporterCompression.Uncompressed;
@@ -255,7 +256,7 @@ namespace HealingKnight.EditorTools
             {
                 tissueFloor = LoadTissue($"Tejido_{name}_Piso", top, Vector4.zero);
                 tissueFill = LoadTissue($"Tejido_{name}_Relleno", top, Vector4.zero);
-                tissuePlatform = LoadTissue($"Tejido_{name}_Plataforma", top, new Vector4(24f, 0f, 24f, 0f));
+                tissuePlatform = LoadTissue($"Tejido_{name}_Plataforma", top, new Vector4(96f, 0f, 96f, 0f));
                 if (tissueFloor == null || tissueFill == null) tissueFloor = tissueFill = null;
             }
             softShadow = LoadTissue("Sombra_Suave", new Vector2(0.5f, 0.5f), Vector4.zero, false);
@@ -287,7 +288,7 @@ namespace HealingKnight.EditorTools
         private const string BackdropFolder = "Assets/_Project/Art/Fondos";
 
         /// <summary>
-        /// Los fondos son pixel art: filtro Point (sin difuminar), sin compresión y con píxeles por unidad tal que
+        /// Los fondos son pinturas lisas: filtro Bilinear, sin compresión y con píxeles por unidad tal que
         /// la imagen mida 1.2 veces el alto de la pantalla (10.8 unidades). LevelBackdrop igual lo reescala si hace falta.
         /// </summary>
         private static Sprite LoadBackdrop(string name)
@@ -300,14 +301,14 @@ namespace HealingKnight.EditorTools
             importer.GetSourceTextureWidthAndHeight(out int width, out int height);
             float ppu = height / (10.8f * 1.2f);
             if (importer.textureType != TextureImporterType.Sprite
-                || importer.filterMode != FilterMode.Point
+                || importer.filterMode != FilterMode.Bilinear
                 || Mathf.Abs(importer.spritePixelsPerUnit - ppu) > 0.01f
                 || importer.textureCompression != TextureImporterCompression.Uncompressed)
             {
                 importer.textureType = TextureImporterType.Sprite;
                 importer.spriteImportMode = SpriteImportMode.Single;
                 importer.spritePixelsPerUnit = ppu;
-                importer.filterMode = FilterMode.Point;
+                importer.filterMode = FilterMode.Bilinear; // pintura lisa (no pixel art)
                 importer.mipmapEnabled = false;
                 importer.wrapMode = TextureWrapMode.Clamp;
                 importer.maxTextureSize = 4096;
@@ -817,7 +818,7 @@ namespace HealingKnight.EditorTools
         /// </summary>
         private void Food(string name, float x, float topFraction)
         {
-            Sprite sprite = LoadTissue($"Comida_{name}", new Vector2(0.5f, 0f), Vector4.zero, true, FoodFolder);
+            Sprite sprite = LoadTissue($"Comida_{name}", new Vector2(0.5f, 0f), Vector4.zero, false, FoodFolder);
             if (sprite == null) return;
             AcidLake lake = LakeAt(x);
             float restY = lake != null ? lake.transform.position.y : FloorY;
@@ -954,8 +955,8 @@ namespace HealingKnight.EditorTools
                 floorEdge = new Color(0.95f, 0.45f, 0.55f),
                 blob = new Color(0.55f, 0.15f, 0.22f, 0.6f),
                 decor = Decor.Veins,
-                backdrop = "Fondo_Estomago", // pixel art; si se borra el PNG vuelven las venas de placeholder
-                tissue = "Estomago",         // piso y plataformas de tejido pixel art (Art/Tejidos)
+                backdrop = "Fondo_Estomago", // pintura estilo caricatura; si se borra el PNG vuelven las venas de placeholder
+                tissue = "Estomago",         // piso y plataformas de tejido estilo caricatura (Art/Tejidos)
                 // Lagos de ácido hundidos entre los bancos de moco (x = inicio, ancho).
                 // Parte 2: dos lagos hondos y largos; se cruzan sobre la comida que flota.
                 // Solo quedan dos bancos de moco: antes de la arena del escudo y antes de la alberca final.
@@ -991,11 +992,11 @@ namespace HealingKnight.EditorTools
             // ----- 2) Lagos de ácido entre bancos de moco -----
             MucusLayer(22.5f, 67f);
             // Comida a medio digerir en los lagos: islas para cruzar sin pisar el ácido.
-            Food("Dona", 24.6f, 0.85f);
-            Food("Salchicha", 28.6f, 0.75f);
-            Food("Hamburguesa", 32.5f, 0.97f);
+            Food("Dona", 24.6f, 0.93f);
+            Food("Salchicha", 28.6f, 0.84f);
+            Food("Hamburguesa", 32.5f, 0.95f);
             Platform(35.5f, 2.2f, 3f);
-            Food("Manzana", 37.8f, 0.72f);
+            Food("Manzana", 37.8f, 0.79f);
 
             // Easter egg en la plataforma más alta, entre la primera y la segunda arena: el diente con cara.
             // Al tocarlo se desbloquea la Boca (nivel secreto) y te lleva ahí.
@@ -1006,25 +1007,25 @@ namespace HealingKnight.EditorTools
                 "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L. Pelea sobre la comida y los bancos de moco.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 1, SpawnSide.Left)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 3, SpawnSide.Both)));
-            Food("Dona", 43.6f, 0.85f);
-            Food("Hamburguesa", 47.2f, 0.97f);
+            Food("Dona", 43.6f, 0.93f);
+            Food("Hamburguesa", 47.2f, 0.95f);
             Platform(50.5f, 3.4f, 3f);
-            Food("Salchicha", 51.2f, 0.75f);
-            Food("Manzana", 55f, 0.72f);
-            Food("Dona", 58.3f, 0.85f);
-            Food("Hamburguesa", 62f, 0.97f);
+            Food("Salchicha", 51.2f, 0.84f);
+            Food("Manzana", 55f, 0.79f);
+            Food("Dona", 58.3f, 0.93f);
+            Food("Hamburguesa", 62f, 0.95f);
 
             // ----- 3) Alberca de marea: solo ácido y comida flotando -----
             Arena("Arena_3_Marea", 72f, 17f,
                 "Contracción del estómago: el ácido nunca baja del todo. Brinca de comida en comida; cuando retumbe, el ácido sube y la comida flota contigo. El escudo no te protege.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 3)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)));
-            Food("Dona", 69f, 0.85f);
-            Food("Hamburguesa", 72.6f, 0.97f);
-            Food("Manzana", 76f, 0.72f);
-            Food("Salchicha", 79.8f, 0.75f);
-            Food("Dona", 83.4f, 0.85f);
-            Food("Hamburguesa", 87f, 0.97f);
+            Food("Dona", 69f, 0.93f);
+            Food("Hamburguesa", 72.6f, 0.95f);
+            Food("Manzana", 76f, 0.79f);
+            Food("Salchicha", 79.8f, 0.84f);
+            Food("Dona", 83.4f, 0.93f);
+            Food("Hamburguesa", 87f, 0.95f);
         }
 
         private void BuildDelgado()

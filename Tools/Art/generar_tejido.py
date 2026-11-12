@@ -1,261 +1,207 @@
 """
-Genera el arte pixel de las superficies del Estómago (piso, relleno, plataformas) y las sombras suaves.
+Genera el arte de las superficies del Estómago (piso, relleno, plataformas) y las sombras suaves,
+en estilo caricatura (tipo Hora de Aventura): colores planos, contorno grueso oscuro, formas redondas,
+brillos ovalados y manchitas, como el fondo pintado.
+
 Todo se repite sin cortes (tileable) para que Unity lo estire con drawMode = Tiled.
+Se dibuja a 3x y se reduce (bordes suaves, sin pixeles).
 
 Uso:  python generar_tejido.py            -> escribe en Assets/_Project/Art/Tejidos/
-Para otro órgano: copia una paleta en PALETAS y llama generar("Nombre", paleta).
-Requiere: numpy, pillow.
+Para otro órgano: agrega una paleta en PALETAS.
+Requiere: numpy, pillow, scipy.
 """
 import os
 import numpy as np
 from PIL import Image
+from scipy import ndimage
 
 AQUI = os.path.dirname(os.path.abspath(__file__))
 SALIDA = os.path.join(AQUI, "..", "..", "Assets", "_Project", "Art", "Tejidos")
 
-# Paleta: del más oscuro al más claro. Mismo tono que el fondo, un poco más claro y saturado para resaltar.
+SS = 3            # sobremuestreo (se dibuja 3 veces más grande y se reduce)
+PPU = 256         # píxeles por unidad en Unity (SceneSetup.TissuePixelsPerUnit)
+
 PALETAS = {
     "Estomago": {
-        "contorno": (32, 6, 15),
-        "rampa": [(62, 13, 28), (88, 21, 38), (116, 30, 50), (146, 42, 63), (178, 58, 77), (212, 84, 97)],
-        "brillo": (246, 172, 172),
-        "moco": (234, 132, 138),
-        "relleno": [(40, 8, 20), (53, 12, 26), (66, 16, 32)],
+        "contorno": (62, 10, 38),
+        "cuerpo": (196, 52, 88),
+        "labio": (236, 108, 126),      # borde de arriba, más claro
+        "brillo": (255, 196, 198),
+        "mancha": (150, 34, 70),
+        "sombra": (158, 38, 74),       # parte de abajo del cuerpo
+        "relleno": (122, 26, 60),
+        "relleno_mancha": (100, 19, 50),
+        "moco": (250, 170, 182),
     }
 }
 
-BAYER = np.array([[0, 8, 2, 10], [12, 4, 14, 6], [3, 11, 1, 9], [15, 7, 13, 5]]) / 16.0
+
+def lienzo(w, h, color=None):
+    img = np.zeros((h, w, 4), np.float32)
+    if color is not None:
+        img[..., :3] = color
+        img[..., 3] = 255
+    return img
 
 
-def ruido(w, h, semilla, octavas=((2, 1.0), (4, 0.5), (8, 0.25)), periodo_x=None, periodo_y=None):
-    """Ruido suave que se repite en X (y en Y si se pide): suma de senos con frecuencias enteras."""
-    rng = np.random.default_rng(semilla)
-    px = periodo_x or w
-    py = periodo_y or h
-    x = np.arange(w)[None, :]
-    y = np.arange(h)[:, None]
-    total = np.zeros((h, w))
-    for f, amp in octavas:
-        for _ in range(3):
-            fx = rng.integers(1, f + 1)
-            fy = rng.integers(0, f + 1) if periodo_y else rng.uniform(0, f)
-            fase = rng.uniform(0, 2 * np.pi)
-            total += amp * np.sin(2 * np.pi * (fx * x / px + fy * y / py) + fase)
-    total -= total.min()
-    return total / max(total.max(), 1e-6)
+def pintar(img, mascara, color, alpha=255):
+    img[mascara, :3] = color
+    img[mascara, 3] = alpha
 
 
-def a_rampa(valor, rampa, x0=0, y0=0):
-    """Valor 0..1 -> color de la rampa con tramado ordenado (dithering), estilo pixel art."""
-    h, w = valor.shape
-    n = len(rampa)
-    yy, xx = np.mgrid[0:h, 0:w]
-    umbral = BAYER[(yy + y0) % 4, (xx + x0) % 4]
-    idx = np.clip(np.floor(valor * (n - 1) + umbral * 0.9), 0, n - 1).astype(int)
-    pal = np.array(rampa, dtype=np.uint8)
-    return pal[idx]
+def elipse(h, w, cx, cy, rx, ry, periodo=None):
+    """Máscara de una elipse; con 'periodo' se repite a los lados (para que el tile no se corte)."""
+    yy, xx = np.mgrid[0:h, 0:w].astype(np.float32)
+    m = np.zeros((h, w), bool)
+    desplaz = (-periodo, 0, periodo) if periodo else (0,)
+    for d in desplaz:
+        m |= ((xx - cx - d) / rx) ** 2 + ((yy - cy) / ry) ** 2 <= 1
+    return m
 
 
-def poros(img, mascara, rng, cantidad, rampa, y_min=0, y_max=None):
-    """Poros como los del fondo: un punto oscuro con un pixel claro abajo (brillo en el borde)."""
-    h, w = mascara.shape
-    y_max = y_max or h - 1
-    for _ in range(cantidad):
-        x, y = int(rng.integers(0, w)), int(rng.integers(y_min, y_max))
-        if mascara[y, x] and y + 1 < h and mascara[y + 1, x]:
-            img[y, x, :3] = rampa[0]
-            if rng.random() < 0.6 and x + 1 < w and mascara[y, x + 1]:
-                img[y, x + 1, :3] = rampa[0]
-            img[y + 1, x, :3] = rampa[min(len(rampa) - 1, 4)]
+def reducir(img):
+    """De 3x al tamaño final, con el color premultiplicado para que no salgan bordes claros."""
+    h, w = img.shape[:2]
+    a = img[..., 3:4] / 255
+    pm = np.concatenate([img[..., :3] * a, img[..., 3:4]], axis=2)
+    pm = pm.reshape(h // SS, SS, w // SS, SS, 4).mean(axis=(1, 3))
+    a2 = pm[..., 3:4] / 255
+    rgb = np.where(a2 > 0, pm[..., :3] / np.maximum(a2, 1e-6), 0)
+    return Image.fromarray(np.clip(np.concatenate([rgb, pm[..., 3:4]], axis=2), 0, 255).astype(np.uint8), "RGBA")
 
 
-def bultos(w, h, centros, rx, ry, cy, periodo):
-    """Sombreado de bultos redondos (como los tubos del fondo): 1 = cresta iluminada, 0 = hendidura.
-    'centros' puede ser una lista de x, o de (x, rx, ry, cy) para bultos de distinto tamaño."""
-    yy, xx = np.mgrid[0:h, 0:w].astype(float)
-    mejor = np.zeros((h, w))
-    for c in centros:
-        cx, rxi, ryi, cyi = c if isinstance(c, tuple) else (c, rx, ry, cy)
-        for k in (-1, 0, 1):
-            dx = (xx - (cx + k * periodo)) / rxi
-            dy = (yy - cyi) / ryi
-            d = np.sqrt(dx ** 2 + dy ** 2)
-            # Luz desde arriba a la izquierda.
-            luz = np.clip(1 - d, 0, 1) * (0.75 + 0.25 * np.clip(-(dx + dy) * 0.7 + 0.3, 0, 1))
-            mejor = np.maximum(mejor, luz)
-    return mejor
+def onda(x, periodo, partes):
+    t = 2 * np.pi * x / periodo
+    return sum(a * np.sin(t * f + fase) for f, a, fase in partes)
 
 
-def rollos(w, h, lista, periodo):
-    """Rollos de tejido estilo pixel art (como los del fondo): cada rollo tiene borde de arriba claro,
-    cuerpo medio, parte de abajo oscura y una hendidura oscura que lo separa del de al lado.
-    Los rollos que van después en la lista quedan ENFRENTE. Devuelve (valor 0..1, hendidura bool, dentro bool)."""
-    yy, xx = np.mgrid[0:h, 0:w].astype(float)
-    valor = np.zeros((h, w))
-    hend = np.zeros((h, w), bool)
-    dentro = np.zeros((h, w), bool)
-    for cx, rx, ry, cy in lista:
-        for k in (-1, 0, 1):
-            dx = (xx - (cx + k * periodo)) / rx
-            dy = (yy - cy) / ry
-            d = np.sqrt(dx ** 2 + dy ** 2)
-            m = d <= 1.0
-            # De arriba (dy=-1) a abajo (dy=+1): claro -> oscuro, con luz extra arriba a la izquierda.
-            v = 0.92 - 0.55 * (dy + 1) / 2 - 0.12 * np.clip(dx, 0, 1)
-            v = np.where(d > 0.86, v - 0.35, v)          # orilla del rollo más oscura (volumen)
-            valor = np.where(m, v, valor)
-            hend = np.where(m, d > 0.95, hend)
-            dentro |= m
-    return np.clip(valor, 0, 1), hend, dentro
+def manchas(img, mascara, h, w, rng, n, color, rmin, rmax, y0, y1, periodo):
+    for _ in range(n):
+        cx, cy = rng.uniform(0, w), rng.uniform(y0, y1)
+        r = rng.uniform(rmin, rmax)
+        m = elipse(h, w, cx, cy, r, r * rng.uniform(0.6, 0.9), periodo) & mascara
+        pintar(img, m, color)
 
 
-def tubo(alto_px, filas):
-    """Perfil de un tubo acostado (como los rollos del fondo): claro en el tercio de arriba, oscuro abajo."""
-    t = np.clip(filas / max(alto_px, 1), 0, 1)
-    return np.clip(0.55 + 0.45 * np.cos(np.pi * (t * 1.15 - 0.18)) * (1 - t * 0.35) - t * 0.25, 0, 1)
+# ---------------- Piso ----------------
 
-
-def poros_densos(img, mascara, rng, cantidad, p, y_min, y_max):
-    """Poros del tejido (como en el fondo): hoyito oscuro de 1-2 px con un pixel claro debajo."""
-    h, w = mascara.shape
-    for _ in range(cantidad):
-        x, y = int(rng.integers(0, w)), int(rng.integers(y_min, y_max))
-        if not (mascara[y, x] and y + 1 < h and mascara[y + 1, x]):
-            continue
-        oscuro = p["rampa"][0] if rng.random() < 0.7 else p["contorno"]
-        img[y, x, :3] = oscuro
-        if rng.random() < 0.45:
-            img[y, (x + 1) % w, :3] = oscuro
-        claro = img[y + 1, x, :3].astype(int)
-        img[y + 1, x, :3] = np.clip(claro + 28, 0, 255)
-
-
-def piso(p, w=128, h=64):
-    """Franja de arriba del piso: un gran pliegue de tejido acostado, con bultos suaves, poros y
-    borde de moco húmedo. Abajo se funde con el relleno."""
+def piso(p, w=512, h=256):
+    """Franja de arriba del piso: contorno grueso arriba, labio claro con borde ondulado, cuerpo con
+    manchas y brillos, y abajo pasa al color del relleno con una onda."""
+    W, H = w * SS, h * SS
     rng = np.random.default_rng(3)
-    yy, xx = np.mgrid[0:h, 0:w]
-    grosor = 40
-    perfil = tubo(grosor, yy.astype(float))
-    bultos_h = ruido(w, h, 4, ((2, 1.0), (3, 0.6)), periodo_x=w)       # el pliegue engorda y adelgaza
-    pliegues = ruido(w, h, 9, ((5, 1.0), (9, 0.4)), periodo_x=w)       # surcos suaves
-    v = perfil * 0.85 + (bultos_h - 0.5) * 0.25 * (yy < grosor) + (pliegues - 0.5) * 0.12
-    # Sombra donde el pliegue se mete bajo el tejido de abajo.
-    borde = grosor + (bultos_h[0] * 6 - 3).astype(int)
-    debajo = yy > borde[None, :]
-    v = np.where(debajo, 0.2 - (yy - borde[None, :]) / h * 0.4, v)
-    v = np.clip(v, 0, 1)
+    img = lienzo(W, H, p["cuerpo"])
+    xs = np.arange(W)
+    yy = np.arange(H)[:, None]
+    todo = np.ones((H, W), bool)
 
-    img = np.zeros((h, w, 4), np.uint8)
-    img[..., :3] = a_rampa(v, p["rampa"])
-    img[..., 3] = 255
-    linea = (yy == borde[None, :]) | (yy == borde[None, :] + 1)
-    img[linea, :3] = p["rampa"][0]
-    poros_densos(img, ~debajo, rng, 140, p, 4, grosor)
+    # Abajo: relleno (con borde ondulado) y una línea de contorno delgada entre los dos.
+    borde = 150 * SS + onda(xs, W, [(2, 10 * SS, 0.4), (3, 6 * SS, 1.3)])
+    pintar(img, yy > borde[None, :] + 4 * SS, p["relleno"])
+    pintar(img, (yy > borde[None, :]) & (yy <= borde[None, :] + 4 * SS), p["contorno"])
+    # Sombra del cuerpo, encima de esa línea.
+    sombra = (yy > borde[None, :] - 26 * SS) & (yy <= borde[None, :])
+    pintar(img, sombra, p["sombra"])
 
-    # Abajo: pasa al relleno con tramado (sin línea de corte).
-    rel_tile = np.array(relleno(p))[..., :3]
-    rel = np.tile(rel_tile, (h // rel_tile.shape[0] + 1, w // rel_tile.shape[1] + 1, 1))[:h, :w]
-    fade = np.clip((yy / (h - 1) - 0.7) / 0.25, 0, 1)
-    usar_rel = fade * 1.05 > BAYER[yy % 4, xx % 4]
-    img[usar_rel, :3] = rel[usar_rel]
+    # Manchitas como las del fondo.
+    manchas(img, yy < borde[None, :] - 30 * SS, H, W, rng, 10, p["mancha"], 6 * SS, 14 * SS, 60 * SS, 130 * SS, W)
+    manchas(img, yy > borde[None, :] + 10 * SS, H, W, rng, 6, p["relleno_mancha"], 8 * SS, 16 * SS, 175 * SS, 245 * SS, W)
 
-    # Borde de moco brillante y destellos húmedos.
-    img[0, :, :3] = p["moco"]
-    img[1, :, :3] = p["rampa"][-1]
-    for x in rng.choice(w, 10, replace=False):
-        img[0, x, :3] = p["brillo"]
-        img[1, x, :3] = p["moco"]
-        if rng.random() < 0.5:
-            img[0, (x + 1) % w, :3] = p["brillo"]
-    return Image.fromarray(img, "RGBA")
+    # Labio claro arriba (borde de abajo ondulado) y brillos ovalados.
+    labio = 14 * SS + 22 * SS + onda(xs, W, [(2, 6 * SS, 0.0), (5, 3 * SS, 2.0)])
+    pintar(img, yy < labio[None, :], p["labio"])
+    for cx in rng.uniform(0, W, 5):
+        pintar(img, elipse(H, W, cx, 24 * SS, rng.uniform(18, 34) * SS, 5 * SS, W), p["brillo"])
+
+    # Contorno grueso de arriba (donde se pisa).
+    pintar(img, np.broadcast_to(yy < 16 * SS, (H, W)), p["contorno"])
+
+    # El relleno al final se repite con el tile de relleno: deja las últimas filas iguales a él.
+    return reducir(img)
 
 
-def relleno(p, w=64, h=64):
-    """Tejido profundo: oscuro, con células grandes apenas visibles y algunos poros."""
+def relleno(p, w=256, h=256):
+    W, H = w * SS, h * SS
     rng = np.random.default_rng(11)
-    celdas = bultos(w, h, (8, 40), 17, 13, 14, w) * 0.6 + bultos(w, h, (24, 56), 17, 13, 46, w) * 0.6
-    celdas = np.maximum(celdas, np.roll(bultos(w, h, (8, 40), 17, 13, 14, w), 32, axis=0) * 0.6)
-    v = np.clip(celdas + ruido(w, h, 11, ((2, 1.0), (5, 0.5)), periodo_x=w, periodo_y=h) * 0.25, 0, 1)
-    img = np.zeros((h, w, 4), np.uint8)
-    img[..., :3] = a_rampa(v, p["relleno"])
-    img[..., 3] = 255
-    for _ in range(10):
-        x, yy = rng.integers(1, w - 1), rng.integers(1, h - 2)
-        img[yy, x, :3] = (20, 3, 10)
-        img[yy + 1, x, :3] = p["relleno"][-1]
-    return Image.fromarray(img, "RGBA")
+    img = lienzo(W, H, p["relleno"])
+    yy, xx = np.mgrid[0:H, 0:W]
+    for _ in range(7):
+        cx, cy = rng.uniform(0, W), rng.uniform(0, H)
+        r = rng.uniform(8, 18) * SS
+        m = np.zeros((H, W), bool)
+        for dx in (-W, 0, W):
+            for dy in (-H, 0, H):
+                m |= ((xx - cx - dx) / r) ** 2 + ((yy - cy - dy) / (r * 0.7)) ** 2 <= 1
+        pintar(img, m, p["relleno_mancha"])
+    return reducir(img)
 
 
-def plataforma(p, tapa=24, centro=64, h=44):
-    """Trozo de pliegue gástrico suelto: arriba plano (se pisa), sombreado de tubo, poros,
-    puntas redondeadas y un par de gotas de moco colgando. Las tapas no se repiten; el centro sí."""
-    w = tapa * 2 + centro
+# ---------------- Plataforma ----------------
+
+def plataforma(p, tapa=96, centro=256, h=176):
+    """Masa de tejido redonda: arriba plana (se pisa), puntas redondas, abajo ondulada con gotas de moco.
+    Las tapas no se repiten; el centro sí (por eso se calcula con el centro repetido 3 veces)."""
+    T, C, H = tapa * SS, centro * SS, h * SS
+    W = T * 2 + C * 3                         # tapa + 3 centros + tapa (luego se queda el del medio)
+    xs = np.arange(W).astype(np.float32)
+    yy = np.arange(H)[:, None].astype(np.float32)
+
+    arriba = np.full(W, 4.0 * SS)
+    abajo = 112 * SS + onda(xs - T, C, [(2, 9 * SS, 0.6), (3, 5 * SS, 2.0)])
+    # Puntas redondas: el contorno sube y se cierra como media elipse.
+    for lado in (0, 1):
+        x0 = T if lado == 0 else W - T
+        k = np.clip((x0 - xs) / T if lado == 0 else (xs - x0) / T, 0, 1)
+        curva = np.sqrt(np.clip(1 - k ** 2, 0, 1))
+        medio = 60 * SS
+        zona = k > 0
+        arriba = np.where(zona, np.minimum(np.maximum(arriba, medio - (medio - 4 * SS) * curva), medio), arriba)
+        abajo = np.where(zona, np.maximum(medio + (abajo - medio) * curva, medio), abajo)
+
+    mascara = (yy >= arriba[None, :]) & (yy <= abajo[None, :])
+    # Gotas de moco (dos por tramo del centro).
+    gotas = np.zeros_like(mascara)
+    for rep in range(3):
+        for gx, largo in ((0.3, 34), (0.72, 50)):
+            cx = T + rep * C + gx * C
+            base = 112 * SS + onda(np.array([cx - T]), C, [(2, 9 * SS, 0.6), (3, 5 * SS, 2.0)])[0]
+            gotas |= elipse(H, W, cx, base + largo * SS * 0.5, 11 * SS, largo * SS * 0.5)
+            gotas |= elipse(H, W, cx, base + largo * SS - 8 * SS, 15 * SS, 15 * SS)
+    todo = mascara | gotas
+
+    img = lienzo(W, H)
+    pintar(img, todo, p["cuerpo"])
+    pintar(img, gotas & ~mascara, p["moco"])
+    # Sombra en la parte de abajo y labio claro arriba.
+    pintar(img, mascara & (yy > abajo[None, :] - 24 * SS), p["sombra"])
+    labio = arriba + 30 * SS + onda(xs - T, C, [(3, 4 * SS, 0.0)])
+    pintar(img, mascara & (yy < labio[None, :]), p["labio"])
+
     rng = np.random.default_rng(21)
-    xs = np.arange(w)
+    for rep in range(3):
+        for fx, fy, r in ((0.2, 70, 9), (0.55, 82, 12), (0.85, 66, 7)):
+            cx = T + rep * C + fx * C
+            pintar(img, elipse(H, W, cx, fy * SS, r * SS, r * SS * 0.7) & mascara, p["mancha"])
+        for fx, ancho in ((0.15, 30), (0.62, 22)):
+            cx = T + rep * C + fx * C
+            pintar(img, elipse(H, W, cx, 18 * SS, ancho * SS, 5 * SS) & mascara, p["brillo"])
+    # Brillos en las puntas.
+    pintar(img, elipse(H, W, T * 0.75, 26 * SS, 18 * SS, 6 * SS) & mascara, p["brillo"])
 
-    def fondo_centro(x):  # se repite cada 'centro' píxeles
-        t = 2 * np.pi * x / centro
-        return 27 + 2.0 * np.sin(t * 2 + 0.6) + 1.2 * np.sin(t * 3 + 2.0)
+    # Contorno grueso por dentro de la orilla.
+    dist = ndimage.distance_transform_edt(todo)
+    pintar(img, todo & (dist <= 14 * SS), p["contorno"])
+    # Las gotas llevan contorno más delgado.
+    dist_g = ndimage.distance_transform_edt(gotas)
+    fino = gotas & ~mascara & (dist_g > 8 * SS)
+    pintar(img, fino, p["moco"])
 
-    junta = fondo_centro(0)
-    alto = np.zeros(w)
-    arriba = np.zeros(w)
-    for x in xs:
-        if x < tapa or x >= tapa + centro:
-            k = (1 - x / (tapa - 1)) if x < tapa else (x - tapa - centro) / (tapa - 1)
-            arriba[x] = round(6 * k ** 2.6)
-            alto[x] = junta - (junta - 9) * k ** 2.2
-        else:
-            alto[x] = fondo_centro(x - tapa)
+    # Se queda con: tapa izquierda + centro del medio + tapa derecha.
+    final = np.concatenate([img[:, :T], img[:, T + C:T + 2 * C], img[:, W - T:]], axis=1)
+    return reducir(final)
 
-    yy, xx = np.mgrid[0:h, 0:w]
-    mascara = (yy >= arriba[None, :]) & (yy <= alto[None, :])
-    rel_y = (yy - arriba[None, :]).astype(float)
-    grosor = (alto - arriba)[None, :]
-    perfil = tubo(1.0, rel_y / np.maximum(grosor, 1))
-    bultos_h = ruido(w, h, 4, ((2, 1.0), (4, 0.5)), periodo_x=centro)
-    v = np.clip(perfil * 0.9 + (bultos_h - 0.5) * 0.2, 0, 1)
-    img = np.zeros((h, w, 4), np.uint8)
-    img[..., :3] = a_rampa(v, p["rampa"])
-    img[..., 3] = mascara * 255
-    poros_densos(img, mascara, rng, 90, p, 3, int(junta) - 3)
 
-    # Gotas de moco colgando: redondas, claras y un poco transparentes.
-    for cx, largo in ((tapa + 17, 6), (tapa + 46, 9)):
-        base = int(fondo_centro(cx - tapa))
-        for y in range(base - 1, min(h - 1, base + largo + 1)):
-            k = (y - base) / largo
-            # Gota: ancha donde se une al tejido, se adelgaza y termina en una bolita.
-            if k < 0.6:
-                r = max(0.9, 3.2 * (1 - k / 0.6) ** 1.5)
-            else:
-                r = 1.9 * np.sqrt(max(0.0, 1 - ((k - 0.8) / 0.22) ** 2))
-            for x in range(int(cx - r - 1), int(cx + r + 2)):
-                if abs(x - cx) <= r:
-                    img[y, x, :3] = p["moco"] if abs(x - cx) < r - 0.8 else p["rampa"][3]
-                    img[y, x, 3] = 215
-        img[base + largo - 1, cx - 1, :3] = p["brillo"]
-
-    # Borde de arriba húmedo y brillos.
-    for x in xs:
-        t = int(arriba[x])
-        img[t, x, :3] = p["moco"]
-        img[t + 1, x, :3] = p["rampa"][-1]
-    for x in rng.choice(np.arange(tapa, tapa + centro), 7, replace=False):
-        img[int(arriba[x]), x, :3] = p["brillo"]
-
-    # Contorno oscuro suave (no negro) por dentro de la orilla de abajo y de las puntas.
-    a = img[..., 3] > 0
-    vecinos = np.roll(a, 1, 0) & np.roll(a, -1, 0) & np.roll(a, 1, 1) & np.roll(a, -1, 1)
-    borde = a & ~vecinos & (img[..., 3] == 255)
-    borde[0, :] = False
-    lado = np.zeros_like(borde)
-    lado[:, tapa] = lado[:, tapa + centro - 1] = True
-    borde &= ~(lado & np.roll(a, 1, 0) & np.roll(a, -1, 0))
-    img[borde, :3] = p["contorno"]
-    return Image.fromarray(img, "RGBA")
-
+# ---------------- Sombras ----------------
 
 def sombra_suave(n=64):
     yy, xx = np.mgrid[0:n, 0:n]
