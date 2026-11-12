@@ -1,0 +1,15 @@
+{
+  "level": "Digestivo_Estomago",
+  "bpm": 126,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2688000,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "level": "Respiratorio_Traquea",
+  "bpm": 134,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2527522,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

@@ -10,6 +10,7 @@ namespace HealingKnight.Gameplay.Audio
     /// Al empezar un jefe cambia (con fundido) a la misma con "_Jefe" (Musica_Digestivo_Jefe) y al terminar regresa.
     /// Los archivos van en Assets/_Project/Audio/Resources/Music. Si no hay archivo, no suena nada.
     /// Al morir y recargar la escena, la música sigue sin reiniciarse.
+    /// Si el nivel tiene música ADAPTATIVA (Resources/MusicAdaptive/&lt;escena&gt;), se usa esa (ver AdaptiveMusic).
     /// </summary>
     public static class Music
     {
@@ -51,6 +52,13 @@ namespace HealingKnight.Gameplay.Audio
             int cut = name.IndexOf('_');
             string system = cut > 0 ? name.Substring(0, cut) : name;
 
+            // Si el nivel tiene música adaptativa (por capas), esa manda y la pista normal se apaga.
+            if (AdaptiveMusic.TryPlayLevel(name))
+            {
+                PlayTrack(null);
+                return;
+            }
+
             AudioClip specific = Load("Musica_" + name);
             baseName = specific != null ? "Musica_" + name : "Musica_" + system;
             levelTrack = specific != null ? specific : Load(baseName);
@@ -59,6 +67,7 @@ namespace HealingKnight.Gameplay.Audio
 
         private static void OnBossStarted(string bossName, Enemies.EnemyHealth health)
         {
+            if (AdaptiveMusic.TryBoss()) return;
             AudioClip boss = Load(baseName + "_Jefe");
             if (boss == null && baseName != null)
             {
@@ -69,7 +78,15 @@ namespace HealingKnight.Gameplay.Audio
             if (boss != null) PlayTrack(boss);
         }
 
-        private static void OnBossEnded() => PlayTrack(levelTrack);
+        private static void OnBossEnded()
+        {
+            if (AdaptiveMusic.IsActive)
+            {
+                AdaptiveMusic.EndBoss();
+                return;
+            }
+            PlayTrack(levelTrack);
+        }
 
         private static void PlayTrack(AudioClip clip)
         {

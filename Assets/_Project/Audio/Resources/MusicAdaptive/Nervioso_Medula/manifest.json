@@ -1,0 +1,15 @@
+{
+  "level": "Nervioso_Medula",
+  "bpm": 168,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2016000,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

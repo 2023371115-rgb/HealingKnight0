@@ -60,6 +60,17 @@ namespace HealingKnight.Gameplay.Level
         private readonly List<EnemyHealth> alive = new List<EnemyHealth>();
 
         public bool IsRunning => status == Status.Running;
+
+        /// <summary>¿Hay alguna arena peleándose ahora? (para la música adaptativa)</summary>
+        public static bool AnyRunning
+        {
+            get
+            {
+                foreach (ArenaZone a in running)
+                    if (a != null && a.IsRunning) return true;
+                return false;
+            }
+        }
         public bool IsCleared => status == Status.Cleared;
         public float RespawnX => leftBound + 1.5f;
 

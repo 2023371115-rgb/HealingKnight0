@@ -45,8 +45,22 @@ namespace HealingKnight.Gameplay.Enemies
         /// <summary>Cualquier enemigo derrotado (para Linfocito, arenas, estadísticas).</summary>
         public static event Action<EnemyHealth> AnyDied;
 
+        /// <summary>Enemigos activos en la escena (la música adaptativa cuenta cuántos hay cerca).</summary>
+        public static readonly System.Collections.Generic.List<EnemyHealth> Active = new System.Collections.Generic.List<EnemyHealth>();
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => AnyDied = null;
+        private static void ResetStatics()
+        {
+            AnyDied = null;
+            Active.Clear();
+        }
+
+        private void OnEnable()
+        {
+            if (!Active.Contains(this)) Active.Add(this);
+        }
+
+        private void OnDisable() => Active.Remove(this);
 
         private void Awake()
         {

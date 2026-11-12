@@ -210,6 +210,34 @@ Todos los sonidos viven en `Assets/_Project/Audio/Resources/SFX` y el juego los 
 
 Los sonidos que pasan fuera de la pantalla se oyen más bajo y, si están muy lejos, no suenan. Disparos e impactos: cortos (menos de 0.2 s) y en mono.
 
+## Música adaptativa (por capas)
+
+Cada nivel tiene su canción separada en 6 capas que suenan sincronizadas; el juego sube o baja cada una según lo
+que pasa (`Scripts/Gameplay/Audio/AdaptiveMusic.cs`):
+
+| Situación | Qué suena |
+|---|---|
+| Explorando | Ambiente + Armonía + Melodía suave |
+| Enemigos a menos de 11 unidades | + Bajo |
+| Arena en pelea | + Percusión, Melodía completa |
+| Muchos enemigos / jefe | + Combate |
+| Arena limpiada | remate "Victoria" en el siguiente tiempo del compás, y luego se calma |
+| Poca vida (35 % o menos) | todo "bajo el agua" (filtro) + latido de corazón |
+| Jefe | cambia a la canción `<Sistema>_Jefe` al empezar un compás, con una subida ("Entrada") |
+
+La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
+
+- Archivos: `Assets/_Project/Audio/Resources/MusicAdaptive/<NombreDeLaEscena>/` con `Ambiente, Armonia, Melodia,
+  Bajo, Percusion, Combate, Victoria` (y `Entrada` en las de jefe) + `manifest.json` (BPM, compases, largo).
+- Los genera `Tools/Audio/generar_musica_adaptativa.py` (`--todos`, o `--nivel Digestivo_Estomago --preview`
+  para oír la mezcla completa en `Tools/Audio/preview/`). Cada capa queda a un volumen fijo para que ninguna tape a
+  las demás, y todas juntas nunca pasan de 0.9.
+- **Para Victor:** si hace su música, que exporte cada canción en esas 6 capas (mismo largo exacto, en loop) con los
+  mismos nombres, y edite el `manifest.json` (sobre todo `bpm` y `bars`, que se usan para cambiar en el compás).
+- Si una escena no tiene carpeta, suena la pista normal de `Resources/Music` como antes.
+- El importador (`Editor/MusicAdaptiveImporter.cs`) pone esos audios en "Decompress On Load" para que las capas
+  no se desfasen.
+
 ## Música (ejemplos)
 
 Cada sistema tiene un género electrónico que suena a lo que pasa en ese órgano, con versión de jefe más rápida y pesada:

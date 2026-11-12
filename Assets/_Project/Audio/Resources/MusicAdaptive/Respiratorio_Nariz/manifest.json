@@ -1,0 +1,15 @@
+{
+  "level": "Respiratorio_Nariz",
+  "bpm": 112,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 3024000,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}
