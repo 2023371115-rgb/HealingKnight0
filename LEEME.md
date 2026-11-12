@@ -141,6 +141,9 @@ Hipocampo (`Fondo_Hipocampo`, magenta con memorias de colores; líquido dorado) 
 sinapsis doradas; líquido magenta). Mismo filtro ligero que el respiratorio. Con tejido nuevo las plataformas ya no
 llevan el tallo de relleno.
 
+Boca (nivel secreto): `Fondo_Boca` (dientes, lengua, úvula y saliva), tejido rojo vino (más oscuro que la lengua
+para que las plataformas resalten) y saliva azul pálido en los huecos.
+
 Para ponerle fondo a otro nivel:
 1. Guarda el PNG en `Art/Fondos/` (por ejemplo `Fondo_Intestino.png`). Ideal: más ancho que 16:9 (≈ 2:1) y sin
    cosas que parezcan plataformas; tonos oscuros/apagados para que el caballero y los enemigos resalten.

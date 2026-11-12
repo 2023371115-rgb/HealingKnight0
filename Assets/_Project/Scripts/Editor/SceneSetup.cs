@@ -1150,7 +1150,14 @@ namespace HealingKnight.EditorTools
                 blob = new Color(0.97f, 0.95f, 0.88f, 0.85f),
                 decor = Decor.Blobs,
                 drip = new Color(0.85f, 0.95f, 1f, 0.6f),
-                glow = new Color(0.9f, 0.95f, 1f, 1f)
+                glow = new Color(0.9f, 0.95f, 1f, 1f),
+                backdrop = "Fondo_Boca",     // pintura estilo caricatura (dientes, lengua y saliva)
+                tissue = "Boca",             // tejido de encía rosa
+                pitLiquid = new Color(1f, 1f, 1f, 1f), // si hay huecos: saliva
+                liquidDeep = new Color(0.45f, 0.62f, 0.8f, 0.9f),
+                liquidSurface = new Color(0.82f, 0.94f, 1f, 0.75f),
+                liquidOutline = new Color(0.2f, 0.28f, 0.42f, 1f),
+                liquidCrest = new Color(1f, 1f, 1f, 0.95f)
             }, "NIVEL SECRETO · BOCA. NODO: Placa bacteriana detectada.");
 
             // Dientes: plataformas blancas.

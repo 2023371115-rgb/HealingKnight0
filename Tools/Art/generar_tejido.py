@@ -130,6 +130,18 @@ PALETAS = {
         "relleno_mancha": (34, 20, 76),
         "moco": (255, 208, 110),
     },
+    # Boca: encía rojo vino (más oscura que la lengua del fondo para que las plataformas se distingan) y saliva azul.
+    "Boca": {
+        "contorno": (44, 6, 20),
+        "cuerpo": (160, 40, 74),
+        "labio": (236, 122, 150),
+        "brillo": (255, 226, 232),
+        "mancha": (124, 28, 58),
+        "sombra": (132, 32, 62),
+        "relleno": (92, 20, 40),
+        "relleno_mancha": (74, 14, 32),
+        "moco": (217, 242, 255),
+    },
 }
 
 
