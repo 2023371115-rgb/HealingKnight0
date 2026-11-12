@@ -32,7 +32,31 @@ PALETAS = {
         "relleno": (122, 26, 60),
         "relleno_mancha": (100, 19, 50),
         "moco": (250, 170, 182),
-    }
+    },
+    # Intestino delgado: durazno y coral (con bilis amarilla).
+    "Delgado": {
+        "contorno": (72, 20, 22),
+        "cuerpo": (226, 106, 74),
+        "labio": (250, 160, 112),
+        "brillo": (255, 224, 176),
+        "mancha": (186, 72, 54),
+        "sombra": (198, 82, 60),
+        "relleno": (150, 50, 40),
+        "relleno_mancha": (126, 40, 32),
+        "moco": (255, 204, 150),
+    },
+    # Intestino grueso: malva apagado con moco dorado.
+    "Grueso": {
+        "contorno": (50, 18, 42),
+        "cuerpo": (158, 90, 130),
+        "labio": (198, 134, 168),
+        "brillo": (238, 200, 216),
+        "mancha": (124, 66, 102),
+        "sombra": (132, 72, 110),
+        "relleno": (94, 48, 78),
+        "relleno_mancha": (78, 38, 64),
+        "moco": (214, 186, 104),
+    },
 }
 
 

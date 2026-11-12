@@ -126,6 +126,11 @@ El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estom
 Reemplaza la pared y los adornos de placeholder y se desliza lento con la cámara (`LevelBackdrop`): al inicio del
 nivel se ve el lado izquierdo de la imagen y al final el derecho, así parece que está muy lejos.
 
+Fondos ya puestos: Estómago (`Fondo_Estomago`, magenta), Intestino delgado (`Fondo_Delgado`, durazno, con bruma
+al centro agregada) e Intestino grueso (`Fondo_Grueso`, la imagen original pasada a malva). Cada uno con su tejido
+(`tissue = "Estomago" / "Delgado" / "Grueso"`) y su líquido: ácido verde, bilis amarilla y líquido turbio olivo
+(`liquidDeep/liquidSurface/liquidOutline/liquidCrest` en el `LevelStyle`).
+
 Para ponerle fondo a otro nivel:
 1. Guarda el PNG en `Art/Fondos/` (por ejemplo `Fondo_Intestino.png`). Ideal: más ancho que 16:9 (≈ 2:1) y sin
    cosas que parezcan plataformas; tonos oscuros/apagados para que el caballero y los enemigos resalten.

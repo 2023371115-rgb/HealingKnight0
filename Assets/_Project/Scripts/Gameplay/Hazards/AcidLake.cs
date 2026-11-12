@@ -91,6 +91,15 @@ namespace HealingKnight.Gameplay.Hazards
         public float Width => width;
         public bool IsHigh => tide && (phase == Phase.Rising || phase == Phase.Holding);
 
+        /// <summary>Colores del líquido (para la bilis del intestino delgado o el líquido turbio del grueso).</summary>
+        public void SetColors(Color deepColor, Color surfaceColor, Color outlineColor, Color crestColor)
+        {
+            deep = deepColor;
+            surface = surfaceColor;
+            outline = outlineColor;
+            crest = crestColor;
+        }
+
         /// <summary>Daño por tick (0 = solo se ve; por ejemplo en un hueco, donde la caída ya cuesta vida).</summary>
         public void SetDamage(float perTick) => damagePerTick = perTick;
 

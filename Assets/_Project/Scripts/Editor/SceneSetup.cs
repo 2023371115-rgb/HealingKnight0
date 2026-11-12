@@ -188,6 +188,11 @@ namespace HealingKnight.EditorTools
             /// </summary>
             public Vector4 tidePool;
             /// <summary>
+            /// Colores del líquido animado (huecos y lagos): hondo, superficie, contorno, brillo.
+            /// Si 'liquidSurface' no tiene alfa, se usa el ácido verde de siempre.
+            /// </summary>
+            public Color liquidDeep, liquidSurface, liquidOutline, liquidCrest;
+            /// <summary>
             /// Arte pixel del piso y las plataformas (Art/Tejidos/Tejido_&lt;nombre&gt;_Piso/_Relleno/_Plataforma.png,
             /// los genera Tools/Art/generar_tejido.py). Vacío o sin PNG = bloques de color de siempre.
             /// </summary>
@@ -380,7 +385,8 @@ namespace HealingKnight.EditorTools
                     new Vector3(startX + length * 0.5f, FloorY - 0.05f, 0f), new Vector2((length + 30f) / aoSize.x, 1.7f / aoSize.y), -160); // opaca abajo
             }
 
-            bool animatedAcid = style.basins != null && style.basins.Length > 0;
+            // Líquido animado en huecos: si hay lagos o si el nivel usa el arte de tejido nuevo.
+            bool animatedAcid = (style.basins != null && style.basins.Length > 0) || tissueFloor != null;
             if (animatedAcid)
             {
                 foreach (Vector2 basin in style.basins) Basin(basin.x, basin.y);
@@ -888,6 +894,8 @@ namespace HealingKnight.EditorTools
             go.transform.position = new Vector3((fromX + toX) * 0.5f, bottomY, 0f);
             var lake = go.AddComponent<AcidLake>();
             lake.Configure(toX - fromX, level, false, 0f);
+            if (currentStyle.liquidSurface.a > 0f)
+                lake.SetColors(currentStyle.liquidDeep, currentStyle.liquidSurface, currentStyle.liquidOutline, currentStyle.liquidCrest);
             return lake;
         }
 
@@ -1039,6 +1047,13 @@ namespace HealingKnight.EditorTools
                 floorEdge = new Color(1f, 0.6f, 0.62f),
                 blob = new Color(0.8f, 0.38f, 0.45f, 0.75f),
                 decor = Decor.Villi,
+                backdrop = "Fondo_Delgado",  // pintura estilo caricatura (vellosidades, durazno)
+                tissue = "Delgado",          // tejido durazno-coral (Tools/Art/generar_tejido.py)
+                // Bilis: amarillo mostaza verdoso.
+                liquidDeep = new Color(0.5f, 0.44f, 0.06f, 0.95f),
+                liquidSurface = new Color(0.9f, 0.8f, 0.22f, 0.85f),
+                liquidOutline = new Color(0.3f, 0.22f, 0.04f, 1f),
+                liquidCrest = new Color(1f, 0.96f, 0.6f, 0.95f),
                 detail = new Color(0.2f, 0.6f, 0.65f, 0.55f),
                 pitLiquid = new Color(0.8f, 0.95f, 0.2f, 1f),
                 drip = new Color(0.8f, 0.95f, 0.25f, 0.85f),
@@ -1075,6 +1090,13 @@ namespace HealingKnight.EditorTools
                 floorEdge = new Color(0.85f, 0.42f, 0.4f),
                 blob = new Color(0.42f, 0.13f, 0.15f, 0.85f),
                 decor = Decor.Folds,
+                backdrop = "Fondo_Grueso",   // pintura estilo caricatura (haustras, malva)
+                tissue = "Grueso",           // tejido malva con moco dorado
+                // Líquido turbio verde olivo.
+                liquidDeep = new Color(0.28f, 0.32f, 0.1f, 0.95f),
+                liquidSurface = new Color(0.56f, 0.6f, 0.22f, 0.85f),
+                liquidOutline = new Color(0.16f, 0.18f, 0.06f, 1f),
+                liquidCrest = new Color(0.84f, 0.86f, 0.52f, 0.95f),
                 detail = new Color(0.15f, 0.45f, 0.45f, 0.6f),
                 pitLiquid = new Color(0.55f, 0.7f, 0.15f, 1f),
                 drip = new Color(0.6f, 0.75f, 0.2f, 0.8f),
