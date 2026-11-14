@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using System.IO;
+using HealingKnight.Core.Progression;
 using HealingKnight.Gameplay.CameraSystem;
 using HealingKnight.Gameplay.Enemies;
 using HealingKnight.Gameplay.Hazards;
@@ -120,10 +121,73 @@ namespace HealingKnight.EditorTools
 
         // ---------- Menús ----------
 
-        private static void BuildMenuScene<T>(string name, Color background) where T : Component
+        private void BuildMenuScene<T>(string name, Color background) where T : Component
         {
             CreateCamera(background, false);
-            new GameObject(name, typeof(T));
+            var go = new GameObject(name, typeof(T));
+            ConfigureMenuArt(go.GetComponent<T>());
+        }
+
+        private const string UIArtFolder = "Assets/_Project/Art/UI";
+
+        /// <summary>
+        /// Le da al menú y al mapa del cuerpo el arte del juego: la letra (Titan One), los microbios que flotan de fondo,
+        /// el fondo pintado y, en el mapa, la "foto" de cada nivel (su fondo pintado).
+        /// Opcionales: Art/UI/Portada.png (fondo del menú) y Art/UI/Logo.png (título dibujado).
+        /// </summary>
+        private void ConfigureMenuArt(Component screen)
+        {
+            var font = AssetDatabase.LoadAssetAtPath<Font>($"{UIArtFolder}/Fuentes/TitanOne-Regular.ttf");
+            SetupUtils.SetRef(screen, "titleFont", font);
+            SetupUtils.SetRef(screen, "bodyFont", font);
+
+            var bugs = new List<Object>();
+            string[] bugFiles =
+            {
+                "Estomago/HPylori_Normal", "Estomago/HPyloriUreasa_Normal", "Estomago/Anisakis_Arrastra",
+                "Delgado/Giardia_Normal", "Delgado/Rotavirus_Normal", "Delgado/Proglotido_Normal",
+                "Grueso/Entamoeba_Normal", "Grueso/CDifficile_Normal", "Grueso/Oxiuro_Normal",
+                "Grueso/Flora_Normal", "Grueso/Flora_Bifido", "Grueso/Flora_Strepto", "Grueso/Flora_Akkermansia"
+            };
+            foreach (string f in bugFiles)
+            {
+                Sprite sp = PrefabSetup.ArtByWidth($"{PrefabSetup.EnemyArtRoot}/{f}.png", 1.5f, new Vector2(0.5f, 0f));
+                if (sp != null) bugs.Add(sp);
+            }
+            SetupUtils.SetRefArray(screen, "microbes", bugs.ToArray());
+
+            if (screen is MainMenuScreen)
+            {
+                Sprite cover = PrefabSetup.ArtByWidth($"{UIArtFolder}/Portada.png", 19.2f);
+                if (cover == null) cover = LoadBackdrop("Fondo_Estomago");
+                SetupUtils.SetRef(screen, "background", cover);
+                SetupUtils.SetRef(screen, "logo", PrefabSetup.ArtByWidth($"{UIArtFolder}/Logo.png", 10f));
+            }
+            else if (screen is BodyMapScreen && data.Catalog != null)
+            {
+                var ids = new List<string>();
+                var art = new List<Object>();
+                foreach (SystemData system in data.Catalog.systems)
+                {
+                    if (system == null) continue;
+                    foreach (LevelData level in system.levels)
+                    {
+                        if (level == null) continue;
+                        // "digestivo_estomago" -> Fondo_Estomago
+                        string key = level.id.Substring(level.id.IndexOf('_') + 1);
+                        Sprite sp = key.Length > 0 ? LoadBackdrop("Fondo_" + char.ToUpper(key[0]) + key.Substring(1)) : null;
+                        if (sp == null) continue;
+                        ids.Add(level.id);
+                        art.Add(sp);
+                    }
+                }
+                var so = new SerializedObject(screen);
+                SerializedProperty idsProp = so.FindProperty("levelIds");
+                idsProp.arraySize = ids.Count;
+                for (int i = 0; i < ids.Count; i++) idsProp.GetArrayElementAtIndex(i).stringValue = ids[i];
+                so.ApplyModifiedPropertiesWithoutUndo();
+                SetupUtils.SetRefArray(screen, "levelArt", art.ToArray());
+            }
         }
 
         // ---------- Piezas comunes de nivel ----------

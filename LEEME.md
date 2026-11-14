@@ -204,6 +204,16 @@ Dibujos opcionales (si no están, se dibuja con figuras): `Art/Grueso/` → `Hau
 `Apendice`; `Art/Enemigos/Grueso/` → `Flora_Normal`, `Entamoeba_*`, `CDifficile_*` (+ `CDifficile_Espora`),
 `Oxiuro_*` y `OxiuroHuevo_Normal` / `_Abre`.
 
+## Menú y mapa del cuerpo (estilo caricatura)
+
+El menú principal y el mapa del cuerpo se dibujan por código con el estilo del juego (`UI/CartoonUI.cs`): formas
+redondas con contorno grueso, brillo y sombra, letra **Titan One** (`Art/UI/Fuentes`, licencia OFL libre), botones que se
+inflan y rebotan (`UI/CartoonButton.cs`) y microbios de los niveles flotando de fondo (`UI/UIMotion.cs`).
+- Menú: fondo pintado (el del estómago, o `Art/UI/Portada.png` si existe), título que flota (o `Art/UI/Logo.png`),
+  prólogo de NODO que se escribe letra por letra.
+- Mapa: una tarjeta por sistema con la pintura de su primer órgano, número en insignia, estado en pastilla y cada nivel
+  con una "foto" redonda de su fondo y palomita si ya está completado; cápsulas para las fórmulas obtenidas.
+
 ## Fondos de nivel (imagen)
 
 El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pintura estilo caricatura, 1672×941).
