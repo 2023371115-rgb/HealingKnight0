@@ -33,6 +33,9 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private float rallyRange = 8f;
         [SerializeField] private float rallyDamage = 6f;
         [SerializeField] private Transform visual;
+        [Tooltip("Dibujos de distintas bacterias buenas; cada una escoge uno según dónde está (así no se ven todas iguales).")]
+        [SerializeField] private SpriteRenderer body;
+        [SerializeField] private Sprite[] variants;
         [SerializeField, TextArea] private string killMessage = "¡Mataste flora buena con el antibiótico! En su lugar creció C. difficile. Apunta con cuidado.";
 
         private EnemyHealth health;
@@ -81,6 +84,11 @@ namespace HealingKnight.Gameplay.Enemies
             home = transform.position;
             seed = home.x * 1.37f;
             dir = Mathf.Sin(seed) >= 0f ? 1f : -1f;
+            if (body != null && variants != null && variants.Length > 1)
+            {
+                int i = Mathf.Abs(Mathf.RoundToInt(home.x * 7.3f)) % variants.Length;
+                if (variants[i] != null) body.sprite = variants[i];
+            }
         }
 
         private void OnHit(DamageInfo info, HitResult result)

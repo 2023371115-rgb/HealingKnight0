@@ -599,6 +599,20 @@ namespace HealingKnight.EditorTools
 
             GameObject segmentsRoot = SetupUtils.Child(root.transform, "Segments", Vector3.zero);
 
+            // Con dibujo (Art/Jefes/Lombriz, los mismos de la persecución): es la misma lombriz.
+            const string wormFolder = "Assets/_Project/Art/Jefes/Lombriz";
+            var wormTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{wormFolder}/Cabeza_Sale.png");
+            Sprite ring = null, headOut = null, headHurt = null;
+            if (wormTex != null)
+            {
+                while (visual.transform.childCount > 0) Object.DestroyImmediate(visual.transform.GetChild(0).gameObject);
+                float ppu = wormTex.width / 1.6f;
+                headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, new Vector2(0.72f, 0.45f));
+                headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, new Vector2(0.72f, 0.45f));
+                head = SetupUtils.SpriteChild(visual.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
+                ring = ArtByWidth($"{wormFolder}/Anillo.png", 1f);
+            }
+
             var health = root.AddComponent<EnemyHealth>();
             SetupUtils.SetRef(health, "data", d);
             SetupUtils.SetRef(health, "effectivenessTable", data.Table);
@@ -607,14 +621,24 @@ namespace HealingKnight.EditorTools
             var hurtbox = root.AddComponent<Hurtbox>();
             SetHurtbox(hurtbox, Vector2.zero, new Vector2(1.4f, 1.3f));
 
+            if (headOut != null)
+            {
+                // Cara de dolor cuando le pegas (y al morir).
+                var poses = root.AddComponent<EnemyPoseArt>();
+                SetupUtils.SetRef(poses, "target", head);
+                SetupUtils.SetRef(poses, "idle", headOut);
+                SetupUtils.SetRef(poses, "hurt", headHurt);
+            }
+
             var boss = root.AddComponent<LombrizBoss>();
             SetupUtils.SetFloat(boss, "fleeAtHealth01", fleeAt);
             SetupUtils.SetString(boss, "introMessage", intro);
             SetupUtils.SetString(boss, fleeAt > 0f ? "fleeMessage" : "defeatMessage", endMessage);
             SetupUtils.SetRef(boss, "visual", visual.transform);
             SetupUtils.SetRef(boss, "segmentsRoot", segmentsRoot.transform);
-            SetupUtils.SetRef(boss, "segmentSprite", PlaceholderArt.Circle);
-            SetupUtils.SetColor(boss, "segmentColor", d.tint);
+            SetupUtils.SetRef(boss, "segmentSprite", ring != null ? ring : PlaceholderArt.Circle);
+            SetupUtils.SetColor(boss, "segmentColor", ring != null ? Color.white : d.tint);
+            if (ring != null) SetupUtils.SetFloat(boss, "headSize", 1.15f);
             SetupUtils.SetRef(boss, "moundRenderer", mound);
             if (minionPrefab != null)
             {
@@ -1101,9 +1125,25 @@ namespace HealingKnight.EditorTools
             GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
             Transform v = visual.transform;
             var parts = new System.Collections.Generic.List<Object>();
-            Sprite art = ArtByWidth($"{EnemyArtRoot}/Grueso/Flora_Normal.png", 0.75f, new Vector2(0.5f, 0f));
+            // Variantes: cualquier PNG "Flora_<algo>.png" en Art/Enemigos/Grueso (todas miden 1.5 de alto).
+            var variants = new System.Collections.Generic.List<Object>();
+            string floraFolder = $"{EnemyArtRoot}/Grueso";
+            if (System.IO.Directory.Exists(floraFolder))
+                foreach (string file in System.IO.Directory.GetFiles(floraFolder, "Flora_*.png"))
+                {
+                    string path = file.Replace('\\', '/');
+                    var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                    if (tex == null) { AssetDatabase.ImportAsset(path); tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path); }
+                    Sprite sp = tex != null ? LoadArtSprite(path, tex.height / 1.5f, new Vector2(0.5f, 0f)) : null;
+                    if (sp != null) variants.Add(sp);
+                }
+            Sprite art = variants.Count > 0 ? (Sprite)variants[0] : null;
+            SpriteRenderer floraBody = null;
             if (art != null)
-                parts.Add(SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 1));
+            {
+                floraBody = SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 1);
+                parts.Add(floraBody);
+            }
             else
             {
                 Color outline = new Color(0.08f, 0.25f, 0.12f);
@@ -1124,6 +1164,11 @@ namespace HealingKnight.EditorTools
             var flora = root.AddComponent<FriendlyBacteria>();
             flora.Configure(data.Antibiotico, CDifficile, data.CDifficile);
             SetupUtils.SetRef(flora, "visual", v);
+            if (floraBody != null)
+            {
+                SetupUtils.SetRef(flora, "body", floraBody);
+                SetupUtils.SetRefArray(flora, "variants", variants.ToArray());
+            }
             return root;
         }
 
