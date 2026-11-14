@@ -1,3 +1,4 @@
+using HealingKnight.Gameplay.Audio;
 using HealingKnight.Gameplay.Player;
 using UnityEngine;
 
@@ -8,10 +9,18 @@ namespace HealingKnight.Gameplay.Hazards
     ///  - Si el ácido está bajo (o seco), descansa en el piso ('restY').
     ///  - Si sube la marea, la comida sube con ella y te lleva encima: es la forma de no quemarte.
     ///  - Mientras flota se mece un poco (solo el dibujo; el piso donde te paras se queda plano).
+    /// Cada comida se comporta distinto ('kind'):
+    ///  - Normal:   solo flota (manzana).
+    ///  - Rebota:   la dona es esponjosa: al caer encima te lanza hacia arriba, como trampolín.
+    ///  - Rueda:    la salchicha rueda hacia donde caminas (y te lleva), hasta la orilla del lago.
+    ///  - Se hunde: la hamburguesa se va digiriendo: si te quedas encima se hunde poco a poco; al bajarte, sube.
     /// El objeto raíz marca la parte de ABAJO de la comida; el colisionador va a 'topHeight'.
     /// </summary>
     public class FloatingFood : MonoBehaviour
     {
+        public enum FoodKind { Normal, Bouncy, Rolling, Sinking }
+
+        [SerializeField] private FoodKind kind = FoodKind.Normal;
         [SerializeField] private AcidLake lake;
         [Tooltip("Altura del fondo de la comida cuando no flota (el piso o el fondo del lago).")]
         [SerializeField] private float restY;
@@ -27,10 +36,25 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private float followTime = 0.25f;
         [SerializeField] private Transform visual;
 
-        private float bottom, velocity, seed;
-        private Vector3 visualBase;
+        [Header("Rebota (dona)")]
+        [SerializeField] private float bounceSpeed = 17f;
+        [Header("Rueda (salchicha)")]
+        [SerializeField] private float rollSpeed = 1.8f;
+        [Header("Se hunde (hamburguesa)")]
+        [SerializeField] private float sinkSpeed = 0.45f;
+        [SerializeField] private float maxSink = 1.1f;
+        [SerializeField] private float recoverSpeed = 0.6f;
 
-        public void Configure(AcidLake acid, float rest, float foodHeight, float top, float foodWidth, Transform art)
+        private float bottom, velocity, seed, sink, squash, roll;
+        private bool playerWasOnTop;
+        private Vector3 visualBase, visualScale = Vector3.one;
+
+        /// <summary>¿El jugador está parado encima ahora? (lo usa, por ejemplo, el sushi con anisakis)</summary>
+        public bool PlayerOnTop { get; private set; }
+        public float TopY => transform.position.y + topHeight;
+        public FoodKind Kind => kind;
+
+        public void Configure(AcidLake acid, float rest, float foodHeight, float top, float foodWidth, Transform art, FoodKind foodKind = FoodKind.Normal)
         {
             lake = acid;
             restY = rest;
@@ -38,38 +62,72 @@ namespace HealingKnight.Gameplay.Hazards
             topHeight = top;
             width = foodWidth;
             visual = art;
+            kind = foodKind;
         }
 
         private void Start()
         {
             bottom = transform.position.y;
             seed = transform.position.x * 1.7f;
-            if (visual != null) visualBase = visual.localPosition;
+            if (visual != null)
+            {
+                visualBase = visual.localPosition;
+                visualScale = visual.localScale;
+            }
         }
 
         private void FixedUpdate()
         {
+            float dt = Time.fixedDeltaTime;
+            PlayerController player = PlayerController.Current;
+            Vector3 p = transform.position;
+            PlayerOnTop = IsOnTop(player, p.x, p.y + topHeight);
+
+            // --- Vertical: flota en el ácido (y la hamburguesa se hunde con tu peso)
+            if (kind == FoodKind.Sinking)
+                sink = PlayerOnTop ? Mathf.Min(maxSink, sink + sinkSpeed * dt) : Mathf.Max(0f, sink - recoverSpeed * dt);
+
             float target = restY;
-            if (lake != null && lake.Level > 0.05f) target = Mathf.Max(restY, lake.SurfaceY - height * submerged);
+            if (lake != null && lake.Level > 0.05f) target = Mathf.Max(restY, lake.SurfaceY - height * submerged - sink);
 
             float before = bottom;
-            bottom = Mathf.SmoothDamp(bottom, target, ref velocity, followTime, Mathf.Infinity, Time.fixedDeltaTime);
-            float delta = bottom - before;
-            Vector3 p = transform.position;
-            transform.position = new Vector3(p.x, bottom, p.z);
+            bottom = Mathf.SmoothDamp(bottom, target, ref velocity, followTime, Mathf.Infinity, dt);
+            float dy = bottom - before;
 
-            // Lleva al jugador si está parado encima (sube y baja con la comida sin rebotar).
-            PlayerController player = PlayerController.Current;
-            if (player == null || Mathf.Abs(delta) < 0.0001f) return;
-            Vector2 feet = player.Position;
-            float top = before + topHeight;
-            bool onTop = Mathf.Abs(feet.x - p.x) <= width * 0.5f + 0.1f && Mathf.Abs(feet.y - top) < 0.15f
-                         && player.Motor.Velocity.y <= 0.5f;
-            if (onTop)
+            // --- Horizontal: la salchicha rueda hacia donde camina el jugador, sin salirse del lago
+            float dx = 0f;
+            if (kind == FoodKind.Rolling && PlayerOnTop && lake != null)
             {
-                Rigidbody2D body = player.Motor.Body;
-                body.position += new Vector2(0f, delta);
+                float input = Mathf.Clamp(player.Motor.Velocity.x / 4f, -1f, 1f);
+                float half = lake.Width * 0.5f - width * 0.5f - 0.1f;
+                float cx = lake.transform.position.x;
+                float nx = Mathf.Clamp(p.x + input * rollSpeed * dt, cx - half, cx + half);
+                dx = nx - p.x;
+                roll -= dx / Mathf.Max(0.2f, height * 0.5f) * Mathf.Rad2Deg;
             }
+
+            transform.position = new Vector3(p.x + dx, bottom, p.z);
+
+            // --- Lleva al jugador (sube, baja y rueda con la comida sin rebotar)
+            if (PlayerOnTop && (Mathf.Abs(dy) > 0.0001f || Mathf.Abs(dx) > 0.0001f))
+                player.Motor.Body.position += new Vector2(dx, dy);
+
+            // --- La dona rebota: al caer encima, te lanza
+            if (kind == FoodKind.Bouncy && PlayerOnTop && !playerWasOnTop && player.Motor.Velocity.y <= 0.5f)
+            {
+                player.Motor.SetVelocity(new Vector2(player.Motor.Velocity.x, bounceSpeed));
+                squash = 1f;
+                Sfx.EffectAt("Alveolo_Rebote", transform.position, 0.8f);
+            }
+            playerWasOnTop = PlayerOnTop;
+        }
+
+        private bool IsOnTop(PlayerController player, float x, float top)
+        {
+            if (player == null || player.Motor == null) return false;
+            Vector2 feet = player.Position;
+            return Mathf.Abs(feet.x - x) <= width * 0.5f + 0.1f && Mathf.Abs(feet.y - top) < 0.18f
+                   && player.Motor.Velocity.y <= 0.5f;
         }
 
         private void Update()
@@ -78,8 +136,12 @@ namespace HealingKnight.Gameplay.Hazards
             bool floating = lake != null && lake.Level > 0.05f && bottom > restY + 0.02f;
             float k = floating ? 1f : 0f;
             float t = Time.time;
+            squash = Mathf.MoveTowards(squash, 0f, Time.deltaTime * 4f);
+            float s = Mathf.Sin(squash * Mathf.PI) * 0.18f;   // la dona se aplasta y se estira al rebotar
+            visual.localScale = new Vector3(visualScale.x * (1f + s), visualScale.y * (1f - s), visualScale.z);
             visual.localPosition = visualBase + new Vector3(0f, Mathf.Sin(t * 2.1f + seed) * 0.03f * k, 0f);
-            visual.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.3f + seed) * 3.5f * k);
+            float sway = Mathf.Sin(t * 1.3f + seed) * 3.5f * k;
+            visual.localRotation = Quaternion.Euler(0f, 0f, kind == FoodKind.Rolling ? sway + roll * 0.15f : sway);
         }
 
         private void OnDrawGizmos()

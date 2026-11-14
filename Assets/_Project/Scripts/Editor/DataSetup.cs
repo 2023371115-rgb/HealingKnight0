@@ -15,6 +15,7 @@ namespace HealingKnight.EditorTools
         public MedicationData Antibiotico, Antiviral, Antiinflamatorio, Antihistaminico, Antiparasitario, Mucolitico, Anticonvulsivo;
         public EffectivenessTable Table;
         public PlayerConfig PlayerConfig;
+        public EnemyData HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
         public EnemyData HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans, Lombriz;
         public EnemyData Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
         public EnemyData Mucosidad, Inflamacion, Colmena;
@@ -185,7 +186,59 @@ namespace HealingKnight.EditorTools
                 e.maxHealth = 22f; e.moveSpeed = 3.4f;
                 e.attackDistance = 1f; e.attackWindup = 0.35f; e.attackDamage = 10f;
                 e.specialCooldown = 4.5f;
-                e.tint = new Color(0.5f, 0.85f, 0.4f);
+                e.tint = new Color(0.95f, 0.76f, 0.31f); // amarillo mostaza: resalta sobre el ácido verde
+            });
+
+            HPyloriMadre = Enemy("Bacteria_HPylori_Madre", e =>
+            {
+                e.displayName = "H. pylori (colonia madre)";
+                e.threat = ThreatType.Bacteria;
+                e.behavior = EnemyBehavior.Walker;
+                e.biologia = "Las bacterias viven en colonias pegadas a la mucosa. Esta es grande y lenta: suelta H. pylori " +
+                    "nuevas cada pocos segundos hasta que la destruyes. Ataca primero a la madre.";
+                e.maxHealth = 70f; e.moveSpeed = 1.4f;
+                e.attackDistance = 1.5f; e.attackWindup = 0.6f; e.attackCooldown = 2.4f; e.attackDamage = 14f; e.attackKnockback = 6f;
+                e.knockbackResistance = 0.85f;
+                e.tint = new Color(0.95f, 0.72f, 0.28f);
+                e.visualScale = 1.9f;
+            });
+
+            HPyloriUreasa = Enemy("Bacteria_HPylori_Ureasa", e =>
+            {
+                e.displayName = "H. pylori (ureasa)";
+                e.threat = ThreatType.Bacteria;
+                e.behavior = EnemyBehavior.Walker;
+                e.biologia = "La H. pylori fabrica ureasa: convierte la urea en amoniaco, que neutraliza el ácido a su alrededor. " +
+                    "En el juego, dentro de su burbuja el ácido no te quema: pelea cerca de ella... y luego acábala.";
+                e.maxHealth = 26f; e.moveSpeed = 2.2f;
+                e.attackDistance = 1f; e.attackWindup = 0.4f; e.attackDamage = 9f;
+                e.tint = new Color(0.25f, 0.78f, 0.69f);
+                e.visualScale = 1.05f;
+            });
+
+            Anisakis = Enemy("Parasito_Anisakis", e =>
+            {
+                e.displayName = "Anisakis";
+                e.threat = ThreatType.Parasito;
+                e.behavior = EnemyBehavior.Latcher;
+                e.biologia = "Gusano parásito que llega escondido en pescado crudo mal preparado (sushi, ceviche) y se clava en la " +
+                    "pared del estómago. En el juego sale del sushi cuando te paras encima y se te pega.";
+                e.maxHealth = 24f; e.moveSpeed = 4.2f;
+                e.attackDistance = 2.6f; e.attackWindup = 0.35f; e.attackCooldown = 2f; e.attackDamage = 8f;
+                e.tint = new Color(0.96f, 0.84f, 0.84f);
+                e.visualScale = 1.1f;
+            });
+
+            Bezoar = Enemy("Jefe_Bezoar", e =>
+            {
+                e.displayName = "Bezoar";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Bola de comida (o pelo, o chicle) que no se digiere y se queda atorada; puede tapar la salida del " +
+                    "estómago. Este está lleno de H. pylori: el antibiótico lo deshace.";
+                e.maxHealth = 320f;
+                e.meleeDamageTakenMultiplier = 0.6f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
+                e.tint = new Color(0.78f, 0.55f, 0.32f);
             });
 
             Giardia = Enemy("Parasito_Giardia", e =>

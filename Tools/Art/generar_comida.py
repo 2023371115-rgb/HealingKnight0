@@ -206,9 +206,41 @@ def salchicha():
     guardar(img, "Salchicha")
 
 
+# ---------------------------------------------------------------- Sushi (con anisakis escondido)
+
+def sushi():
+    w, h = 620, 330
+    img, d = nuevo(w, h)
+    lw = int(OL * 0.75)
+    # Arroz: bloque redondeado blanco con granitos
+    d.rounded_rectangle(S(50, 150, 570, 310), radius=70 * SS, fill=(250, 246, 236, 255), outline=LINEA, width=lw)
+    rng = np.random.default_rng(12)
+    for _ in range(40):
+        x, y = rng.uniform(90, 530), rng.uniform(180, 290)
+        d.ellipse(S(x - 9, y - 5, x + 9, y + 5), fill=(232, 226, 210, 255))
+    # Salmón encima, con rayas claras
+    lomo = []
+    for x in np.linspace(30, 590, 60):
+        lomo.append((x * SS, (70 + 22 * ((x - 310) / 280) ** 2 + 6 * math.sin(x / 40)) * SS))
+    lomo += [(590 * SS, 190 * SS), (30 * SS, 190 * SS)]
+    d.polygon(lomo, fill=(250, 130, 90, 255), outline=LINEA, width=lw)
+    for k in range(6):
+        x0 = 90 + k * 85
+        d.line(S(x0, 95, x0 + 50, 175), fill=(255, 200, 170, 255), width=10 * SS)
+    d.chord(S(80, 60, 360, 150), 200, 300, fill=(255, 220, 200, 255))   # brillo
+    # Tira de alga
+    d.rectangle(S(270, 80, 350, 305), fill=(40, 70, 50, 255), outline=LINEA, width=lw)
+    # Una puntita del gusano asomándose (pista para el jugador)
+    d.arc(S(500, 40, 560, 110), 180, 360, fill=LINEA, width=16 * SS)
+    d.arc(S(500, 40, 560, 110), 180, 360, fill=(246, 214, 214, 255), width=8 * SS)
+    img = contorno_exterior(img)
+    guardar(img, "Sushi")
+
+
 if __name__ == "__main__":
     dona()
     hamburguesa()
     manzana()
     salchicha()
+    sushi()
     print("Listo:", os.path.abspath(SALIDA))

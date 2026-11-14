@@ -97,19 +97,33 @@ arriba del piso y debajo de cada plataforma; las paredes de huecos y lagos lleva
 
 ## Ácido del Estómago (lago y marea)
 
-El Estómago tiene tres partes que suben de dificultad:
-1. **Inicio seco** (tutorial).
-2. **Lagos de ácido:** dos lagos hondos y largos (`basins` en el `LevelStyle`, 1.2 de hondo) que se cruzan
-   brincando sobre la comida que flota. Solo hay dos bancos de moco (zona segura) y ya no hay huecos al vacío.
-   Biología: el moco es lo que protege al estómago de su propio ácido, y ahí vive la H. pylori.
-3. **Alberca de marea:** el final del nivel es una alberca honda que siempre tiene ácido (`tidePool` en el
-   `LevelStyle`). No hay plataformas: solo comida flotando. Cuando retumba, el ácido sube y la comida sube contigo.
+El Estómago (rediseño, 160 de largo) tiene cinco partes que suben de dificultad:
+1. **Inicio seco** (tutorial, Arena 1).
+2. **Lagos de ácido con géiseres:** dos lagos hondos (`basins`) que se cruzan sobre comida. Hay chorros de ácido
+   (`AcidGeyser`) que burbujean 1 s de aviso y luego saltan: hay que medir el brinco. Primera cápsula de omeprazol.
+3. **La colonia (Arena 2):** H. pylori madre (grande, cada 5 s suelta bacterias hijas; mátala primero) y H. pylori con
+   **ureasa** (burbuja turquesa: el ácido no quema dentro de ella, biología real: la ureasa hace amoníaco que neutraliza el ácido).
+4. **Gas y marea (Arena 3):** burbujas de gas (`GasBubbleVent`) que suben como elevadores y revientan arriba, y la
+   alberca de marea (`tidePool`) con comida que sube con el ácido. Un sushi tiene **anisakis** escondido.
+5. **Contracción y jefe:** una pared de músculo (`PeristalsisWave`) te persigue y te empuja al píloro, que está tapado por
+   el **Bezoar** (bola de comida pegada, Arena 4). Al vencerlo se abre el píloro (`PyloricDoor`) y sigue el intestino.
 
-El ácido se dibuja y anima por código (`Hazards/AcidLake.cs`): verde plano con contorno oscuro en la superficie,
-olas suaves, brillo, burbujas que revientan y vapor. No necesita arte. Daña si tienes los pies dentro (saltando por encima no); el escudo no protege.
-A los enemigos no les hace nada (la H. pylori neutraliza el ácido con ureasa).
+Comida con comportamiento (`FloatingFood.FoodKind`):
+- **Normal:** flota y sube con la marea.
+- **Bouncy (dona):** trampolín, te lanza alto.
+- **Rolling (salchicha):** rueda hacia donde caminas, como tronco.
+- **Sinking (hamburguesa):** se hunde despacio mientras estás encima; no te quedes.
+- `Food(nombre, x, altura, kind, anisakis: true)` esconde un anisakis que sale al pisarla.
+
+**Omeprazol** (`AntacidPickup`): cápsula que baja todo el ácido 8 s (no quema y los géiseres se apagan); reaparece a los 14 s.
+Es un medicamento real contra la acidez y parte de la triple terapia contra H. pylori.
+
+**Bezoar** (`Enemies/BezoarBoss.cs`, 320 de vida): rueda de pared a pared (sáltalo), avienta pedazos de comida en arco y,
+desde la mitad de vida, brinca y aplasta soltando H. pylori. Por ahora se dibuja con círculos; falta su sprite.
 
 En `SceneSetup`:
+- `Geyser(x, pisoY, altura, intervalo, desfase)`, `GasVent(x, altura, intervalo)`, `Omeprazol(x, y)`,
+  `Peristalsis(desdeX, hastaX, velocidad)` y `Pylorus(x, arenaDelJefe)`.
 - `basins = new[] { new Vector2(inicio, ancho), ... }` en el `LevelStyle`: lagos hundidos en el piso.
 - `Lake(desdeX, hastaX)` pone un lago sobre el piso (sin hundir).
 - `tidePool = new Vector4(inicio, ancho, hondo, alturaMaxima)` en el `LevelStyle`: alberca de marea que nunca se seca.

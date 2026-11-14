@@ -21,6 +21,7 @@ namespace HealingKnight.EditorTools
         public Projectile Capsule, EnemyProjectile;
         public MedicineBomb Bomb;
         public PlayerController Player;
+        public EnemyHealth HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
         public EnemyHealth HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans;
         public EnemyHealth LombrizDelgado, LombrizGrueso;
         public EnemyHealth Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
@@ -55,6 +56,22 @@ namespace HealingKnight.EditorTools
             CDifficile = Enemy("Bacteria_CDifficile", data.CDifficile, EnemyShape.Capsule);
             Oxiuro = Enemy("Parasito_Oxiuro", data.Oxiuro, EnemyShape.Long);
             SMutans = Enemy("Bacteria_SMutans", data.SMutans, EnemyShape.Blob);
+
+            // Estómago (rediseño): colonia madre, H. pylori con ureasa, anisakis y el jefe Bezoar.
+            HPyloriMadre = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_HPylori_Madre.prefab", () =>
+            {
+                GameObject go = BuildEnemy("Bacteria_HPylori_Madre", data.HPyloriMadre, EnemyShape.Blob);
+                go.AddComponent<ColonySpawner>().Configure(HPylori, data.HPylori, go.transform.Find("Visual"));
+                return go;
+            });
+            HPyloriUreasa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_HPylori_Ureasa.prefab", () =>
+            {
+                GameObject go = BuildEnemy("Bacteria_HPylori_Ureasa", data.HPyloriUreasa, EnemyShape.Capsule);
+                go.AddComponent<UreaseAura>();
+                return go;
+            });
+            Anisakis = Enemy("Parasito_Anisakis", data.Anisakis, EnemyShape.Long);
+            Bezoar = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Bezoar_Estomago.prefab", BuildBezoar);
 
             LombrizDelgado = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_IntestinoDelgado.prefab",
                 () => BuildLombriz("Lombriz_IntestinoDelgado", 0.5f, null, null,
@@ -686,6 +703,75 @@ namespace HealingKnight.EditorTools
         }
 
         // ---------- Jefe colmena (Pulmones) ----------
+
+        /// <summary>
+        /// Jefe Bezoar (placeholder hasta tener el sprite): bola grande de "comida pegada" con cara.
+        /// El pivote está en el piso; el dibujo gira al rodar (Visual) pero la cara no (Caras).
+        /// </summary>
+        private GameObject BuildBezoar()
+        {
+            EnemyData d = data.Bezoar;
+            const float r = 1.8f;
+            var root = new GameObject("Bezoar_Estomago");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            // El "Visual" gira: va centrado en la bola.
+            GameObject spinner = SetupUtils.Child(root.transform, "Visual", new Vector3(0f, r, 0f));
+            Transform v = spinner.transform;
+            var body = new System.Collections.Generic.List<Object>();
+            body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(r * 2.08f, r * 2.08f), -1));
+            body.Add(SetupUtils.SpriteChild(v, "Bola", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(r * 2f, r * 2f), 0));
+            // Pedazos de comida pegados (dona, pan, papas, chicle) de colores.
+            Vector2[] bitPos = { new Vector2(-0.8f, 0.7f), new Vector2(0.9f, 0.5f), new Vector2(-0.3f, -0.9f), new Vector2(0.8f, -0.7f), new Vector2(-1.1f, -0.2f) };
+            Vector2[] bitSize = { new Vector2(1.1f, 0.8f), new Vector2(0.9f, 0.7f), new Vector2(1.2f, 0.5f), new Vector2(0.7f, 0.7f), new Vector2(0.5f, 0.9f) };
+            Color[] bitColor =
+            {
+                new Color(0.96f, 0.5f, 0.7f), new Color(0.95f, 0.7f, 0.3f), new Color(1f, 0.85f, 0.35f),
+                new Color(0.6f, 0.9f, 0.85f), new Color(0.55f, 0.35f, 0.25f),
+            };
+            for (int i = 0; i < bitPos.Length; i++)
+                body.Add(SetupUtils.SpriteChild(v, "Pedazo", PlaceholderArt.Circle, bitColor[i], new Vector3(bitPos[i].x, bitPos[i].y, 0f), bitSize[i], 1));
+
+            // Caras (no giran): normal, enojada y derrotada.
+            GameObject faceRoot = SetupUtils.Child(root.transform, "Caras", new Vector3(0f, r, 0f));
+            var faces = new System.Collections.Generic.List<Object>();
+            string[] names = { "Normal", "Enojado", "Derrotado" };
+            for (int i = 0; i < 3; i++)
+            {
+                GameObject f = SetupUtils.Child(faceRoot.transform, names[i], Vector3.zero);
+                float eyeY = i == 2 ? 0.25f : 0.35f;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    SetupUtils.SpriteChild(f.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(side * 0.55f, eyeY, 0f), new Vector2(0.6f, i == 1 ? 0.45f : 0.6f), 3);
+                    SetupUtils.SpriteChild(f.transform, "Pupila", PlaceholderArt.Circle, new Color(0.1f, 0.02f, 0.06f),
+                        new Vector3(side * 0.5f, eyeY - 0.05f, 0f), new Vector2(0.25f, 0.25f), 4);
+                    if (i == 1)
+                        SetupUtils.SpriteChild(f.transform, "Ceja", PlaceholderArt.Square, new Color(0.24f, 0.04f, 0.15f),
+                            new Vector3(side * 0.55f, eyeY + 0.35f, 0f), new Vector2(0.6f, 0.12f), 4).transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
+                }
+                SetupUtils.SpriteChild(f.transform, "Boca", PlaceholderArt.Capsule, new Color(0.35f, 0.05f, 0.12f), new Vector3(0f, -0.45f, 0f),
+                    new Vector2(i == 1 ? 1.1f : 0.8f, i == 1 ? 0.4f : 0.2f), 3);
+                f.SetActive(i == 0);
+                faces.Add(f);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, new Vector2(0f, r), new Vector2(r * 1.8f, r * 1.8f));
+
+            var boss = root.AddComponent<BezoarBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRefArray(boss, "faces", faces.ToArray());
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "minionPrefab", HPylori);
+            SetupUtils.SetRef(boss, "minionData", data.HPylori);
+            return root;
+        }
 
         private GameObject BuildHive()
         {

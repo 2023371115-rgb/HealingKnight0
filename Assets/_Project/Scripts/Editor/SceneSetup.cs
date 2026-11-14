@@ -838,7 +838,8 @@ namespace HealingKnight.EditorTools
         /// 'topFraction' = a qué altura del dibujo está la parte que se pisa (0..1 desde abajo).
         /// Descansa en el piso o el fondo del lago donde está, y sube si sube el ácido (marea).
         /// </summary>
-        private void Food(string name, float x, float topFraction)
+        private void Food(string name, float x, float topFraction,
+            FloatingFood.FoodKind kind = FloatingFood.FoodKind.Normal, bool anisakis = false)
         {
             Sprite sprite = LoadTissue($"Comida_{name}", new Vector2(0.5f, 0f), Vector4.zero, false, FoodFolder);
             if (sprite == null) return;
@@ -870,7 +871,73 @@ namespace HealingKnight.EditorTools
             effector.useOneWay = true;
             effector.surfaceArc = 160f;
 
-            root.AddComponent<FloatingFood>().Configure(lake, restY, size.y, size.y * topFraction, size.x * 0.8f, art.transform);
+            root.AddComponent<FloatingFood>().Configure(lake, restY, size.y, size.y * topFraction, size.x * 0.8f, art.transform, kind);
+            if (anisakis) root.AddComponent<AnisakisNest>().Configure(prefabs.Anisakis, data.Anisakis, art.transform);
+        }
+
+        // ---------- Elementos del Estómago (rediseño) ----------
+
+        /// <summary>Chorro de ácido. 'groundY' = donde nace (piso o fondo del lago). 'offset' desfasa chorros vecinos.</summary>
+        private void Geyser(float x, float groundY, float height = 4.5f, float interval = 3.5f, float offset = 0f)
+        {
+            var go = new GameObject("ChorroAcido");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, groundY, 0f);
+            go.AddComponent<AcidGeyser>().Configure(height, interval, offset);
+        }
+
+        /// <summary>Burbujas de gas que suben desde el ácido y te llevan hacia arriba.</summary>
+        private void GasVent(float x, float height, float interval = 2.6f)
+        {
+            var go = new GameObject("BurbujasGas");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, FloorY - 0.35f, 0f);
+            go.AddComponent<GasBubbleVent>().Configure(interval, height);
+        }
+
+        /// <summary>Cápsula de omeprazol (placeholder: cápsula morada y blanca) que baja el ácido unos segundos.</summary>
+        private void Omeprazol(float x, float y)
+        {
+            var go = new GameObject("Omeprazol");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Capsule, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(0.95f, 0.5f), 20);
+            SetupUtils.SpriteChild(art.transform, "Mitad1", PlaceholderArt.Capsule, new Color(0.56f, 0.36f, 0.85f), new Vector3(-0.18f, 0f, 0f), new Vector2(0.5f, 0.4f), 21);
+            SetupUtils.SpriteChild(art.transform, "Mitad2", PlaceholderArt.Capsule, new Color(0.98f, 0.96f, 1f), new Vector3(0.18f, 0f, 0f), new Vector2(0.5f, 0.4f), 21);
+            SetupUtils.SpriteChild(art.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.8f), new Vector3(-0.2f, 0.08f, 0f), new Vector2(0.2f, 0.08f), 22);
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.7f, 0.55f, 1f, 0.25f), Vector3.zero, new Vector2(1.4f, 1.4f), 19);
+            go.AddComponent<AntacidPickup>().Configure(art.transform);
+        }
+
+        /// <summary>La contracción que te persigue de 'fromX' a 'toX'.</summary>
+        private void Peristalsis(float fromX, float toX, float speed = 4.1f)
+        {
+            var go = new GameObject("Contraccion");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(fromX, FloorY, 0f);
+            go.AddComponent<PeristalsisWave>().Configure(fromX, toX, speed);
+        }
+
+        /// <summary>El píloro (salida del estómago): cerrado mientras la arena del jefe no esté limpia.</summary>
+        private void Pylorus(float x, ArenaZone bossArena)
+        {
+            var go = new GameObject("Piloro");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, FloorY, 0f);
+            GameObject closed = SetupUtils.Child(go.transform, "Cerrado", Vector3.zero);
+            GameObject open = SetupUtils.Child(go.transform, "Abierto", Vector3.zero);
+            foreach (GameObject state in new[] { closed, open })
+            {
+                bool isOpen = state == open;
+                SetupUtils.SpriteChild(state.transform, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), new Vector3(0f, 2.2f, 0f), new Vector2(3.6f, 4.6f), -20);
+                SetupUtils.SpriteChild(state.transform, "Anillo", PlaceholderArt.Circle, new Color(0.88f, 0.38f, 0.5f), new Vector3(0f, 2.2f, 0f), new Vector2(3.4f, 4.4f), -19);
+                SetupUtils.SpriteChild(state.transform, "Centro", PlaceholderArt.Circle,
+                    isOpen ? new Color(1f, 0.78f, 0.6f) : new Color(0.66f, 0.2f, 0.33f), new Vector3(0f, 2.2f, 0f),
+                    isOpen ? new Vector2(2.2f, 3.2f) : new Vector2(1f, 1.2f), -18);
+                state.SetActive(!isOpen);
+            }
+            go.AddComponent<PyloricDoor>().Configure(bossArena, closed, open);
         }
 
         private void Basin(float fromX, float width)
@@ -970,7 +1037,7 @@ namespace HealingKnight.EditorTools
 
         private void BuildEstomago()
         {
-            BuildLevelBase(100f, new LevelStyle
+            BuildLevelBase(160f, new LevelStyle
             {
                 // Estómago: tejido carmesí, plataformas de carne rosada que escurren ácido verde brillante.
                 background = new Color(0.1f, 0.02f, 0.04f),
@@ -981,75 +1048,98 @@ namespace HealingKnight.EditorTools
                 decor = Decor.Veins,
                 backdrop = "Fondo_Estomago", // pintura estilo caricatura; si se borra el PNG vuelven las venas de placeholder
                 tissue = "Estomago",         // piso y plataformas de tejido estilo caricatura (Art/Tejidos)
-                // Lagos de ácido hundidos entre los bancos de moco (x = inicio, ancho).
-                // Parte 2: dos lagos hondos y largos; se cruzan sobre la comida que flota.
-                // Solo quedan dos bancos de moco: antes de la arena del escudo y antes de la alberca final.
+                // Lagos de ácido hundidos (x = inicio, ancho). Se cruzan sobre la comida que flota.
                 basins = new[]
                 {
-                    new Vector2(22.5f, 17.5f), // 22.5 a 40
-                    new Vector2(42f, 22f)      // 42 a 64 (arena del escudo)
+                    new Vector2(21f, 15f),    // 2) lago A: comida que rebota, rueda y se hunde + chorros
+                    new Vector2(39f, 12f),    //    lago B: con omeprazol se cruza caminando por el fondo
+                    new Vector2(57f, 10f),    // 3) lago de la arena de la colonia (ureasa = burbuja segura)
+                    new Vector2(72f, 12f),    // 4) lago de las burbujas de gas
+                    new Vector2(112f, 2.5f),  // 6) charcos de la huida (se brincan)
+                    new Vector2(118f, 2.5f)
                 },
-                // Parte 3: alberca honda de 67 a 89, siempre con ácido; sube hasta 1.5 sobre el piso.
-                tidePool = new Vector4(67f, 22f, 1.2f, 1.5f),
+                // 5) Alberca de marea de 86 a 106, siempre con ácido; sube hasta 1.5 sobre el piso.
+                tidePool = new Vector4(86f, 20f, 1.2f, 1.5f),
                 detail = new Color(0.15f, 0.55f, 0.6f, 0.7f),
                 pitLiquid = new Color(0.5f, 1f, 0.15f, 1f),
                 drip = new Color(0.55f, 1f, 0.2f, 0.9f),
                 glow = new Color(0.45f, 1f, 0.2f, 1f)
             }, "NODO: Estás en el estómago. Muévete con A/D, salta con K o Espacio. Apunta con W (W + A/D = diagonal).");
 
-            // El nivel tiene tres partes que suben de dificultad:
-            //  1) Inicio seco (tutorial).
-            //  2) Lago de ácido: el piso seguro es la capa de moco; el ácido se junta entre los bancos de moco.
-            //  3) Marea: el estómago se contrae y el ácido sube y baja por toda la última arena.
+            // Recorrido (cada parte agrega algo nuevo):
+            //  1) Entrada seca (tutorial).
+            //  2) Lagos con comida que rebota/rueda/se hunde, chorros de ácido y omeprazol.
+            //  3) Arena de la colonia madre y la H. pylori con ureasa.
+            //  4) Subida con burbujas de gas y el sushi con anisakis.
+            //  5) Alberca de marea.
+            //  6) Huida de la contracción.
+            //  7) Jefe Bezoar tapando el píloro.
+            MucusLayer(19f, 150f);
 
-            // ----- 1) Inicio seco -----
-            // Plataformas para practicar el salto y el disparo hacia abajo.
+            // ----- 1) Entrada seca -----
             Platform(0f, 2.2f, 3f);
             Platform(4.5f, 3.6f, 2.5f);
-
-            // Tutorial: un enemigo a la vez.
-            Arena("Arena_1_Tutorial", 8f, 18f,
+            Arena("Arena_1_Tutorial", 8f, 14f,
                 "H. pylori: una bacteria que se entierra en el moco y sale debajo de ti (enterrada no le haces daño). Cambia de cápsula con Q/E hasta encontrar la que funciona.",
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 1)),
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 2)));
 
-            // ----- 2) Lagos de ácido entre bancos de moco -----
-            MucusLayer(22.5f, 67f);
-            // Comida a medio digerir en los lagos: islas para cruzar sin pisar el ácido.
-            Food("Dona", 24.6f, 0.93f);
-            Food("Salchicha", 28.6f, 0.84f);
-            Food("Hamburguesa", 32.5f, 0.95f);
-            Platform(35.5f, 2.2f, 3f);
-            Food("Manzana", 37.8f, 0.79f);
+            // ----- 2) Lagos con comida "viva" y chorros de ácido -----
+            Food("Dona", 23.4f, 0.93f, FloatingFood.FoodKind.Bouncy);          // rebota: trampolín
+            Food("Salchicha", 28.2f, 0.84f, FloatingFood.FoodKind.Rolling);    // rueda hacia donde caminas
+            Food("Hamburguesa", 33.2f, 0.95f, FloatingFood.FoodKind.Sinking);  // se hunde si te quedas
+            Geyser(25.8f, FloorY - BasinDepth, 4.5f, 3.4f, 0f);
+            Geyser(30.7f, FloorY - BasinDepth, 4.5f, 3.4f, 1.7f);
+            Omeprazol(37.5f, 1.3f);                                             // banco entre los lagos
+            Food("Manzana", 42f, 0.79f);
+            Food("Dona", 47.3f, 0.93f, FloatingFood.FoodKind.Bouncy);
+            Geyser(44.6f, FloorY - BasinDepth, 4.5f, 3f, 0.5f);
+            Geyser(49.8f, FloorY - BasinDepth, 4.5f, 3f, 2f);
+            // Easter egg: muy alto, solo se alcanza rebotando en la dona + doble salto.
+            Platform(45.5f, 5.4f, 2.5f);
+            Tooth(45.8f, 5.4f);
 
-            // Easter egg en la plataforma más alta, entre la primera y la segunda arena: el diente con cara.
-            // Al tocarlo se desbloquea la Boca (nivel secreto) y te lleva ahí.
-            Platform(39f, 4.2f, 2.5f);
-            Tooth(39.3f, 4.2f);
+            // ----- 3) Arena de la colonia -----
+            Arena("Arena_2_Colonia", 56f, 18f,
+                "NODO: ¡Una colonia de H. pylori! Destruye a la MADRE o no dejará de soltar crías. La H. pylori turquesa neutraliza el ácido: cerca de ella no te quema. Escudo: Shift (o I); justo antes del golpe = PARRY.",
+                W(0.6f, E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)),
+                W(1.0f, E(prefabs.HPyloriMadre, data.HPyloriMadre, 1), E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1, SpawnSide.Left)));
+            Food("Hamburguesa", 59.6f, 0.95f, FloatingFood.FoodKind.Sinking);
+            Food("Salchicha", 64.2f, 0.84f, FloatingFood.FoodKind.Rolling);
+            Platform(62f, 3.4f, 3f);
 
-            Arena("Arena_2_Escudo", 44f, 18f,
-                "Escudo: mantén Shift (o I). Si lo levantas justo antes del golpe haces PARRY. Bomba de medicamento: L. Pelea sobre la comida y los bancos de moco.",
-                W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 1, SpawnSide.Left)),
-                W(1.0f, E(prefabs.HPylori, data.HPylori, 3, SpawnSide.Both)));
-            Food("Dona", 43.6f, 0.93f);
-            Food("Hamburguesa", 47.2f, 0.95f);
-            Platform(50.5f, 3.4f, 3f);
-            Food("Salchicha", 51.2f, 0.84f);
-            Food("Manzana", 55f, 0.79f);
-            Food("Dona", 58.3f, 0.93f);
-            Food("Hamburguesa", 62f, 0.95f);
+            // ----- 4) Burbujas de gas y el sushi -----
+            GasVent(74.6f, 6.6f);
+            GasVent(80.2f, 7.4f, 3f);
+            Platform(77.4f, 5.6f, 2.6f);
+            Platform(83.6f, 6.6f, 2.4f);
+            Omeprazol(83.6f, 7.8f);                                             // premio arriba
+            Food("Sushi", 78f, 0.85f, FloatingFood.FoodKind.Normal, true);      // ¡anisakis!
 
-            // ----- 3) Alberca de marea: solo ácido y comida flotando -----
-            Arena("Arena_3_Marea", 72f, 17f,
-                "Contracción del estómago: el ácido nunca baja del todo. Brinca de comida en comida; cuando retumbe, el ácido sube y la comida flota contigo. El escudo no te protege.",
-                W(0.6f, E(prefabs.HPylori, data.HPylori, 3)),
-                W(1.0f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)));
-            Food("Dona", 69f, 0.93f);
-            Food("Hamburguesa", 72.6f, 0.95f);
-            Food("Manzana", 76f, 0.79f);
-            Food("Salchicha", 79.8f, 0.84f);
-            Food("Dona", 83.4f, 0.93f);
-            Food("Hamburguesa", 87f, 0.95f);
+            // ----- 5) Alberca de marea -----
+            Arena("Arena_3_Marea", 90f, 16f,
+                "Contracción del estómago: el ácido sube y baja. La comida flota contigo... pero la hamburguesa se hunde. La H. pylori turquesa te da un refugio en el ácido.",
+                W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1)),
+                W(1.0f, E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left), E(prefabs.Anisakis, data.Anisakis, 1)));
+            Food("Dona", 88.2f, 0.93f, FloatingFood.FoodKind.Bouncy);
+            Food("Hamburguesa", 91.8f, 0.95f, FloatingFood.FoodKind.Sinking);
+            Food("Manzana", 95.3f, 0.79f);
+            Food("Sushi", 98.6f, 0.85f, FloatingFood.FoodKind.Normal, true);
+            Food("Salchicha", 102.4f, 0.84f, FloatingFood.FoodKind.Rolling);
+
+            // ----- 6) Huida: la contracción te persigue hasta la arena del jefe -----
+            Peristalsis(109f, 125f);
+            Geyser(115.5f, FloorY, 3.5f, 2.2f, 0f);
+            Geyser(121.5f, FloorY, 3.5f, 2.2f, 1.1f);
+            Platform(115.5f, 2.6f, 2f);
+
+            // ----- 7) Jefe: el Bezoar tapa el píloro -----
+            ArenaZone boss = Arena("Arena_4_Bezoar", 129f, 18f,
+                "NODO: Algo enorme tapa la salida del estómago...",
+                W(1.2f, E(prefabs.Bezoar, data.Bezoar, 1)));
+            Platform(131.5f, 2.8f, 2.4f);
+            Platform(138.5f, 2.8f, 2.4f);
+            Pylorus(147f, boss);
         }
 
         private void BuildDelgado()

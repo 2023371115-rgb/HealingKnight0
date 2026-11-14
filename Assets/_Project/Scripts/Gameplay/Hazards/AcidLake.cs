@@ -85,9 +85,22 @@ namespace HealingKnight.Gameplay.Hazards
 
         private static Sprite square, circle;
 
-        public float SurfaceY => transform.position.y + level;
+        public float SurfaceY => transform.position.y + shown;
         /// <summary>Altura del ácido sobre el fondo del lago (0 = seco).</summary>
-        public float Level => level;
+        public float Level => shown;
+
+        // ---------- Omeprazol: baja el ácido de TODOS los lagos un rato ----------
+        private static float neutralizedUntil;
+        private float shown;           // nivel que se ve y que quema (el natural, o casi seco si está neutralizado)
+        private float neutralBlend;    // 0 normal … 1 neutralizado
+
+        /// <summary>El omeprazol baja la producción de ácido: los lagos casi se vacían y dejan de quemar unos segundos.</summary>
+        public static void Neutralize(float seconds) => neutralizedUntil = Mathf.Max(neutralizedUntil, Time.time + seconds);
+        public static bool IsNeutralized => Time.time < neutralizedUntil;
+        public static float NeutralizedTimeLeft => Mathf.Max(0f, neutralizedUntil - Time.time);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => neutralizedUntil = 0f;
         public float Width => width;
         public bool IsHigh => tide && (phase == Phase.Rising || phase == Phase.Holding);
 
@@ -115,6 +128,7 @@ namespace HealingKnight.Gameplay.Hazards
         {
             seed = transform.position.x * 0.37f;
             level = lowLevel;
+            shown = level;
             phase = tide ? Phase.Waiting : Phase.Holding;
             BuildVisual();
             SfxLoop.Attach(gameObject, "Acido_Burbujeo", tide ? 0.35f : 0.5f, width * 0.5f, width * 0.5f + 7f);
@@ -126,8 +140,16 @@ namespace HealingKnight.Gameplay.Hazards
             if (tide) UpdateTide(dt);
             else agitation = 0.15f;
 
+            // Con omeprazol el ácido baja casi hasta el fondo (en ~1.2 s) y vuelve a subir al terminar.
+            neutralBlend = Mathf.MoveTowards(neutralBlend, IsNeutralized ? 1f : 0f, dt / 1.2f);
+            shown = Mathf.Lerp(level, Mathf.Min(level, 0.12f), Mathf.SmoothStep(0f, 1f, neutralBlend));
+
+            // Las funciones de abajo usan 'level': se les pasa el nivel que se ve.
+            float natural = level;
+            level = shown;
             UpdateDamage(dt);
             UpdateVisual(dt);
+            level = natural;
         }
 
         // ---------- Marea ----------
@@ -207,7 +229,11 @@ namespace HealingKnight.Gameplay.Hazards
         private void UpdateDamage(float dt)
         {
             PlayerController player = PlayerController.Current;
-            if (player == null || !player.Health.IsAlive || level < 0.05f || damagePerTick <= 0f) { damageTimer = 0f; return; }
+            if (player == null || !player.Health.IsAlive || level < 0.05f || damagePerTick <= 0f || neutralBlend > 0.6f)
+            {
+                damageTimer = 0f;
+                return;
+            }
 
             Vector2 feet = player.Position;
             Vector2 c = transform.position;
@@ -217,7 +243,8 @@ namespace HealingKnight.Gameplay.Hazards
             bool inside = overLake && feet.y > c.y - 1f
                           && (player.Motor.IsGrounded ? feet.y <= top + 0.05f : feet.y < top - 0.1f);
 
-            if (!inside) { damageTimer = 0f; return; }
+            // Cerca de una H. pylori con ureasa el ácido está neutralizado: no quema.
+            if (!inside || Enemies.UreaseAura.Protects(feet)) { damageTimer = 0f; return; }
 
             damageTimer -= dt;
             if (damageTimer > 0f) return;
