@@ -22,7 +22,7 @@ namespace HealingKnight.EditorTools
         public MedicineBomb Bomb;
         public PlayerController Player;
         public EnemyHealth HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
-        public EnemyHealth Tenia, Proglotido, LombrizHuye;
+        public EnemyHealth Tenia, Proglotido, LombrizHuye, Flora;
         public EnemyHealth HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans;
         public EnemyHealth LombrizDelgado, LombrizGrueso;
         public EnemyHealth Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
@@ -79,6 +79,9 @@ namespace HealingKnight.EditorTools
             Proglotido = Enemy("Parasito_Proglotido", data.Proglotido, EnemyShape.Long);
             Tenia = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Tenia_Delgado.prefab", BuildTenia);
             LombrizHuye = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_Persecucion.prefab", BuildWormChase);
+
+            // Intestino grueso: flora buena (necesita C. difficile ya hecho).
+            Flora = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_Flora.prefab", BuildFlora);
 
             LombrizDelgado = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_IntestinoDelgado.prefab",
                 () => BuildLombriz("Lombriz_IntestinoDelgado", 0.5f, null, null,
@@ -525,6 +528,10 @@ namespace HealingKnight.EditorTools
                 case "Parasito_Giardia": folder = "Delgado"; prefix = "Giardia"; width = 1.7f; break;
                 case "Virus_Rotavirus": folder = "Delgado"; prefix = "Rotavirus"; width = 1.35f; pivot = new Vector2(0.5f, 0.5f); break;
                 case "Parasito_Proglotido": folder = "Delgado"; prefix = "Proglotido"; width = 1.5f; break;
+                case "Parasito_Entamoeba": folder = "Grueso"; prefix = "Entamoeba"; width = 2f; break;
+                case "Bacteria_CDifficile": folder = "Grueso"; prefix = "CDifficile"; width = 1.6f; break;
+                case "Parasito_Oxiuro": folder = "Grueso"; prefix = "Oxiuro"; width = 1.5f; break;
+                case "Parasito_Oxiuro_Huevo": folder = "Grueso"; prefix = "OxiuroHuevo"; width = 1.1f; movePose = "Normal"; attackPose = "Abre"; break;
                 default: return;
             }
 
@@ -552,6 +559,7 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(poses, "attack", attack);
             SetupUtils.SetRef(poses, "hurt", hurt);
             SetupUtils.SetRef(poses, "dead", dead);
+            SetupUtils.SetRef(poses, "shelled", Load("Espora"));
         }
 
         /// <summary>Carga un PNG de arte para que mida 'worldWidth' de ancho (pivote al centro). Null si no existe.</summary>
@@ -1080,6 +1088,42 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(chase, "headRoar", headRoar);
                 SetupUtils.SetRef(chase, "headHurt", headHurt);
             }
+            return root;
+        }
+
+        /// <summary>Flora intestinal buena: bastoncito verde con cara feliz. Con dibujo si hay Art/Enemigos/Grueso/Flora_Normal.png.</summary>
+        private GameObject BuildFlora()
+        {
+            EnemyData d = data.Flora;
+            var root = new GameObject("Bacteria_Flora");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 3;
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Transform v = visual.transform;
+            var parts = new System.Collections.Generic.List<Object>();
+            Sprite art = ArtByWidth($"{EnemyArtRoot}/Grueso/Flora_Normal.png", 1.4f, new Vector2(0.5f, 0f));
+            if (art != null)
+                parts.Add(SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 1));
+            else
+            {
+                Color outline = new Color(0.08f, 0.25f, 0.12f);
+                parts.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Capsule, outline, new Vector3(0f, 0.38f, 0f), new Vector2(1.28f, 1.56f), 0));
+                parts.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Capsule, d.tint, new Vector3(0f, 0.38f, 0f), new Vector2(1.16f, 1.36f), 1));
+                SetupUtils.SpriteChild(v, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.7f), new Vector3(-0.25f, 0.5f, 0f), new Vector2(0.3f, 0.1f), 2);
+                for (int side = -1; side <= 1; side += 2)
+                    SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, outline, new Vector3(0.12f + side * 0.13f, 0.44f, 0f), new Vector2(0.09f, 0.12f), 2);
+                SetupUtils.SpriteChild(v, "Sonrisa", PlaceholderArt.Circle, outline, new Vector3(0.12f, 0.3f, 0f), new Vector2(0.2f, 0.08f), 2);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", parts.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 0.4f), new Vector2(1f, 0.8f));
+
+            var flora = root.AddComponent<FriendlyBacteria>();
+            flora.Configure(data.Antibiotico, CDifficile, data.CDifficile);
+            SetupUtils.SetRef(flora, "visual", v);
             return root;
         }
 

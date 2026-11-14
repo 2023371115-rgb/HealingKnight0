@@ -11,6 +11,8 @@ namespace HealingKnight.Gameplay.Level
     public class HealPickup : MonoBehaviour
     {
         [SerializeField] private float amount = 35f;
+        [Tooltip("Bombas extra (el apéndice: tejido de defensa).")]
+        [SerializeField] private int bombs = 0;
         [SerializeField] private float radius = 0.8f;
         [SerializeField, TextArea] private string message = "NODO: Suero oral. Repone el agua y las sales que se pierden con la diarrea. +Vida";
         [SerializeField] private Transform visual;
@@ -18,10 +20,12 @@ namespace HealingKnight.Gameplay.Level
         private Vector3 basePosition;
         private bool taken;
 
-        public void Configure(Transform art, float heal)
+        public void Configure(Transform art, float heal, int extraBombs = 0, string text = null)
         {
             visual = art;
             amount = heal;
+            bombs = extraBombs;
+            if (!string.IsNullOrEmpty(text)) message = text;
         }
 
         private void Awake() => basePosition = transform.position;
@@ -39,6 +43,11 @@ namespace HealingKnight.Gameplay.Level
 
             taken = true;
             player.Health.Heal(amount);
+            if (bombs > 0)
+            {
+                PlayerBombs b = player.GetComponent<PlayerBombs>();
+                if (b != null) b.Add(bombs);
+            }
             GameplayEvents.RaiseMessage(message);
             Sfx.Effect("Bomba_Ganada", 0.9f);
             gameObject.SetActive(false);

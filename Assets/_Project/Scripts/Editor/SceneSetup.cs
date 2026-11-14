@@ -1414,7 +1414,10 @@ namespace HealingKnight.EditorTools
 
         private void BuildGrueso()
         {
-            BuildLevelBase(95f, new LevelStyle
+            // Rediseño (215 de largo), siguiendo el colon de verdad:
+            // 1) ciego y apéndice · 2) colon ascendente (subida con el líquido detrás) · 3) colon transverso, ARRIBA
+            // (flora buena y C. difficile) · 4) colon descendente (bajada, lodo y úlceras) · 5) sigmoide y recto (nidos y jefe).
+            BuildLevelBase(215f, new LevelStyle
             {
                 // Intestino grueso: más oscuro y pesado, pliegues en arco y líquido verde olivo turbio.
                 background = new Color(0.07f, 0.03f, 0.03f),
@@ -1434,25 +1437,202 @@ namespace HealingKnight.EditorTools
                 pitLiquid = new Color(0.55f, 0.7f, 0.15f, 1f),
                 drip = new Color(0.6f, 0.75f, 0.2f, 0.8f),
                 glow = new Color(0.55f, 0.85f, 0.2f, 1f)
-            }, "NODO: Intestino grueso. La lombriz está cerca.",
-                new Vector2(29f, 3f));
+            }, "NODO: Intestino grueso. Aquí se absorbe el agua y viven billones de bacterias... buenas y malas.");
 
+            const float top = 16f;   // altura del colon transverso
+
+            // ---------- 1) Ciego y apéndice ----------
+            Platform(3f, 2.2f, 3f);
             Arena("Arena_1_Amebas", 10f, 18f, "Entamoeba: ameba lenta; su seudópodo llega lejos y te jala. No te quedes enfrente. Antiparasitario.",
                 W(0.6f, E(prefabs.Entamoeba, data.Entamoeba, 1), E(prefabs.Oxiuro, data.Oxiuro, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.Entamoeba, data.Entamoeba, 1), E(prefabs.Oxiuro, data.Oxiuro, 2, SpawnSide.Both)));
-            Platform(14f, 2.2f, 3f);
+            SetMessage("NODO: Haustras. Las bolsas del colon se aprietan y te lanzan: úsalas para subir.", 26f);
+            Haustra(28f, 0f);
+            Haustra(31.5f, 0.9f);
+            Haustra(35f, 1.8f);
+            // Apéndice secreto: arriba, se llega con la bolsa de en medio + doble salto.
+            Platform(31.5f, 5.6f, 3.2f);
+            AppendixReward(31.5f, 6.8f);
 
-            Platform(31f, 2.4f, 2.5f);
+            // ---------- 2) Colon ascendente: la subida ----------
+            SetMessage("NODO: Colon ascendente. Sube... ¡y no dejes que te alcance lo que viene de abajo!", 40f);
+            Flood(41.5f, 57f, top - 0.5f, 0.5f);
+            Platform(45f, 2.4f, 2.8f);
+            Platform(49.5f, 4.7f, 2.8f);
+            Platform(45.5f, 7f, 2.8f);
+            Platform(50f, 9.3f, 2.8f);
+            Platform(46f, 11.6f, 2.8f);
+            Platform(50.5f, 13.9f, 2.8f);
+            Platform(54.2f, 15.2f, 2.4f);
+            GasVent(53.5f, 9f, 2.8f);
+            Ambush(49.5f, 4.7f + 0.3f, prefabs.Oxiuro, data.Oxiuro, 2, 1.2f, 0f, new Vector2(0f, 3f), false);
+            Ambush(50.5f, 13.9f + 0.3f, prefabs.Oxiuro, data.Oxiuro, 2, 1.2f, 0f, new Vector2(0f, 3f), false);
 
-            Arena("Arena_2_CDifficile", 36f, 18f, "C. difficile: herida se vuelve espora y todo le rebota; espera a que despierte. Solo el antibiótico.",
+            // ---------- 3) Colon transverso (arriba): la microbiota ----------
+            SolidBlock(57f, 122f, top);
+            SetMessage("NODO: Microbiota. Las bacterias verdes son BUENAS: no les dispares antibiótico o crecerá C. difficile.", 58f);
+            foreach (float fx in new[] { 61f, 63.5f, 66f, 68.5f, 71f, 73.5f }) FloraAt(fx, top);
+            Probiotic(66f, top + 1.6f);
+            ArenaZone cdiff = Arena("Arena_2_CDifficile", 80f, 22f, "C. difficile: herida se vuelve espora y todo le rebota. Solo el antibiótico... ¡y cuidado con la flora buena!",
                 W(0.6f, E(prefabs.CDifficile, data.CDifficile, 2), E(prefabs.Oxiuro, data.Oxiuro, 1, SpawnSide.Left)),
                 W(1.0f, E(prefabs.CDifficile, data.CDifficile, 2), E(prefabs.Entamoeba, data.Entamoeba, 1, SpawnSide.Left)));
-            Platform(42f, 2.2f, 3f);
-            Platform(48f, 2.2f, 3f);
+            cdiff.floorY = top;
+            cdiff.transform.position = new Vector3(80f, top, 0f);
+            foreach (float fx in new[] { 83f, 88.5f, 94f }) FloraAt(fx, top);
+            Platform(86f, top + 2.6f, 3f);
+            Platform(93f, top + 2.6f, 3f);
+            foreach (float fx in new[] { 104f, 107f, 110f, 113f }) FloraAt(fx, top);
+            Probiotic(108.5f, top + 1.6f);
+            Ambush(110f, top + 3f, prefabs.CDifficile, data.CDifficile, 2, 0.5f, 7f, new Vector2(0f, 2f), false);
+            Ambush(116f, top + 3f, prefabs.Oxiuro, data.Oxiuro, 3, 0.5f, 7f, new Vector2(0f, 2f), false);
 
-            // Pelea final: desde la fase 2 invoca oxiuros. Arena sin plataformas.
-            Arena("Arena_3_LombrizFinal", 64f, 22f, null,
+            // ---------- 4) Colon descendente: la bajada ----------
+            SetMessage("NODO: Colon descendente. El colon absorbe el agua: todo se vuelve LODO espeso. No te quedes parado.", 120f);
+            Bolus(new Vector2(124.5f, top - 0.6f), new Vector2(124.5f, 1.2f), 2.2f, 0f);
+            Bolus(new Vector2(130f, 1.2f), new Vector2(130f, top - 2f), 2.2f, 0.5f);
+            Platform(127.5f, 11f, 2.4f);
+            Platform(133f, 7f, 2.4f);
+            Platform(137f, 3.5f, 2.4f);
+            Mud(126f, 152f);
+            Ulcer(135.5f);
+            Ulcer(145f);
+
+            // ---------- 5) Sigmoide y recto ----------
+            SetMessage("NODO: Recto. Los oxiuros ponen sus huevos aquí: rómpelos antes de que salgan más.", 152f);
+            foreach (float ex in new[] { 154f, 156.5f, 159f }) EnemyAt(prefabs.OxiuroHuevo, ex, FloorY);
+            Arena("Arena_3_Nidos", 165f, 18f, "Nidos de oxiuros: los huevos se abren si los dejas. Antiparasitario.",
+                W(0.6f, E(prefabs.Oxiuro, data.Oxiuro, 3)),
+                W(1.0f, E(prefabs.Entamoeba, data.Entamoeba, 1), E(prefabs.Oxiuro, data.Oxiuro, 2, SpawnSide.Both)),
+                W(1.0f, E(prefabs.OxiuroHuevo, data.OxiuroHuevo, 2), E(prefabs.Oxiuro, data.Oxiuro, 2, SpawnSide.Left)));
+            Haustra(183f, 0f);
+
+            // Pelea final: la lombriz. Abajo de la mitad de vida, oleadas de "movimiento de masa": hay que subirse.
+            Arena("Arena_4_LombrizFinal", 189f, 24f, null,
                 W(1.0f, E(prefabs.LombrizGrueso, data.Lombriz, 1)));
+            Platform(191.5f, 2.8f, 3f);
+            Platform(198f, 3.4f, 3f);
+            Platform(204.5f, 2.8f, 3f);
+            Haustra(195f, 0.4f);
+            Haustra(201.5f, 1.4f);
+            MassWaveIn(186f, 210f);
+        }
+
+        // ---------- Elementos del Intestino grueso (rediseño) ----------
+
+        private const string LargeIntestineArt = "Assets/_Project/Art/Grueso";
+
+        /// <summary>Bloque de tejido sólido (con colisión) de 'fromX' a 'toX' con el piso arriba en 'topY' (el colon transverso).</summary>
+        private void SolidBlock(float fromX, float toX, float topY)
+        {
+            float width = toX - fromX;
+            float height = topY - FloorY + 6f;
+            var go = new GameObject("BloqueTejido");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(fromX + width * 0.5f, topY, 0f);
+            go.layer = PhysicsLayers.Ground;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(width, height);
+            box.offset = new Vector2(0f, -height * 0.5f);
+            if (tissueFloor != null) TissueGround(go.transform, width, height, Color.white, true);
+            else SetupUtils.SpriteChild(go.transform, "Bloque", PlaceholderArt.Square, new Color(0.5f, 0.2f, 0.2f), new Vector3(0f, -height, 0f), new Vector2(width, height), -99);
+        }
+
+        private void Haustra(float x, float offset)
+        {
+            var go = new GameObject("Haustra");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, FloorY, 0f);
+            go.AddComponent<HaustraPouch>().Configure(2.6f, 2.8f, offset, PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Haustra.png", 2.9f, new Vector2(0.5f, 0.05f)));
+        }
+
+        private void Flood(float fromX, float toX, float topY, float speed)
+        {
+            var go = new GameObject("LiquidoQueSube");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3((fromX + toX) * 0.5f, FloorY - 0.3f, 0f);
+            go.AddComponent<RisingFlood>().Configure(fromX, toX, topY, speed);
+        }
+
+        private void Mud(float fromX, float toX)
+        {
+            var go = new GameObject("Lodo");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3((fromX + toX) * 0.5f, FloorY, 0f);
+            go.AddComponent<MudZone>().Configure(toX - fromX);
+        }
+
+        private void Bolus(Vector2 from, Vector2 to, float speed, float phase)
+        {
+            var go = new GameObject("Bolo");
+            go.transform.SetParent(environment, false);
+            go.transform.position = from;
+            go.AddComponent<MovingPlatform>().Configure(from, to, speed, phase, 2.6f, PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Bolo.png", 2.8f));
+        }
+
+        private void Ulcer(float x)
+        {
+            var go = new GameObject("Ulcera");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, FloorY, 0f);
+            go.AddComponent<EnemyNest>().Configure(prefabs.Entamoeba, data.Entamoeba, 7f, 1, PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Ulcera.png", 2.2f, new Vector2(0.5f, 0.2f)));
+        }
+
+        private void FloraAt(float x, float groundY) => EnemyAt(prefabs.Flora, x, groundY);
+
+        /// <summary>Pone un enemigo (o la flora) fijo en la escena, fuera de las arenas.</summary>
+        private void EnemyAt(EnemyHealth prefab, float x, float groundY)
+        {
+            if (prefab == null) return;
+            var go = (GameObject)PrefabUtility.InstantiatePrefab(prefab.gameObject);
+            go.transform.SetParent(environment, true);
+            go.transform.position = new Vector3(x, groundY, 0f);
+        }
+
+        private void Probiotic(float x, float y)
+        {
+            var go = new GameObject("Probiotico");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Probiotico.png", 0.9f);
+            if (pic != null) SetupUtils.SpriteChild(art.transform, "Frasco", pic, Color.white, Vector3.zero, Vector2.one, 21);
+            else
+            {
+                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.1f, 0.2f, 0.1f), Vector3.zero, new Vector2(0.62f, 0.86f), 20);
+                SetupUtils.SpriteChild(art.transform, "Frasco", PlaceholderArt.SquareCentered, new Color(0.95f, 0.97f, 1f), Vector3.zero, new Vector2(0.52f, 0.76f), 21);
+                SetupUtils.SpriteChild(art.transform, "Etiqueta", PlaceholderArt.SquareCentered, new Color(0.45f, 0.85f, 0.5f), new Vector3(0f, -0.05f, 0f), new Vector2(0.52f, 0.3f), 22);
+                SetupUtils.SpriteChild(art.transform, "Tapa", PlaceholderArt.SquareCentered, new Color(0.3f, 0.65f, 0.35f), new Vector3(0f, 0.42f, 0f), new Vector2(0.56f, 0.14f), 22);
+            }
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.5f, 1f, 0.55f, 0.25f), Vector3.zero, new Vector2(1.5f, 1.5f), 19);
+            go.AddComponent<ProbioticPickup>().Configure(art.transform);
+        }
+
+        /// <summary>Premio del apéndice secreto: vida y bombas (el apéndice tiene tejido de defensa).</summary>
+        private void AppendixReward(float x, float y)
+        {
+            var go = new GameObject("Apendice");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Apendice.png", 1.1f);
+            if (pic != null) SetupUtils.SpriteChild(art.transform, "Ganglio", pic, Color.white, Vector3.zero, Vector2.one, 21);
+            else
+            {
+                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Circle, new Color(0.2f, 0.08f, 0.25f), Vector3.zero, new Vector2(0.9f, 0.9f), 20);
+                SetupUtils.SpriteChild(art.transform, "Ganglio", PlaceholderArt.Circle, new Color(0.8f, 0.65f, 1f), Vector3.zero, new Vector2(0.78f, 0.78f), 21);
+                SetupUtils.SpriteChild(art.transform, "Brillo", PlaceholderArt.Circle, Color.white, new Vector3(-0.15f, 0.15f, 0f), new Vector2(0.2f, 0.12f), 22);
+            }
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.8f, 0.6f, 1f, 0.3f), Vector3.zero, new Vector2(1.6f, 1.6f), 19);
+            go.AddComponent<HealPickup>().Configure(art.transform, 25f, 3,
+                "NODO: ¡Encontraste el APÉNDICE! Tiene tejido de defensa (linfocitos). +Vida y +3 bombas.");
+        }
+
+        private void MassWaveIn(float fromX, float toX)
+        {
+            var go = new GameObject("MovimientoDeMasa");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(fromX, FloorY, 0f);
+            go.AddComponent<MassWave>().Configure(fromX, toX);
         }
 
         private void BuildBoca()

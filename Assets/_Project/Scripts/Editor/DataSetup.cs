@@ -16,7 +16,7 @@ namespace HealingKnight.EditorTools
         public EffectivenessTable Table;
         public PlayerConfig PlayerConfig;
         public EnemyData HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
-        public EnemyData Tenia, TeniaSegmento, Proglotido, LombrizHuye;
+        public EnemyData Tenia, TeniaSegmento, Proglotido, LombrizHuye, Flora;
         public EnemyData HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans, Lombriz;
         public EnemyData Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
         public EnemyData Mucosidad, Inflamacion, Colmena;
@@ -284,6 +284,19 @@ namespace HealingKnight.EditorTools
                 e.meleeDamageTakenMultiplier = 0.6f;
                 e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 4;
                 e.tint = new Color(0.95f, 0.62f, 0.6f);
+            });
+
+            // Intestino grueso (rediseño): flora intestinal buena (no ataca; si la matas con antibiótico sale C. difficile).
+            Flora = Enemy("Bacteria_Flora", e =>
+            {
+                e.displayName = "Flora intestinal (bacteria buena)";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Lactobacillus y Bifidobacterium: bacterias buenas del colon que ayudan a digerir y no dejan espacio a las malas. " +
+                    "Los antibióticos también las matan, y entonces C. difficile puede crecer. NO les dispares antibiótico.";
+                e.maxHealth = 12f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.tint = new Color(0.45f, 0.85f, 0.5f);
             });
 
             Giardia = Enemy("Parasito_Giardia", e =>
@@ -705,7 +718,7 @@ namespace HealingKnight.EditorTools
             DigestivoDelgado = Level("Digestivo", "02_IntestinoDelgado", "digestivo_delgado", "Intestino delgado", "Digestivo_IntestinoDelgado", false,
                 "Bilis, vellosidades, la tenia y un río de quimo. Persigue a la lombriz hasta la válvula ileocecal.");
             DigestivoGrueso = Level("Digestivo", "03_IntestinoGrueso", "digestivo_grueso", "Intestino grueso", "Digestivo_IntestinoGrueso", true,
-                "Amebas, C. difficile y oxiuros. Acaba con la lombriz.");
+                "Sube por el colon, cuida la flora buena, cruza el lodo y acaba con la lombriz.");
             DigestivoBoca = Level("Digestivo", "99_Boca_Secreto", "digestivo_boca", "Boca", "Digestivo_Boca", false,
                 "Nivel secreto: caries y placa bacteriana.");
             if (!DigestivoBoca.hidden)

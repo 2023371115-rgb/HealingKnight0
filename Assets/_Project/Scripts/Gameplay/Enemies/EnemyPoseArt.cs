@@ -17,6 +17,8 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private Sprite attack;
         [SerializeField] private Sprite hurt;
         [SerializeField] private Sprite dead;
+        [Tooltip("Dibujo cuando se protege (C. difficile hecha espora). Opcional.")]
+        [SerializeField] private Sprite shelled;
         [Tooltip("Cuánto se ve la pose de 'lastimado' cuando le pegas.")]
         [SerializeField] private float hurtFlash = 0.25f;
 
@@ -76,7 +78,7 @@ namespace HealingKnight.Gameplay.Enemies
             else if (hurtTimer > 0f) pose = EnemyBrain.Pose.Hurt;
             else pose = brain != null ? brain.CurrentPose : EnemyBrain.Pose.Idle;
 
-            Sprite s = Pick(pose);
+            Sprite s = !isDead && shelled != null && health != null && health.Shelled ? shelled : Pick(pose);
             if (s != null && target.sprite != s) target.sprite = s;
         }
 

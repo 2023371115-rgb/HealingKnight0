@@ -184,6 +184,26 @@ Dibujos (fondo verde ya quitado):
   `Peyer_Apagada` / `_Encendida` y `Valvula_Abierta` / `_Cerrada`.
 Si borras un PNG, ese objeto vuelve a dibujarse con figuras.
 
+## Intestino grueso (rediseño)
+
+215 de largo, siguiendo el colon de verdad: sube, cruza por arriba y baja.
+1. **Ciego y apéndice:** arena de amebas y **haustras** (`Level/HaustraPouch.cs`): bolsas del piso que tiemblan y te
+   lanzan hacia arriba. Con la de en medio y doble salto llegas al **apéndice secreto** (+vida y +3 bombas).
+2. **Colon ascendente:** subida por plataformas en zigzag con el **líquido que sube** detrás (`Hazards/RisingFlood.cs`:
+   empieza cuando trepas; si sales de la zona o mueres, baja). Oxiuros emboscados y una burbuja de gas.
+3. **Colon transverso (arriba, altura 16):** un bloque de tejido sólido (`SolidBlock`). Aquí vive la **flora buena**
+   (`Enemies/FriendlyBacteria.cs`): no ataca; si la matas con **antibiótico** sale **C. difficile** en su lugar. El
+   **probiótico** (`Level/ProbioticPickup.cs`) la pone a atacar a los enemigos 10 s. Arena de C. difficile con flora adentro.
+4. **Colon descendente:** bajada con **bolos** que suben y bajan (`Level/MovingPlatform.cs`), **lodo** que te frena y más
+   si te quedas parado (`Hazards/MudZone.cs`) y **úlceras** de las que salen amebas (`Enemies/EnemyNest.cs`).
+5. **Sigmoide y recto:** huevos de oxiuro sueltos, arena de nidos y la **pelea final con la lombriz**: abajo del 35 % de
+   vida llegan oleadas de **movimiento de masa** (`Hazards/MassWave.cs`) que barren el piso: súbete a las plataformas.
+
+Al reaparecer, el juego busca el piso sólido de esa X (así funciona también arriba, en el transverso).
+Dibujos opcionales (si no están, se dibuja con figuras): `Art/Grueso/` → `Haustra`, `Bolo`, `Ulcera`, `Probiotico`,
+`Apendice`; `Art/Enemigos/Grueso/` → `Flora_Normal`, `Entamoeba_*`, `CDifficile_*` (+ `CDifficile_Espora`),
+`Oxiuro_*` y `OxiuroHuevo_Normal` / `_Abre`.
+
 ## Fondos de nivel (imagen)
 
 El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pintura estilo caricatura, 1672×941).

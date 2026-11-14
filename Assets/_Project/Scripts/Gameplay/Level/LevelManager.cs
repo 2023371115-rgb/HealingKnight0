@@ -122,7 +122,23 @@ namespace HealingKnight.Gameplay.Level
             }
 
             // Reaparece cayendo desde arriba, un poco antes de la arena para que esta vuelva a activarse al avanzar.
-            player.Respawn(new Vector2(respawnX - 1f, spawnPoint.y + 3f));
+            player.Respawn(new Vector2(respawnX - 1f, RespawnHeight(respawnX - 1f)));
+        }
+
+        /// <summary>
+        /// Altura para reaparecer en esa X: un poco arriba del piso sólido que haya ahí (no de una plataforma de un solo
+        /// sentido). Así funciona también en partes altas del nivel (el colon transverso está arriba).
+        /// </summary>
+        private float RespawnHeight(float x)
+        {
+            float fallback = spawnPoint.y + 3f;
+            RaycastHit2D[] hits = Physics2D.RaycastAll(new Vector2(x, levelBounds.yMax + 30f), Vector2.down, levelBounds.height + 60f, 1 << PhysicsLayers.Ground);
+            foreach (RaycastHit2D h in hits)
+            {
+                if (h.collider == null || h.collider.usedByEffector) continue;
+                return Mathf.Max(fallback, h.point.y + 2.5f);
+            }
+            return fallback;
         }
 
         private IEnumerator CompleteLevel()
