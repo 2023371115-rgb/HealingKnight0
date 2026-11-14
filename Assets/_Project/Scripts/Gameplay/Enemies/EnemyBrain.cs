@@ -91,6 +91,26 @@ namespace HealingKnight.Gameplay.Enemies
         private bool isOffspring;
 
         public EnemyData Data => data;
+
+        /// <summary>Pose para el dibujo (EnemyPoseArt): quieto, moviéndose, atacando, lastimado o muerto.</summary>
+        public enum Pose { Idle, Move, Attack, Hurt, Dead }
+
+        public Pose CurrentPose
+        {
+            get
+            {
+                switch (state)
+                {
+                    case State.Idle: return Pose.Idle;
+                    case State.Windup:
+                    case State.Attack:
+                    case State.Special: return Pose.Attack;
+                    case State.Hurt: return Pose.Hurt;
+                    case State.Dead: return Pose.Dead;
+                    default: return Pose.Move;
+                }
+            }
+        }
         private bool IsFlying => motor == null;
         private Vector2 Position => transform.position;
         private EnemyBehavior Behavior => data.behavior;

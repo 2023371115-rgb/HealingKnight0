@@ -61,7 +61,8 @@ namespace HealingKnight.EditorTools
             HPyloriMadre = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_HPylori_Madre.prefab", () =>
             {
                 GameObject go = BuildEnemy("Bacteria_HPylori_Madre", data.HPyloriMadre, EnemyShape.Blob);
-                go.AddComponent<ColonySpawner>().Configure(HPylori, data.HPylori, go.transform.Find("Visual"));
+                // Se infla el dibujo (Body), no "Visual": a "Visual" lo voltea el cerebro según hacia dónde mira.
+                go.AddComponent<ColonySpawner>().Configure(HPylori, data.HPylori, go.transform.Find("Visual/Body"));
                 return go;
             });
             HPyloriUreasa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_HPylori_Ureasa.prefab", () =>
@@ -490,8 +491,60 @@ namespace HealingKnight.EditorTools
             Vector2 hurtSize = bodySize + new Vector2(0.15f, 0.15f);
             SetHurtbox(hurtbox, flying ? Vector2.zero : new Vector2(0f, hurtSize.y * 0.5f), hurtSize);
 
+            ApplyEnemyArt(root, name, health);
             return root;
         }
+
+        // ---------- Arte dibujado de enemigos (reemplaza las figuras de colores) ----------
+
+        public const string EnemyArtFolder = "Assets/_Project/Art/Enemigos/Estomago";
+
+        /// <summary>
+        /// Si hay PNG para este enemigo (Art/Enemigos/Estomago/&lt;prefijo&gt;_&lt;Pose&gt;.png), quita las figuras de colores
+        /// y pone el dibujo con sus poses. 'width' = ancho en unidades de la pose Normal (las demás usan la misma escala).
+        /// Poses: Normal (quieto), Mueve, Ataca, Dano (le pegan), Muere. Las que falten usan la más parecida.
+        /// </summary>
+        private void ApplyEnemyArt(GameObject root, string name, EnemyHealth health)
+        {
+            string prefix, idlePose = "Normal", movePose = "Normal", attackPose = "Ataca", hurtPose = "Dano", deadPose = "Muere";
+            float width;
+            switch (name)
+            {
+                case "Bacteria_HPylori": prefix = "HPylori"; width = 1.7f; break;
+                case "Bacteria_HPylori_Madre": prefix = "HPyloriMadre"; width = 3f; attackPose = "Suelta"; break;
+                case "Bacteria_HPylori_Ureasa": prefix = "HPyloriUreasa"; width = 1.85f; break;
+                case "Parasito_Anisakis": prefix = "Anisakis"; width = 2.2f; idlePose = "Dormido"; movePose = "Arrastra"; break;
+                default: return;
+            }
+
+            string Path(string pose) => $"{EnemyArtFolder}/{prefix}_{pose}.png";
+            // La escala sale de la pose en que camina (para el anisakis es "Arrastra").
+            var reference = AssetDatabase.LoadAssetAtPath<Texture2D>(Path(movePose));
+            if (reference == null) return;
+            float ppu = reference.width / width;
+            Sprite Load(string pose) => LoadArtSprite(Path(pose), ppu, new Vector2(0.5f, 0f));
+
+            Sprite idle = Load(idlePose), move = Load(movePose), attack = Load(attackPose), hurt = Load(hurtPose), dead = Load(deadPose);
+
+            Transform visual = root.transform.Find("Visual");
+            var old = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in visual) old.Add(child.gameObject);
+            foreach (GameObject go in old) Object.DestroyImmediate(go);
+
+            SpriteRenderer body = SetupUtils.SpriteChild(visual, "Body", idle != null ? idle : move, Color.white, Vector3.zero, Vector2.one, 0);
+            SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { body });
+
+            var poses = root.AddComponent<EnemyPoseArt>();
+            SetupUtils.SetRef(poses, "target", body);
+            SetupUtils.SetRef(poses, "idle", idle);
+            SetupUtils.SetRef(poses, "move", move);
+            SetupUtils.SetRef(poses, "attack", attack);
+            SetupUtils.SetRef(poses, "hurt", hurt);
+            SetupUtils.SetRef(poses, "dead", dead);
+        }
+
+        /// <summary>Carga un PNG de arte (para la escena: omeprazol, contracción, píloro). Null si no existe.</summary>
+        public static Sprite ArtSprite(string path, float pixelsPerUnit, Vector2 pivot) => LoadArtSprite(path, pixelsPerUnit, pivot);
 
         // ---------- Jefe lombriz ----------
 
@@ -720,40 +773,62 @@ namespace HealingKnight.EditorTools
             GameObject spinner = SetupUtils.Child(root.transform, "Visual", new Vector3(0f, r, 0f));
             Transform v = spinner.transform;
             var body = new System.Collections.Generic.List<Object>();
-            body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(r * 2.08f, r * 2.08f), -1));
-            body.Add(SetupUtils.SpriteChild(v, "Bola", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(r * 2f, r * 2f), 0));
-            // Pedazos de comida pegados (dona, pan, papas, chicle) de colores.
-            Vector2[] bitPos = { new Vector2(-0.8f, 0.7f), new Vector2(0.9f, 0.5f), new Vector2(-0.3f, -0.9f), new Vector2(0.8f, -0.7f), new Vector2(-1.1f, -0.2f) };
-            Vector2[] bitSize = { new Vector2(1.1f, 0.8f), new Vector2(0.9f, 0.7f), new Vector2(1.2f, 0.5f), new Vector2(0.7f, 0.7f), new Vector2(0.5f, 0.9f) };
-            Color[] bitColor =
-            {
-                new Color(0.96f, 0.5f, 0.7f), new Color(0.95f, 0.7f, 0.3f), new Color(1f, 0.85f, 0.35f),
-                new Color(0.6f, 0.9f, 0.85f), new Color(0.55f, 0.35f, 0.25f),
-            };
-            for (int i = 0; i < bitPos.Length; i++)
-                body.Add(SetupUtils.SpriteChild(v, "Pedazo", PlaceholderArt.Circle, bitColor[i], new Vector3(bitPos[i].x, bitPos[i].y, 0f), bitSize[i], 1));
-
-            // Caras (no giran): normal, enojada y derrotada.
-            GameObject faceRoot = SetupUtils.Child(root.transform, "Caras", new Vector3(0f, r, 0f));
             var faces = new System.Collections.Generic.List<Object>();
-            string[] names = { "Normal", "Enojado", "Derrotado" };
-            for (int i = 0; i < 3; i++)
+            const string bezoarFolder = "Assets/_Project/Art/Jefes/Bezoar";
+            var bezoarTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{bezoarFolder}/Bezoar_Normal.png");
+            bool hasArt = bezoarTex != null;
+            if (hasArt)
             {
-                GameObject f = SetupUtils.Child(faceRoot.transform, names[i], Vector3.zero);
-                float eyeY = i == 2 ? 0.25f : 0.35f;
-                for (int side = -1; side <= 1; side += 2)
+                // Dibujo completo (la cara viene en el dibujo): las tres caras son tres dibujos y giran con la bola.
+                float ppu = bezoarTex.width / (r * 2.1f);
+                string[] states = { "Normal", "Enojado", "Derrotado" };
+                for (int i = 0; i < states.Length; i++)
                 {
-                    SetupUtils.SpriteChild(f.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(side * 0.55f, eyeY, 0f), new Vector2(0.6f, i == 1 ? 0.45f : 0.6f), 3);
-                    SetupUtils.SpriteChild(f.transform, "Pupila", PlaceholderArt.Circle, new Color(0.1f, 0.02f, 0.06f),
-                        new Vector3(side * 0.5f, eyeY - 0.05f, 0f), new Vector2(0.25f, 0.25f), 4);
-                    if (i == 1)
-                        SetupUtils.SpriteChild(f.transform, "Ceja", PlaceholderArt.Square, new Color(0.24f, 0.04f, 0.15f),
-                            new Vector3(side * 0.55f, eyeY + 0.35f, 0f), new Vector2(0.6f, 0.12f), 4).transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
+                    Sprite sp = LoadArtSprite($"{bezoarFolder}/Bezoar_{states[i]}.png", ppu, new Vector2(0.5f, 0.5f));
+                    if (sp == null) sp = LoadArtSprite($"{bezoarFolder}/Bezoar_Normal.png", ppu, new Vector2(0.5f, 0.5f));
+                    SpriteRenderer sr = SetupUtils.SpriteChild(v, states[i], sp, Color.white, Vector3.zero, Vector2.one, 0);
+                    body.Add(sr);
+                    faces.Add(sr.gameObject);
+                    sr.gameObject.SetActive(i == 0);
                 }
-                SetupUtils.SpriteChild(f.transform, "Boca", PlaceholderArt.Capsule, new Color(0.35f, 0.05f, 0.12f), new Vector3(0f, -0.45f, 0f),
-                    new Vector2(i == 1 ? 1.1f : 0.8f, i == 1 ? 0.4f : 0.2f), 3);
-                f.SetActive(i == 0);
-                faces.Add(f);
+            }
+            else
+            {
+                body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(r * 2.08f, r * 2.08f), -1));
+                body.Add(SetupUtils.SpriteChild(v, "Bola", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(r * 2f, r * 2f), 0));
+                // Pedazos de comida pegados (dona, pan, papas, chicle) de colores.
+                Vector2[] bitPos = { new Vector2(-0.8f, 0.7f), new Vector2(0.9f, 0.5f), new Vector2(-0.3f, -0.9f), new Vector2(0.8f, -0.7f), new Vector2(-1.1f, -0.2f) };
+                Vector2[] bitSize = { new Vector2(1.1f, 0.8f), new Vector2(0.9f, 0.7f), new Vector2(1.2f, 0.5f), new Vector2(0.7f, 0.7f), new Vector2(0.5f, 0.9f) };
+                Color[] bitColor =
+                {
+                    new Color(0.96f, 0.5f, 0.7f), new Color(0.95f, 0.7f, 0.3f), new Color(1f, 0.85f, 0.35f),
+                    new Color(0.6f, 0.9f, 0.85f), new Color(0.55f, 0.35f, 0.25f),
+                };
+                for (int i = 0; i < bitPos.Length; i++)
+                    body.Add(SetupUtils.SpriteChild(v, "Pedazo", PlaceholderArt.Circle, bitColor[i], new Vector3(bitPos[i].x, bitPos[i].y, 0f), bitSize[i], 1));
+
+                // Caras (no giran): normal, enojada y derrotada.
+                GameObject faceRoot = SetupUtils.Child(root.transform, "Caras", new Vector3(0f, r, 0f));
+                string[] names = { "Normal", "Enojado", "Derrotado" };
+                for (int i = 0; i < 3; i++)
+                {
+                    GameObject f = SetupUtils.Child(faceRoot.transform, names[i], Vector3.zero);
+                    float eyeY = i == 2 ? 0.25f : 0.35f;
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        SetupUtils.SpriteChild(f.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(side * 0.55f, eyeY, 0f), new Vector2(0.6f, i == 1 ? 0.45f : 0.6f), 3);
+                        SetupUtils.SpriteChild(f.transform, "Pupila", PlaceholderArt.Circle, new Color(0.1f, 0.02f, 0.06f),
+                            new Vector3(side * 0.5f, eyeY - 0.05f, 0f), new Vector2(0.25f, 0.25f), 4);
+                        if (i == 1)
+                            SetupUtils.SpriteChild(f.transform, "Ceja", PlaceholderArt.Square, new Color(0.24f, 0.04f, 0.15f),
+                                new Vector3(side * 0.55f, eyeY + 0.35f, 0f), new Vector2(0.6f, 0.12f), 4).transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
+                    }
+                    SetupUtils.SpriteChild(f.transform, "Boca", PlaceholderArt.Capsule, new Color(0.35f, 0.05f, 0.12f), new Vector3(0f, -0.45f, 0f),
+                        new Vector2(i == 1 ? 1.1f : 0.8f, i == 1 ? 0.4f : 0.2f), 3);
+                    f.SetActive(i == 0);
+                    faces.Add(f);
+                }
+
             }
 
             var health = root.AddComponent<EnemyHealth>();
@@ -770,6 +845,13 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
             SetupUtils.SetRef(boss, "minionPrefab", HPylori);
             SetupUtils.SetRef(boss, "minionData", data.HPylori);
+            var chunkArt = new System.Collections.Generic.List<Object>();
+            foreach (string piece in new[] { "Papa", "Dona", "Chicle", "Dulce" })
+            {
+                Sprite sp = LoadArtSprite($"{bezoarFolder}/Pedazo_{piece}.png", 200f, new Vector2(0.5f, 0.5f));
+                if (sp != null) chunkArt.Add(sp);
+            }
+            SetupUtils.SetRefArray(boss, "chunkSprites", chunkArt.ToArray());
             return root;
         }
 

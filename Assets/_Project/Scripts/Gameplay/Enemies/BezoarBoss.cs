@@ -49,6 +49,9 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private float projectileDamage = 10f;
         [SerializeField] private Color projectileColor = new Color(0.95f, 0.75f, 0.35f);
         [SerializeField] private int chunks = 4;
+        [Tooltip("Dibujos de los pedazos que avienta (papa, dona, chicle, dulce). Vacío = bolita de color.")]
+        [SerializeField] private Sprite[] chunkSprites;
+        [SerializeField] private float chunkSize = 0.8f;
 
         [Header("Azotón (fase 2+)")]
         [SerializeField] private float jumpHeight = 6f;
@@ -173,6 +176,9 @@ namespace HealingKnight.Gameplay.Enemies
                 }
             }
 
+            // Cuando deja de rodar se endereza (para que la cara se vea derecha al lanzar).
+            if (state != State.Roll && state != State.WindRoll && state != State.JumpUp)
+                spin = Mathf.MoveTowardsAngle(spin, 0f, 360f * dt);
             if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, spin);
             TryContactDamage(player);
         }
@@ -254,6 +260,8 @@ namespace HealingKnight.Gameplay.Enemies
                 float vy = 9f + (i % 2) * 1.5f;
                 Vector2 v = new Vector2(vx, vy);
                 Projectile p = pool.Get();
+                bool art = chunkSprites != null && chunkSprites.Length > 0;
+                if (art) DressChunk(p, chunkSprites[Random.Range(0, chunkSprites.Length)]);
                 p.Launch(new ProjectileShot
                 {
                     origin = Center + Vector2.up * (radius * 0.6f),
@@ -266,11 +274,22 @@ namespace HealingKnight.Gameplay.Enemies
                     sourceTeam = Team.Enemy,
                     targetTeam = Team.Player,
                     medication = null,
-                    color = projectileColor,
+                    color = art ? Color.white : projectileColor,
                     groundMask = groundMask,
                     gravity = 18f
                 }, finished => pool.Release(finished));
             }
+        }
+
+        /// <summary>Le pone al proyectil el dibujo de un pedazo de comida (el pool es solo del Bezoar, así que no afecta a otros).</summary>
+        private void DressChunk(Projectile p, Sprite sprite)
+        {
+            if (sprite == null) return;
+            SpriteRenderer sr = p.GetComponentInChildren<SpriteRenderer>();
+            if (sr == null) return;
+            sr.sprite = sprite;
+            float w = Mathf.Max(sprite.bounds.size.x, sprite.bounds.size.y);
+            if (w > 0.001f) sr.transform.localScale = Vector3.one * (chunkSize / w);
         }
 
         private void TryContactDamage(PlayerController player)
@@ -310,6 +329,7 @@ namespace HealingKnight.Gameplay.Enemies
         {
             state = State.Dead;
             SetFace(2);
+            if (visual != null) { visual.localRotation = Quaternion.identity; visual.localScale = Vector3.one; }
             foreach (EnemyHealth m in minions)
                 if (m != null) Destroy(m.gameObject);
             minions.Clear();

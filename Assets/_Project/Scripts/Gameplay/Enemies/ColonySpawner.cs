@@ -69,6 +69,8 @@ namespace HealingKnight.Gameplay.Enemies
 
             int count = Mathf.Min(perSpawn, maxAlive - children.Count);
             for (int i = 0; i < count; i++) Spawn(i, count);
+            EnemyPoseArt art = GetComponent<EnemyPoseArt>();
+            if (art != null) art.Hold(EnemyBrain.Pose.Attack, 0.8f); // dibujo "soltando crías"
             Sfx.EffectAt("Colmena_Enjambre", transform.position, 0.8f);
         }
 

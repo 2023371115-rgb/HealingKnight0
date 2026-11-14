@@ -156,7 +156,13 @@ namespace HealingKnight.Gameplay.Hazards
 
         private void Wobble()
         {
-            if (bumps == null) return;
+            if (bumps == null)
+            {
+                // Con dibujo: la ola "respira" (se estira y aplasta un poco).
+                float k = Mathf.Sin(Time.time * 5f) * 0.035f;
+                visual.localScale = new Vector3(1f + k, 1f - k, 1f);
+                return;
+            }
             float t = Time.time;
             for (int i = 0; i < bumps.Length; i++)
             {

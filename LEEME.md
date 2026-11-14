@@ -77,6 +77,20 @@ encima. Los PNG están en `Assets/_Project/Art/Comida/` (`Comida_<Nombre>.png`, 
 Para agregar otra comida: dibuja o genera el PNG con fondo transparente (que no sea el cuadriculado pintado),
 guárdalo en esa carpeta y agrega una línea `Food(...)`.
 
+## Dibujos del Estómago (enemigos, jefe y objetos)
+
+Los dibujos hechos con IA (fondo verde quitado) ya están en el juego:
+- `Art/Enemigos/Estomago/<Enemigo>_<Pose>.png`: `HPylori`, `HPyloriMadre`, `HPyloriUreasa` y `Anisakis`.
+  Poses: `Normal` (quieto), `Mueve`, `Ataca`, `Dano` (le pegan) y `Muere`; el anisakis usa `Dormido` (hasta que te ve)
+  y `Arrastra`, y la madre usa `Suelta` cuando suelta crías. Si falta una pose se usa la más parecida.
+  El cambio de pose lo hace `Enemies/EnemyPoseArt.cs`; el tamaño de cada enemigo está en `ApplyEnemyArt` (`PrefabSetup`).
+- `Art/Jefes/Bezoar/`: `Bezoar_Normal`, `Bezoar_Enojado`, `Bezoar_Derrotado` y los pedazos que avienta (`Pedazo_*`).
+- `Art/Estomago/`: `Omeprazol`, `Contraccion` (pivote en la cara, al frente) y `Piloro_Cerrado` / `Piloro_Abierto`.
+- `Art/Comida/`: dona, hamburguesa, manzana, salchicha y sushi dibujados con IA. **Ojo:** `generar_comida.py` los
+  reemplaza por los dibujados por código si lo vuelves a correr.
+
+Para cambiar un dibujo: guarda el PNG nuevo con el mismo nombre (fondo transparente, mirando a la derecha) y regenera.
+
 ## Estilo de arte: caricatura (tipo Hora de Aventura)
 
 El juego ya no usa pixel art: colores planos, contorno grueso oscuro (el mismo tono en todo), formas redondas,
@@ -119,7 +133,7 @@ Comida con comportamiento (`FloatingFood.FoodKind`):
 Es un medicamento real contra la acidez y parte de la triple terapia contra H. pylori.
 
 **Bezoar** (`Enemies/BezoarBoss.cs`, 320 de vida): rueda de pared a pared (sáltalo), avienta pedazos de comida en arco y,
-desde la mitad de vida, brinca y aplasta soltando H. pylori. Por ahora se dibuja con círculos; falta su sprite.
+desde la mitad de vida, brinca y aplasta soltando H. pylori. Rueda de verdad (el dibujo gira) y se endereza al detenerse.
 
 En `SceneSetup`:
 - `Geyser(x, pisoY, altura, intervalo, desfase)`, `GasVent(x, altura, intervalo)`, `Omeprazol(x, y)`,

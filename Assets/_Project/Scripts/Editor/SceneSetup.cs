@@ -895,18 +895,28 @@ namespace HealingKnight.EditorTools
             go.AddComponent<GasBubbleVent>().Configure(interval, height);
         }
 
-        /// <summary>Cápsula de omeprazol (placeholder: cápsula morada y blanca) que baja el ácido unos segundos.</summary>
+        private const string StomachArtFolder = "Assets/_Project/Art/Estomago";
+
+        /// <summary>Cápsula de omeprazol (Art/Estomago/Omeprazol.png; sin PNG, cápsula de figuras) que baja el ácido unos segundos.</summary>
         private void Omeprazol(float x, float y)
         {
             var go = new GameObject("Omeprazol");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, y, 0f);
             GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
-            SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Capsule, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(0.95f, 0.5f), 20);
-            SetupUtils.SpriteChild(art.transform, "Mitad1", PlaceholderArt.Capsule, new Color(0.56f, 0.36f, 0.85f), new Vector3(-0.18f, 0f, 0f), new Vector2(0.5f, 0.4f), 21);
-            SetupUtils.SpriteChild(art.transform, "Mitad2", PlaceholderArt.Capsule, new Color(0.98f, 0.96f, 1f), new Vector3(0.18f, 0f, 0f), new Vector2(0.5f, 0.4f), 21);
-            SetupUtils.SpriteChild(art.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.8f), new Vector3(-0.2f, 0.08f, 0f), new Vector2(0.2f, 0.08f), 22);
-            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.7f, 0.55f, 1f, 0.25f), Vector3.zero, new Vector2(1.4f, 1.4f), 19);
+            Sprite pill = PrefabSetup.ArtSprite($"{StomachArtFolder}/Omeprazol.png", 200f, new Vector2(0.5f, 0.5f));
+            if (pill != null)
+            {
+                SetupUtils.SpriteChild(art.transform, "Capsula", pill, Color.white, Vector3.zero, Vector2.one, 21);
+            }
+            else
+            {
+                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Capsule, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(0.95f, 0.5f), 20);
+                SetupUtils.SpriteChild(art.transform, "Mitad1", PlaceholderArt.Capsule, new Color(0.56f, 0.36f, 0.85f), new Vector3(-0.18f, 0f, 0f), new Vector2(0.5f, 0.4f), 21);
+                SetupUtils.SpriteChild(art.transform, "Mitad2", PlaceholderArt.Capsule, new Color(0.98f, 0.96f, 1f), new Vector3(0.18f, 0f, 0f), new Vector2(0.5f, 0.4f), 21);
+                SetupUtils.SpriteChild(art.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.8f), new Vector3(-0.2f, 0.08f, 0f), new Vector2(0.2f, 0.08f), 22);
+            }
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.7f, 0.55f, 1f, 0.25f), Vector3.zero, new Vector2(1.5f, 1.5f), 19);
             go.AddComponent<AntacidPickup>().Configure(art.transform);
         }
 
@@ -916,7 +926,18 @@ namespace HealingKnight.EditorTools
             var go = new GameObject("Contraccion");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(fromX, FloorY, 0f);
-            go.AddComponent<PeristalsisWave>().Configure(fromX, toX, speed);
+            var wave = go.AddComponent<PeristalsisWave>();
+            wave.Configure(fromX, toX, speed);
+            // Dibujo de la ola de músculo: 8 de alto, con el pivote en el frente (la cara) y en el piso.
+            const float waveHeight = 8f;
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{StomachArtFolder}/Contraccion.png");
+            Sprite waveArt = tex != null ? PrefabSetup.ArtSprite($"{StomachArtFolder}/Contraccion.png", tex.height / waveHeight, new Vector2(0.96f, 0.02f)) : null;
+            if (waveArt != null)
+            {
+                GameObject visual = SetupUtils.Child(go.transform, "Ola", Vector3.zero);
+                SetupUtils.SpriteChild(visual.transform, "Dibujo", waveArt, Color.white, Vector3.zero, Vector2.one, 25);
+                SetupUtils.SetRef(wave, "visual", visual.transform);
+            }
         }
 
         /// <summary>El píloro (salida del estómago): cerrado mientras la arena del jefe no esté limpia.</summary>
@@ -927,14 +948,28 @@ namespace HealingKnight.EditorTools
             go.transform.position = new Vector3(x, FloorY, 0f);
             GameObject closed = SetupUtils.Child(go.transform, "Cerrado", Vector3.zero);
             GameObject open = SetupUtils.Child(go.transform, "Abierto", Vector3.zero);
+            // Dibujos Art/Estomago/Piloro_Cerrado y Piloro_Abierto (4.8 de alto, pivote abajo al centro).
+            const float pylorusHeight = 4.8f;
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{StomachArtFolder}/Piloro_Cerrado.png");
+            float ppu = tex != null ? tex.height / pylorusHeight : 100f;
+            Sprite closedArt = tex != null ? PrefabSetup.ArtSprite($"{StomachArtFolder}/Piloro_Cerrado.png", ppu, new Vector2(0.5f, 0f)) : null;
+            Sprite openArt = tex != null ? PrefabSetup.ArtSprite($"{StomachArtFolder}/Piloro_Abierto.png", ppu, new Vector2(0.5f, 0f)) : null;
             foreach (GameObject state in new[] { closed, open })
             {
                 bool isOpen = state == open;
-                SetupUtils.SpriteChild(state.transform, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), new Vector3(0f, 2.2f, 0f), new Vector2(3.6f, 4.6f), -20);
-                SetupUtils.SpriteChild(state.transform, "Anillo", PlaceholderArt.Circle, new Color(0.88f, 0.38f, 0.5f), new Vector3(0f, 2.2f, 0f), new Vector2(3.4f, 4.4f), -19);
-                SetupUtils.SpriteChild(state.transform, "Centro", PlaceholderArt.Circle,
-                    isOpen ? new Color(1f, 0.78f, 0.6f) : new Color(0.66f, 0.2f, 0.33f), new Vector3(0f, 2.2f, 0f),
-                    isOpen ? new Vector2(2.2f, 3.2f) : new Vector2(1f, 1.2f), -18);
+                Sprite art = isOpen ? openArt : closedArt;
+                if (art != null)
+                {
+                    SetupUtils.SpriteChild(state.transform, "Dibujo", art, Color.white, new Vector3(0f, -0.2f, 0f), Vector2.one, -18);
+                }
+                else
+                {
+                    SetupUtils.SpriteChild(state.transform, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), new Vector3(0f, 2.2f, 0f), new Vector2(3.6f, 4.6f), -20);
+                    SetupUtils.SpriteChild(state.transform, "Anillo", PlaceholderArt.Circle, new Color(0.88f, 0.38f, 0.5f), new Vector3(0f, 2.2f, 0f), new Vector2(3.4f, 4.4f), -19);
+                    SetupUtils.SpriteChild(state.transform, "Centro", PlaceholderArt.Circle,
+                        isOpen ? new Color(1f, 0.78f, 0.6f) : new Color(0.66f, 0.2f, 0.33f), new Vector3(0f, 2.2f, 0f),
+                        isOpen ? new Vector2(2.2f, 3.2f) : new Vector2(1f, 1.2f), -18);
+                }
                 state.SetActive(!isOpen);
             }
             go.AddComponent<PyloricDoor>().Configure(bossArena, closed, open);
@@ -1085,14 +1120,14 @@ namespace HealingKnight.EditorTools
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 2)));
 
             // ----- 2) Lagos con comida "viva" y chorros de ácido -----
-            Food("Dona", 23.4f, 0.93f, FloatingFood.FoodKind.Bouncy);          // rebota: trampolín
-            Food("Salchicha", 28.2f, 0.84f, FloatingFood.FoodKind.Rolling);    // rueda hacia donde caminas
+            Food("Dona", 23.4f, 0.95f, FloatingFood.FoodKind.Bouncy);          // rebota: trampolín
+            Food("Salchicha", 28.2f, 0.79f, FloatingFood.FoodKind.Rolling);    // rueda hacia donde caminas
             Food("Hamburguesa", 33.2f, 0.95f, FloatingFood.FoodKind.Sinking);  // se hunde si te quedas
             Geyser(25.8f, FloorY - BasinDepth, 4.5f, 3.4f, 0f);
             Geyser(30.7f, FloorY - BasinDepth, 4.5f, 3.4f, 1.7f);
             Omeprazol(37.5f, 1.3f);                                             // banco entre los lagos
-            Food("Manzana", 42f, 0.79f);
-            Food("Dona", 47.3f, 0.93f, FloatingFood.FoodKind.Bouncy);
+            Food("Manzana", 42f, 0.89f);
+            Food("Dona", 47.3f, 0.95f, FloatingFood.FoodKind.Bouncy);
             Geyser(44.6f, FloorY - BasinDepth, 4.5f, 3f, 0.5f);
             Geyser(49.8f, FloorY - BasinDepth, 4.5f, 3f, 2f);
             // Easter egg: muy alto, solo se alcanza rebotando en la dona + doble salto.
@@ -1105,7 +1140,7 @@ namespace HealingKnight.EditorTools
                 W(0.6f, E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.HPyloriMadre, data.HPyloriMadre, 1), E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1, SpawnSide.Left)));
             Food("Hamburguesa", 59.6f, 0.95f, FloatingFood.FoodKind.Sinking);
-            Food("Salchicha", 64.2f, 0.84f, FloatingFood.FoodKind.Rolling);
+            Food("Salchicha", 64.2f, 0.79f, FloatingFood.FoodKind.Rolling);
             Platform(62f, 3.4f, 3f);
 
             // ----- 4) Burbujas de gas y el sushi -----
@@ -1114,18 +1149,18 @@ namespace HealingKnight.EditorTools
             Platform(77.4f, 5.6f, 2.6f);
             Platform(83.6f, 6.6f, 2.4f);
             Omeprazol(83.6f, 7.8f);                                             // premio arriba
-            Food("Sushi", 78f, 0.85f, FloatingFood.FoodKind.Normal, true);      // ¡anisakis!
+            Food("Sushi", 78f, 0.92f, FloatingFood.FoodKind.Normal, true);      // ¡anisakis!
 
             // ----- 5) Alberca de marea -----
             Arena("Arena_3_Marea", 90f, 16f,
                 "Contracción del estómago: el ácido sube y baja. La comida flota contigo... pero la hamburguesa se hunde. La H. pylori turquesa te da un refugio en el ácido.",
                 W(0.6f, E(prefabs.HPylori, data.HPylori, 2), E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1)),
                 W(1.0f, E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left), E(prefabs.Anisakis, data.Anisakis, 1)));
-            Food("Dona", 88.2f, 0.93f, FloatingFood.FoodKind.Bouncy);
+            Food("Dona", 88.2f, 0.95f, FloatingFood.FoodKind.Bouncy);
             Food("Hamburguesa", 91.8f, 0.95f, FloatingFood.FoodKind.Sinking);
-            Food("Manzana", 95.3f, 0.79f);
-            Food("Sushi", 98.6f, 0.85f, FloatingFood.FoodKind.Normal, true);
-            Food("Salchicha", 102.4f, 0.84f, FloatingFood.FoodKind.Rolling);
+            Food("Manzana", 95.3f, 0.89f);
+            Food("Sushi", 98.6f, 0.92f, FloatingFood.FoodKind.Normal, true);
+            Food("Salchicha", 102.4f, 0.79f, FloatingFood.FoodKind.Rolling);
 
             // ----- 6) Huida: la contracción te persigue hasta la arena del jefe -----
             Peristalsis(109f, 125f);
