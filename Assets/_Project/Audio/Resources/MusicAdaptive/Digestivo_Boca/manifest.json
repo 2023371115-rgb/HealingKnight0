@@ -1,0 +1,15 @@
+{
+  "level": "Digestivo_Boca",
+  "bpm": 120,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2822400,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "level": "Digestivo_Jefe",
+  "bpm": 142,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2385127,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

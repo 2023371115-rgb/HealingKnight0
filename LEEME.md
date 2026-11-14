@@ -1,0 +1,401 @@
+# Healing Knight
+
+*Run and gun* 2D de un jugador (estilo **Metal Slug**) hecho en Unity 6. Un nanobot médico recorre los sistemas del cuerpo del Paciente 001 y derrota enfermedades usando el medicamento correcto.
+
+**Entrega de diciembre:** Sistema Digestivo: Estómago → Intestino delgado (la lombriz aparece y huye) → Intestino grueso (pelea final con la lombriz). La **Boca** es un nivel secreto: se desbloquea al tocar un pasaje escondido en el Estómago.
+
+**Siguiente (prototipo listo):** Sistema Respiratorio: Nariz (rinovirus, polen, S. aureus) → Tráquea (tos ferina) → Pulmones (neumonía, influenza y el jefe volador: la **colmena de tuberculosis**; da la fórmula 2 y cierra con el aviso de que la infección va al cerebro). Mecánica del GDD: el paso por los bronquiolos está bloqueado por **mucosidad** (Mucolítico; te frena si la tocas) e **inflamación** (Antiinflamatorio; se contrae al dañarla). El **polen** es un alérgeno: Antihistamínico.
+
+**Prototipo del Sistema Nervioso:** Médula espinal (poliovirus, meningococo, rabia; aprendes las **tormentas eléctricas**: un destello avisa 1 s dónde cae el rayo de 2 u y el escudo no protege) → Cerebro (herpes y los demás entre **neuronas sanas**: tus cápsulas las atraviesan, pero los disparos enemigos las dañan (−3 de **salud del cerebro**) y las infectan. Las neuronas rojas sueltan descargas y desgastan el cerebro hasta que las calmas. Si la salud del cerebro llega a 0, desenlace negativo y se reinicia el nivel) → **Hipocampo** (jefe: el **virus de la rabia** como el ciempiés de Centipede: una cadena de viriones que baja de riel en cada orilla, se parte en dos si rompes el medio, invoca rayos, infecta neuronas y en furia corre a ras de piso; da la fórmula 3). El **Anticonvulsivo** es la cápsula regional: calma neuronas rojas (+5 cerebro) y su bomba deja un campo neuroprotector.
+
+---
+
+## Primer uso (5 minutos)
+
+1. Abre el proyecto en Unity (6000.6.3f1). La primera vez tarda en importar.
+2. En la barra de menús: **Healing Knight → Crear proyecto base**.
+   Crea los sprites de prueba, los datos (medicamentos, enemigos, sistemas), los prefabs y las escenas.
+   Se puede volver a ejecutar: **nunca sobrescribe** lo que ya existe.
+3. Abre `Assets/_Project/Scenes/MainMenu.unity` y dale **Play**.
+4. Haz commit de todo lo que se generó, incluidos los archivos `.meta`.
+
+Para probar mecánicas sin pasar por el menú, abre **Healing Knight → Abrir escena → Sandbox** (tiene todos los enemigos y al jefe).
+
+Si cambia la estructura del proyecto base (nuevos enemigos, niveles, etc.) y todavía no has personalizado los assets generados, usa **Healing Knight → Regenerar proyecto base**: borra `Data`, `Prefabs`, `Scenes` y `Art/Placeholders` de `_Project` y los vuelve a crear.
+
+## Controles
+
+Apuntas **libre con el mouse** (o el stick derecho del control). Si no usas el mouse, apuntas en 8 direcciones como en Metal Slug: W arriba, W + A/D en diagonal, S abajo en el aire. Mover el mouse cambia al apuntado con mouse; presionar W regresa al de teclas.
+
+| Acción | Teclado / mouse | Gamepad |
+|---|---|---|
+| Moverse | A / D | Stick izq. / cruceta |
+| Apuntar libre (miras hacia donde apuntas) | Mouse | Stick der. |
+| Apuntar en 8 direcciones | W, W + A/D, S en el aire | Stick izq. |
+| Encogerse (se hace pequeño y esquiva disparos altos) | S | Abajo |
+| Disparar (mantener = ráfaga). Si un enemigo está pegado, **cuchillazo** automático. Disparar hacia abajo en el aire frena la caída | J / clic izquierdo | X / gatillo der. |
+| Escudo burbuja (mantener) — levántalo justo antes del golpe para hacer **parry** | K / clic derecho | Gatillo izq. |
+| Saltar (altura fija) · **doble salto** en el aire | Espacio | A / LB |
+| **Caída lenta**: mantén saltar mientras caes (1.5 s, se recarga al pisar el suelo) | mantener Espacio | mantener A / LB |
+| **Bomba de medicamento** (granada). Empiezas con 5; la barra bajo el contador se llena con daño efectivo, cuchillazos y parry, y al llenarse ganas otra (máx. 10) | L / F | B / RB |
+| **Fijar** (mantener): te quedas quieto para apuntar con calma | U / Shift izq. | Clic del stick der. |
+| Medicamento anterior / siguiente | Rueda del mouse / Q / E | — / Y |
+| Medicamento directo | 1 a 5 | — |
+| Pausa | Esc | Start |
+
+Los controles se definen en `Scripts/Gameplay/Player/PlayerInputReader.cs`.
+
+---
+
+## Arte del caballero
+
+Está en `Assets/_Project/Art/Player` (esa carpeta no la borra "Regenerar proyecto base"):
+
+| Archivo | Qué es |
+|---|---|
+El caballero está cortado en piezas, como un muñeco articulado, y se anima por código (`PlayerRigAnimator`): camina balanceando las piernas y doblando las rodillas, recoge las piernas al saltar, las abre al caer y respira quieto. Cada pieza tiene su PNG y su `_Color` (lo que pinta el medicamento, en blanco):
+
+| Pieza | Qué es | Gira en |
+|---|---|---|
+| `Caballero_Torso` | Cabeza, torso y cadera | (fija; sube y baja al caminar) |
+| `Caballero_PiernaFrente_Muslo` | Muslo (se usa para las dos piernas) | La cadera |
+| `Caballero_PiernaFrente_Pie` | Rodilla, espinilla y pie (las dos piernas) | La rodilla |
+| `Caballero_Brazo` | Brazo con el cañón | El hombro (apunta) |
+
+La pierna de atrás usa el mismo dibujo que la de enfrente, un poco inclinada hacia atrás, para que las dos sean simétricas y completas. La importación (Sprite, 850 píxeles por unidad y pivotes) y la posición de cada pieza están en `Editor/PlayerArt.cs`. Si redibujas una pieza con el mismo tamaño y pose, no hay que tocar nada. Los ángulos del paso, salto y caída se ajustan en el componente `PlayerRigAnimator` del prefab.
+
+**Encogerse:** abajo ya no aplasta al caballero; lo hace más pequeño de forma pareja (brazo, escudo y disparo incluidos) y baja su colisionador. El tamaño y la velocidad del cambio están en el PlayerConfig (`crouchHeightFactor`, `shrinkSpeed`).
+
+## Comida flotante (Estómago)
+
+En los lagos y en la marea hay comida a medio digerir (dona, manzana, salchicha, hamburguesa) que sirve de
+plataforma: en los lagos son islas para cruzar sin pisar el ácido, y en la marea **suben con el ácido** y te llevan
+encima. Los PNG están en `Assets/_Project/Art/Comida/` (`Comida_<Nombre>.png`, fondo transparente, estilo caricatura a
+256 píxeles por unidad); los dibuja `Tools/Art/generar_comida.py`. En `SceneSetup`: `Food("Dona", x, alturaDelPiso)` donde la altura es la fracción del dibujo
+(0 = abajo, 1 = arriba) en la que se pisa. Si la x cae dentro de un lago o una marea, flota en él.
+
+Para agregar otra comida: dibuja o genera el PNG con fondo transparente (que no sea el cuadriculado pintado),
+guárdalo en esa carpeta y agrega una línea `Food(...)`.
+
+## Dibujos del Estómago (enemigos, jefe y objetos)
+
+Los dibujos hechos con IA (fondo verde quitado) ya están en el juego:
+- `Art/Enemigos/Estomago/<Enemigo>_<Pose>.png`: `HPylori`, `HPyloriMadre`, `HPyloriUreasa` y `Anisakis`.
+  Poses: `Normal` (quieto), `Mueve`, `Ataca`, `Dano` (le pegan) y `Muere`; el anisakis usa `Dormido` (hasta que te ve)
+  y `Arrastra`, y la madre usa `Suelta` cuando suelta crías. Si falta una pose se usa la más parecida.
+  El cambio de pose lo hace `Enemies/EnemyPoseArt.cs`; el tamaño de cada enemigo está en `ApplyEnemyArt` (`PrefabSetup`).
+- `Art/Jefes/Bezoar/`: `Bezoar_Normal`, `Bezoar_Enojado`, `Bezoar_Derrotado` y los pedazos que avienta (`Pedazo_*`).
+- `Art/Estomago/`: `Omeprazol`, `Contraccion` (pivote en la cara, al frente) y `Piloro_Cerrado` / `Piloro_Abierto`.
+- `Art/Comida/`: dona, hamburguesa, manzana, salchicha y sushi dibujados con IA. **Ojo:** `generar_comida.py` los
+  reemplaza por los dibujados por código si lo vuelves a correr.
+
+Para cambiar un dibujo: guarda el PNG nuevo con el mismo nombre (fondo transparente, mirando a la derecha) y regenera.
+
+## Estilo de arte: caricatura (tipo Hora de Aventura)
+
+El juego ya no usa pixel art: colores planos, contorno grueso oscuro (el mismo tono en todo), formas redondas,
+brillos ovalados y manchitas. Lo que se dibuje nuevo (enemigos, objetos) debe seguir esas reglas para que combine.
+
+## Piso y plataformas de tejido
+
+En el Estómago el piso y las plataformas ya no son bloques de color: son tejido estilo caricatura con la
+misma paleta del fondo (contorno grueso, labio claro, manchas, brillos y gotas de moco) y sombras de contacto (el fondo se oscurece
+arriba del piso y debajo de cada plataforma; las paredes de huecos y lagos llevan sombra).
+
+- Las imágenes están en `Assets/_Project/Art/Tejidos/` y las genera `Tools/Art/generar_tejido.py`
+  (`python generar_tejido.py`). Se repiten sin cortes: Unity las usa con *Draw Mode = Tiled*.
+- La plataforma tiene puntas fijas (96 px a cada lado) y el centro se repite: sirve para cualquier ancho.
+- Para otro órgano: agrega una paleta en `PALETAS` del script, genera, y en el `LevelStyle` de ese nivel pon
+  `tissue = "Nombre"`. Si dibujas tú los PNG, respeta los nombres y tamaños (256 píxeles = 1 unidad: piso 512×256,
+  relleno 256×256, plataforma 448×176 con puntas de 96 px) y que se repitan sin cortes a los lados.
+
+## Ácido del Estómago (lago y marea)
+
+El Estómago (rediseño, 160 de largo) tiene cinco partes que suben de dificultad:
+1. **Inicio seco** (tutorial, Arena 1).
+2. **Lagos de ácido con géiseres:** dos lagos hondos (`basins`) que se cruzan sobre comida. Hay chorros de ácido
+   (`AcidGeyser`) que burbujean 1 s de aviso y luego saltan: hay que medir el brinco. Primera cápsula de omeprazol.
+3. **La colonia (Arena 2):** H. pylori madre (grande, cada 5 s suelta bacterias hijas; mátala primero) y H. pylori con
+   **ureasa** (burbuja turquesa: el ácido no quema dentro de ella, biología real: la ureasa hace amoníaco que neutraliza el ácido).
+4. **Gas y marea (Arena 3):** burbujas de gas (`GasBubbleVent`) que suben como elevadores y revientan arriba, y la
+   alberca de marea (`tidePool`) con comida que sube con el ácido. Un sushi tiene **anisakis** escondido.
+5. **Contracción y jefe:** una pared de músculo (`PeristalsisWave`) te persigue y te empuja al píloro, que está tapado por
+   el **Bezoar** (bola de comida pegada, Arena 4). Al vencerlo se abre el píloro (`PyloricDoor`) y sigue el intestino.
+
+Comida con comportamiento (`FloatingFood.FoodKind`):
+- **Normal:** flota y sube con la marea.
+- **Bouncy (dona):** trampolín, te lanza alto.
+- **Rolling (salchicha):** rueda hacia donde caminas, como tronco.
+- **Sinking (hamburguesa):** se hunde despacio mientras estás encima; no te quedes.
+- `Food(nombre, x, altura, kind, anisakis: true)` esconde un anisakis que sale al pisarla.
+
+**Omeprazol** (`AntacidPickup`): cápsula que baja todo el ácido 8 s (no quema y los géiseres se apagan); reaparece a los 14 s.
+Es un medicamento real contra la acidez y parte de la triple terapia contra H. pylori.
+
+**Bezoar** (`Enemies/BezoarBoss.cs`, 320 de vida): rueda de pared a pared (sáltalo), avienta pedazos de comida en arco y,
+desde la mitad de vida, brinca y aplasta soltando H. pylori. Rueda de verdad (el dibujo gira) y se endereza al detenerse.
+
+En `SceneSetup`:
+- `Geyser(x, pisoY, altura, intervalo, desfase)`, `GasVent(x, altura, intervalo)`, `Omeprazol(x, y)`,
+  `Peristalsis(desdeX, hastaX, velocidad)` y `Pylorus(x, arenaDelJefe)`.
+- `basins = new[] { new Vector2(inicio, ancho), ... }` en el `LevelStyle`: lagos hundidos en el piso.
+- `Lake(desdeX, hastaX)` pone un lago sobre el piso (sin hundir).
+- `tidePool = new Vector4(inicio, ancho, hondo, alturaMaxima)` en el `LevelStyle`: alberca de marea que nunca se seca.
+- `Tide(desdeX, hastaX, altura)` pone una marea sobre el piso que sí se seca.
+- `MucusLayer(desdeX, hastaX)` dibuja la capa de moco.
+
+En la escena puedes ajustar a mano cada lago: colores, ancho de columna de la ola (más grande = más pixel art),
+daño y los tiempos de la marea (seco, aviso, subida, espera, bajada). Sirve igual para la bilis del intestino
+cambiando los colores.
+
+## Intestino delgado (rediseño)
+
+190 de largo, en las tres partes reales del intestino delgado:
+1. **Duodeno:** arena de Giardia y un lago de bilis con **gotas de grasa** (`Hazards/FatDroplet.cs`) que sirven de plataforma.
+   Los **chorros de bilis** (el mismo `AcidGeyser` del estómago con `SetColors`) las rompen en gotitas, como la bilis de verdad
+   (emulsiona la grasa); a los 2.8 s se vuelven a juntar.
+2. **Yeyuno:** **vellosidades** que se mecen (`Hazards/SwayingVillus.cs`; te paras en la punta y te lleva) sobre la bilis,
+   con **Giardias escondidas** que se te avientan (`Level/AmbushSpawner.cs`). En la arena del rotavirus, el **rotavirus
+   aplana las vellosidades** que tiene cerca (se recuperan despacio cuando ya no hay). Luego una **placa de Peyer**
+   (`Level/PeyerPatch.cs`: punto de guardado y cura un poco) y **suero oral** (`Level/HealPickup.cs`: cura 35).
+3. **Tenia (minijefe, Arena 3):** `Enemies/TeniaBoss.cs`. La cabeza cuelga arriba a la derecha; el cuerpo son 9 pedazos con
+   su propia vida: si cortas uno se vuelve un **proglótido** que camina (máximo 4). Ataques: latigazo (brinca), mordida
+   y cada 11 s suelta el último pedazo. Conviene pegarle a la cabeza.
+4. **Íleon, río de quimo:** te subes a la salchicha (`FloatingFood`, tipo `Raft`) y avanza sola río abajo, aunque brinques
+   encima; si te caes, se detiene. Hay chorros de bilis que brincar y rotavirus que llegan volando (emboscadas).
+5. **Persecución de la lombriz:** `Enemies/WormChase.cs`. La pantalla se cierra alrededor del punto donde está la lombriz:
+   sale del piso una y otra vez (antes tiembla el montículo) y solo le puedes pegar cuando está afuera. Cuando le bajas
+   un pedazo de vida, huye al siguiente punto y la pantalla avanza. En la **válvula ileocecal** se escapa al intestino
+   grueso (no muere aquí). Si mueres, lo que le bajaste se queda.
+6. **Tenia:** su cabeza está agarrada a una columna de tejido; el cuerpo vuelve a crecer desde el cuello cada 4.5 s
+   (máximo 9 pedazos) y solo suelta pedazos con huevos si tiene más de 5.
+
+**Enemigos de suelo:** ahora atacan hasta 3 a la vez; los demás amagan acercándose y alejándose en vez de quedarse quietos.
+Se meten a los lagos (el ácido y la bilis no les hacen nada) y bajan de plataformas bajas para seguirte. Si uno con turno
+de ataque se queda lejos o atorado, suelta el turno para que otro ataque.
+
+En `SceneSetup`: `BileGeyser`, `FatDrop`, `Villus`, `Ambush`, `OralSerum`, `Peyer`, `WormChaseAt` e `IleocecalValve`.
+Dibujos (fondo verde ya quitado):
+- `Art/Enemigos/Delgado/`: `Giardia_*`, `Rotavirus_*` (Normal, Ataca, Dano, Muere) y `Proglotido_Normal` / `_Ataca`.
+- `Art/Jefes/Tenia/`: `Cabeza_Normal`, `Cabeza_Muerde`, `Cabeza_Derrotada` (el cuello abajo es donde nace el cuerpo) y
+  `Segmento`, `Segmento_Cuello`, `Segmento_Huevos` (los 2 primeros pedazos son de cuello y los 3 últimos llevan huevos).
+- `Art/Jefes/Lombriz/`: `Cabeza_Sale`, `Cabeza_Ruge`, `Cabeza_Dano`, `Anillo`, `Anillo_Chico`, `Cola` y `Monticulo`.
+- `Art/Delgado/`: `GotaGrasa` (+ `_Rota`), `Vellosidad` (+ `_Danada`, se mezclan al aplanarse), `SueroOral`,
+  `Peyer_Apagada` / `_Encendida` y `Valvula_Abierta` / `_Cerrada`.
+Si borras un PNG, ese objeto vuelve a dibujarse con figuras.
+
+## Intestino grueso (rediseño)
+
+215 de largo, siguiendo el colon de verdad: sube, cruza por arriba y baja.
+1. **Ciego y apéndice:** arena de amebas y **haustras** (`Level/HaustraPouch.cs`): bolsas del piso que tiemblan y te
+   lanzan hacia arriba. Con la de en medio y doble salto llegas al **apéndice secreto** (+vida y +3 bombas).
+2. **Colon ascendente:** subida por plataformas en zigzag con el **líquido que sube** detrás (`Hazards/RisingFlood.cs`:
+   empieza cuando trepas; si sales de la zona o mueres, baja). Oxiuros emboscados y una burbuja de gas.
+3. **Colon transverso (arriba, altura 16):** un bloque de tejido sólido (`SolidBlock`). Aquí vive la **flora buena**
+   (`Enemies/FriendlyBacteria.cs`): no ataca; si la matas con **antibiótico** sale **C. difficile** en su lugar. El
+   **probiótico** (`Level/ProbioticPickup.cs`) la pone a atacar a los enemigos 10 s. Arena de C. difficile con flora adentro.
+4. **Colon descendente:** bajada con **bolos** que suben y bajan (`Level/MovingPlatform.cs`), **lodo** que te frena y más
+   si te quedas parado (`Hazards/MudZone.cs`) y **úlceras** de las que salen amebas (`Enemies/EnemyNest.cs`).
+5. **Sigmoide y recto:** huevos de oxiuro sueltos, arena de nidos y la **pelea final con la lombriz**: abajo del 35 % de
+   vida llegan oleadas de **movimiento de masa** (`Hazards/MassWave.cs`) que barren el piso: súbete a las plataformas.
+
+Al reaparecer, el juego busca el piso sólido de esa X (así funciona también arriba, en el transverso).
+Dibujos opcionales (si no están, se dibuja con figuras): `Art/Grueso/` → `Haustra`, `Bolo`, `Ulcera`, `Probiotico`,
+`Apendice`; `Art/Enemigos/Grueso/` → `Flora_Normal`, `Entamoeba_*`, `CDifficile_*` (+ `CDifficile_Espora`),
+`Oxiuro_*` y `OxiuroHuevo_Normal` / `_Abre`.
+
+## Fondos de nivel (imagen)
+
+El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pintura estilo caricatura, 1672×941).
+Reemplaza la pared y los adornos de placeholder y se desliza lento con la cámara (`LevelBackdrop`): al inicio del
+nivel se ve el lado izquierdo de la imagen y al final el derecho, así parece que está muy lejos.
+
+Fondos ya puestos: Estómago (`Fondo_Estomago`, magenta), Intestino delgado (`Fondo_Delgado`, durazno, con bruma
+al centro agregada) e Intestino grueso (`Fondo_Grueso`, la imagen original pasada a malva). Cada uno con su tejido
+(`tissue = "Estomago" / "Delgado" / "Grueso"`) y su líquido: ácido verde, bilis amarilla y líquido turbio olivo
+(`liquidDeep/liquidSurface/liquidOutline/liquidCrest` en el `LevelStyle`).
+
+Respiratorio (morados fríos, como los colores originales de esos niveles): Nariz (`Fondo_Nariz`, ciruela, moco
+amarillo lima), Tráquea (`Fondo_Traquea`, índigo, moco azulado) y Pulmones (`Fondo_Pulmones`, noche índigo, líquido
+turquesa). A los tres se les bajó un poco la saturación y el brillo, con bruma al centro y orillas más oscuras, para que
+no compitan con la acción. Con fondo pintado ya no se dibujan los cilios de relleno sobre el piso.
+
+Nervioso (violeta oscuro con un acento de luz por nivel): Médula (`Fondo_Medula`, turquesa; líquido cefalorraquídeo),
+Hipocampo (`Fondo_Hipocampo`, magenta con memorias de colores; líquido dorado) y Cerebro (`Fondo_Cerebro`, índigo con
+sinapsis doradas; líquido magenta). Mismo filtro ligero que el respiratorio. Con tejido nuevo las plataformas ya no
+llevan el tallo de relleno.
+
+Boca (nivel secreto): `Fondo_Boca` (dientes, lengua, úvula y saliva), tejido rojo vino (más oscuro que la lengua
+para que las plataformas resalten) y saliva azul pálido en los huecos.
+
+Para ponerle fondo a otro nivel:
+1. Guarda el PNG en `Art/Fondos/` (por ejemplo `Fondo_Intestino.png`). Ideal: más ancho que 16:9 (≈ 2:1) y sin
+   cosas que parezcan plataformas; tonos oscuros/apagados para que el caballero y los enemigos resalten.
+2. En `SceneSetup`, en el `LevelStyle` de ese nivel, agrega `backdrop = "Fondo_Intestino"`.
+3. *Healing Knight → Crear/Regenerar proyecto base*.
+
+El importador lo deja solo en Sprite, filtro Bilinear (pintura lisa) y tamaño ≈ 1.2 veces el alto de la pantalla.
+En la escena, el objeto `Environment/Fondo` tiene opciones para ajustar a mano: cuánto se desliza, subirlo o bajarlo
+y cuánto se queda atrás cuando la cámara sube. Si borras el PNG, el nivel vuelve a su fondo de placeholder.
+
+## Easter egg: el diente
+
+En el Estómago, en la plataforma más alta entre la primera y la segunda arena, flota un diente con cara. Es la entrada secreta a la **Boca**: al tocarlo brinca, gira, avisa y te lleva ahí. Desde ese momento la Boca aparece también en el mapa del cuerpo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.
+
+**Mundo secreto (solo de prueba):** una idea para después, un planeta vivo invadido por patógenos alienígenas. No está en el juego ni en el mapa; solo se abre desde **Healing Knight → Abrir escena → Extra · Mundo secreto (prueba)**.
+
+## Enemigos: comportamiento y biología
+
+Cada enemigo tiene un comportamiento (`behavior` en su EnemyData) basado en su microorganismo, y puede tener **debilidades propias** (`weaknesses`) que ganan sobre la tabla general. Los de suelo bajan de las plataformas si estás abajo y saltan para subir si estás arriba; si no te alcanzan, patrullan. Todos se mueven con inercia (aceleran y frenan), rebotan al caminar, se estiran al saltar, se aplastan al caer y los voladores se inclinan hacia donde van. En el Sandbox, la arena "Arena_Enemigos" trae una oleada por comportamiento para probarlos.
+
+| Enemigo | Cómo pelea | Por qué (biología) | Debilidad |
+|---|---|---|---|
+| H. pylori | Se entierra (inmune), avanza escondido y sale debajo de ti | Se entierra en el moco del estómago para que el ácido no la mate | Antibiótico |
+| Giardia | Salta y se te pega: te frena y te daña; un disparo la despega | Disco ventral con el que se pega al intestino | Antiparasitario **y** Antibiótico (metronidazol es las dos cosas) |
+| Rotavirus | Rueda voladora: gira a tu alrededor, acelera el giro, se echa para atrás y se lanza como sierra; rebota en piso, paredes y escudo | "Rota" = rueda: así se ve al microscopio | Antiviral |
+| Entamoeba | Seudópodo largo que te jala | Fagocitosis: engulle células | Antiparasitario |
+| C. difficile | Herida se vuelve espora (todo rebota) y despierta | Sus esporas resisten antibióticos y calor | Solo Antibiótico |
+| Oxiuro | Rápido, culebrea; al morir deja un huevo que eclosiona | Autoinfección con sus huevos | Antiparasitario |
+| S. mutans | Lanza ácido en arco desde lejos | Ácido láctico que causa la caries | Antibiótico |
+| Rinovirus | Vuelo errático, estornuda en abanico; se cura solo | No existe antiviral para el resfriado | Todo le hace poco (Antiviral parcial) |
+| Polen | Lo lleva el aire; cerca revienta y te frena | Alérgeno: histamina | Antihistamínico |
+| S. aureus | Al morir se separa en 2 cocos | Racimo de uvas (staphylé) | Antibiótico |
+| B. pertussis | Se infla y tose 3 veces; cada tos empuja | Ataques de tos ferina | Antibiótico |
+| Neumococo | Avanza a saltos y te cae encima | Diplococo que llega en gotitas | Antibiótico |
+| Influenza | Se lanza en picada | Espículas con las que se clava | Antiviral (oseltamivir) |
+| Tuberculosis | Lenta y dura; de lejos tose gotitas en arco; se encierra en granuloma | Pared cerosa; granulomas | Solo Antibiótico |
+| Meningococo | Se agazapa y cruza a toda velocidad | Infección rapidísima | Antibiótico |
+| Poliovirus | Sus disparos te paralizan (lento) | Ataca neuronas motoras | Antiviral |
+| Herpes | Se vuelve latente (invisible), reaparece y dispara en ráfaga | Latencia en ganglios nerviosos | Antiviral (aciclovir) |
+| Rabia (suelta) | Muerde 3 veces seguidas | Vuelve agresivo al infectado | **Anticonvulsivo** (sedar el cerebro); Antiviral parcial |
+
+## Sonido (experimento)
+
+Todos los sonidos viven en `Assets/_Project/Audio/Resources/SFX` y el juego los busca **por nombre de archivo**: para cambiar uno, reemplaza el archivo con el mismo nombre (`.ogg` de preferencia; los `.wav` van por Git LFS). No hay que tocar código ni regenerar. Los actuales son de prueba, sintetizados con `Tools/Audio/generar_sonidos.py` (ahí está explicado cómo hacer más). Los volúmenes por grupo están en `Data/Resources/CombatAudio`.
+
+| Archivo | Cuándo suena |
+|---|---|
+| `Disparo_<Medicamento>` / `Impacto_<Medicamento>` | Disparar / pegarle a algo (también se pueden arrastrar al campo del MedicationData) |
+| `Rebote_Ineficaz` | Cápsula ineficaz que rebota en gris |
+| `Jugador_Salto`, `Jugador_SaltoDoble`, `Jugador_Herido`, `Jugador_Muere` | Jugador |
+| `Escudo_Bloquea`, `Escudo_Parry`, `Escudo_Rompe` | Escudo |
+| `Bomba_Lanza`, `Bomba_Explota`, `Bomba_Ganada` | Bombas (ganada = se llenó la barra peleando) |
+| `<archivo del enemigo>_Disparo` / `_Muere` | Un enemigo en particular, p. ej. `Virus_Rinovirus_Muere` |
+| `<tipo>_Disparo` / `_Muere` | Todo un tipo si el enemigo no tiene el suyo: `Virus_`, `Bacteria_`, `Parasito_`, `Bloqueo_`, `Jefe_`... |
+| `Enemigo_Disparo` / `Enemigo_Muere` | Lo que no tenga ninguno de los dos anteriores |
+| `Neurona_Hiperexcitada_Muere` | Calmar una neurona roja (vuelve a ser sana) |
+| `Acido_Burbujeo` (bucle), `Acido_Quema` | Charco de ácido: burbujea cerca, chisporrotea al quemarte |
+| `Lombriz_Retumbo`, `Lombriz_Sale`, `Lombriz_Entra`, `Lombriz_Ruge` | Aviso bajo tierra, salir, meterse, quedar expuesta / huir |
+| `Alveolo_Infla`, `Alveolo_Desinfla`, `Alveolo_Rebote` | Alvéolos de los pulmones (inhala, exhala, trampolín) |
+| `Colmena_Enjambre` | La colmena suelta su enjambre (su disparo es `Jefe_Colmena_Disparo` o `Jefe_Disparo`) |
+| `Rayo_Aviso`, `Rayo_Cae` | Tormenta: el segundo de aviso y el rayo |
+| `Neurona_Carga`, `Neurona_Descarga`, `Neurona_Golpe`, `Neurona_Infecta` | Neuronas: carga y descarga de la roja, golpe e infección de la sana |
+| `Campo_Neuroprotector` | Bomba de anticonvulsivo |
+| `Rabia_Chillido` | La cadena de rabia da la vuelta |
+| `Diente_Secreto` | Tocar el diente secreto del Estómago (lleva a la Boca) |
+| `Ambiente_<Sistema>` (bucle) | Fondo de cada sistema según el nombre de la escena (`Ambiente_Digestivo`, `_Respiratorio`, `_Nervioso`). `Ambiente_<Escena>` (p. ej. `Ambiente_Nervioso_Hipocampo`) le gana para un nivel en particular |
+
+Los sonidos que pasan fuera de la pantalla se oyen más bajo y, si están muy lejos, no suenan. Disparos e impactos: cortos (menos de 0.2 s) y en mono.
+
+## Música adaptativa (por capas)
+
+Cada nivel tiene su canción separada en 6 capas que suenan sincronizadas; el juego sube o baja cada una según lo
+que pasa (`Scripts/Gameplay/Audio/AdaptiveMusic.cs`):
+
+| Situación | Qué suena |
+|---|---|
+| Explorando | Ambiente + Armonía + Melodía suave |
+| Enemigos a menos de 11 unidades | + Bajo |
+| Arena en pelea | + Percusión, Melodía completa |
+| Muchos enemigos / jefe | + Combate |
+| Arena limpiada | remate "Victoria" en el siguiente tiempo del compás, y luego se calma |
+| Poca vida (35 % o menos) | todo "bajo el agua" (filtro) + latido de corazón |
+| Jefe | cambia a la canción `<Sistema>_Jefe` al empezar un compás, con una subida ("Entrada") |
+
+La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
+
+- Archivos: `Assets/_Project/Audio/Resources/MusicAdaptive/<NombreDeLaEscena>/` con `Ambiente, Armonia, Melodia,
+  Bajo, Percusion, Combate, Victoria` (y `Entrada` en las de jefe) + `manifest.json` (BPM, compases, largo).
+- Los genera `Tools/Audio/generar_musica_adaptativa.py` (v4: estructura integrada al juego + motor de sonido de la v3 del
+  equipo: acid con filtro resonante, pads supersaw, lead de trance, pluck y reese; melodía con pluck en el digestivo,
+  lead en el respiratorio y campanas en el nervioso) (`--todos`, o `--nivel Digestivo_Estomago --preview`
+  para oír la mezcla completa en `Tools/Audio/preview/`). Cada capa queda a un volumen fijo para que ninguna tape a
+  las demás, y todas juntas nunca pasan de 0.9.
+- **Para Victor:** si hace su música, que exporte cada canción en esas 6 capas (mismo largo exacto, en loop) con los
+  mismos nombres, y edite el `manifest.json` (sobre todo `bpm` y `bars`, que se usan para cambiar en el compás).
+- Si una escena no tiene carpeta, suena la pista normal de `Resources/Music` como antes.
+- El importador (`Editor/MusicAdaptiveImporter.cs`) pone esos audios en "Decompress On Load" para que las capas
+  no se desfasen.
+
+## Música (ejemplos)
+
+Cada sistema tiene un género electrónico que suena a lo que pasa en ese órgano, con versión de jefe más rápida y pesada:
+
+| Sistema | Género | BPM | Archivos |
+|---|---|---|---|
+| Digestivo | Acid house (bajo "acid" burbujeante = jugos gástricos) | 128 / 134 | `Musica_Digestivo`, `Musica_Digestivo_Jefe` |
+| Respiratorio | Trance (pads que suben y bajan = respirar) | 138 / 145 | `Musica_Respiratorio`, `Musica_Respiratorio_Jefe` |
+| Nervioso | Neurofunk (drum & bass eléctrico = neuronas) | 174 / 176 | `Musica_Nervioso`, `Musica_Nervioso_Jefe` |
+
+Van en `Assets/_Project/Audio/Resources/Music` y el juego las elige por el nombre de la escena: `Musica_<Escena>` (p. ej. `Musica_Nervioso_Hipocampo`) le gana a `Musica_<Sistema>`. Cuando empieza un jefe cambia con fundido a `..._Jefe` y al terminar regresa. Al morir no se reinicia. El volumen está en `Data/Resources/CombatAudio` (Music Volume).
+
+Las actuales son de ejemplo, hechas con `Tools/Audio/generar_musica.py` (secuenciador en Python). Para poner la de Víctor: guárdala en `.ogg` con el mismo nombre; que sea un loop que empate al final y que no tenga demasiados graves, para que se oigan los efectos.
+
+## Estructura de carpetas
+
+```
+Assets/
+├── _Project/                 ← TODO lo del juego va aquí
+│   ├── Art/                  Sprites (Placeholders se generan solos; reemplázalos con tu arte)
+│   ├── Audio/
+│   ├── Data/                 ScriptableObjects: balance y contenido, editables sin código
+│   │   ├── Combat/           EffectivenessTable (tabla medicamento × amenaza)
+│   │   ├── Enemies/          H. pylori, Giardia, Rotavirus, Entamoeba, C. difficile, Oxiuro, S. mutans, Jefe_Lombriz
+│   │   ├── Medications/      Antibiótico, Antiviral, ..., Antiparasitario, Mucolítico
+│   │   ├── Player/           PlayerConfig (velocidades, salto, daño, escudo...)
+│   │   ├── Resources/        GameCatalog (lista de sistemas del mapa)
+│   │   └── Systems/          Un folder por sistema con su SystemData y sus LevelData
+│   ├── Prefabs/              Player, Enemies, Bosses, Projectiles, Hazards, Level
+│   ├── Scenes/               MainMenu, BodyMap, Levels/<Sistema>/..., Sandbox
+│   ├── Scripts/
+│   │   ├── Core/             Datos, efectividad, daño, progreso y guardado (sin dependencias)
+│   │   ├── Gameplay/         Jugador, enemigos, arenas, peligros, cámara, nivel
+│   │   ├── UI/               HUD, pausa, menú principal, mapa del cuerpo
+│   │   └── Editor/           Herramienta "Crear proyecto base"
+│   └── Tests/EditMode/       Pruebas automáticas (Window → General → Test Runner)
+├── _Prototype/               El prototipo entregado para AU (solo referencia; se puede borrar)
+├── Settings/                 URP y configuración de render
+└── TextMesh Pro/
+```
+
+Cada carpeta de `Scripts` es un *assembly* (`.asmdef`): compila por separado y no puede depender de las de "arriba". La dirección es Core ← Gameplay ← UI ← Editor.
+
+## Cómo funciona (vista lateral)
+
+- La **posición** de un personaje son sus pies. El hijo `Visual` se voltea al mirar a la izquierda.
+- El jugador y los enemigos que caminan usan `Rigidbody2D` + `BoxCollider2D` + `CharacterMotor2D` (gravedad propia, salto de altura fija, detección de suelo). Los voladores (virus) y el jefe se mueven por script.
+- Capas de física: **Ground** (piso y plataformas), **Player**, **Enemy**, **PlayerProjectile**. Los personajes solo chocan con el piso: entre ellos se atraviesan, como en Metal Slug (`PhysicsLayers.cs`).
+- Las **plataformas** son de un solo sentido (`PlatformEffector2D`): se atraviesan saltando desde abajo.
+- Caer a un hueco cuesta vida y te regresa al último suelo seguro. Los enemigos que caen se eliminan.
+- El combate **no** usa colisiones de física: disparos, cuchillo y bombas buscan `Hurtbox` (rectángulos) con matemática simple (`HitMath`). Por eso encogerse esquiva disparos altos y salta por encima de la embestida de la lombriz.
+- Apuntado: libre con mouse o stick derecho (`AimMath.Toward`) o en 8 direcciones con teclas (`AimMath.Resolve`). Probado en `Tests/EditMode/Combat2DTests.cs`.
+
+## Cómo agregar contenido
+
+| Quiero... | Pasos |
+|---|---|
+| **Cambiar balance** (daño, velocidad, vida) | Edita el asset en `Data/` (funciona incluso en Play Mode) |
+| **Un enemigo nuevo** | Crea un `EnemyData` (clic derecho → Create → Healing Knight → Enemigo), duplica un prefab de `Prefabs/Enemies`, asígnale el dato y cambia el arte de `Visual` |
+| **Un nivel nuevo** | Duplica una escena de `Scenes/Levels`, crea un `LevelData` con el nombre exacto de la escena, agrégalo a la lista del `SystemData` y a Build Settings |
+| **Una arena** | GameObject con `ArenaZone`: `triggerX`, límites, `floorY` y oleadas (prefab + dato + cantidad). La pantalla se cierra hasta acabar las oleadas |
+| **Plataformas y huecos** | Plataforma: objeto en capa **Ground** con `BoxCollider2D` (*Used By Effector*) + `PlatformEffector2D`. Hueco: deja un espacio entre dos tramos de piso |
+| **Un nivel secreto** | En su `LevelData` marca `hidden` y escribe un `secretId`; coloca un prefab `SecretPassage` con ese mismo id en algún nivel |
+| **Un sistema nuevo** | Crea `SystemData` y sus `LevelData`, y agrégalo al `GameCatalog` |
+| **Tu arte del personaje** | Importa el PSD, arma las piezas dentro de `Visual` del prefab `HealingKnight` y borra las figuras de prueba. Los scripts de la raíz no cambian |
+
+## Reglas del repo
+
+- `main` = estable. Trabaja en ramas `feature/nombre` y únelas con Pull Request.
+- Una persona por escena a la vez.
+- Mueve o renombra archivos **desde Unity** (para que su `.meta` viaje con ellos).
+- Si usas archivos grandes (PSD, WAV), instala Git LFS una vez: `git lfs install`.

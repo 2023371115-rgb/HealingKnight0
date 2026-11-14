@@ -1,0 +1,15 @@
+{
+  "level": "Digestivo_IntestinoGrueso",
+  "bpm": 132,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2565818,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}
