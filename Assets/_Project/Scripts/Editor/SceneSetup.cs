@@ -1378,9 +1378,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildDelgado()
         {
-            // Rediseño (190 de largo): 1) duodeno (bilis y grasa) · 2) yeyuno (vellosidades y rotavirus) ·
+            // Rediseño (205 de largo): 1) duodeno (bilis y grasa) · 2) yeyuno (vellosidades y rotavirus) ·
             // 3) tenia · 4) íleon (río de quimo en balsa) · 5) persecución de la lombriz hasta la válvula ileocecal.
-            BuildLevelBase(190f, new LevelStyle
+            BuildLevelBase(205f, new LevelStyle
             {
                 // Intestino delgado: tejido rosa coral con vellosidades y bilis amarilla verdosa.
                 background = new Color(0.11f, 0.03f, 0.05f),
@@ -1472,8 +1472,9 @@ namespace HealingKnight.EditorTools
 
             // ---------- 5) Persecución de la lombriz ----------
             Peyer(163.5f);
-            WormChaseAt(164f, 168f, 173f, 178f, 183f);
-            IleocecalValve(185f);
+            // Zona de pelea más larga: sale en 4 puntos separados y la pantalla se cierra alrededor de cada uno.
+            WormChaseAt(164f, 170f, 178f, 186f, 194f);
+            IleocecalValve(199f);
         }
 
         private void BuildGrueso()

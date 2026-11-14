@@ -54,8 +54,8 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private float ringGap = 0.55f;
 
         [Header("Pantalla cerrada")]
-        [SerializeField] private float lockBehind = 11f;
-        [SerializeField] private float lockAhead = 3f;
+        [SerializeField] private float lockBehind = 15f;
+        [SerializeField] private float lockAhead = 5f;
         [SerializeField, TextArea] private string fleeMessage = "¡Se mete más adelante! Síguela.";
 
         private enum State { Waiting, Warn, Emerge, Buried, Escaped }
@@ -81,6 +81,8 @@ namespace HealingKnight.Gameplay.Enemies
             health.Hit += OnHit;
             GameplayEvents.PlayerDefeated += OnPlayerDefeated;
         }
+
+        private void OnDestroy() => LevelManager.Unblock(this);
 
         private void OnDisable()
         {
@@ -108,6 +110,8 @@ namespace HealingKnight.Gameplay.Enemies
         {
             floorY = transform.position.y;
             health.HealthFloor01 = healthFloor;
+            // El nivel no se termina hasta que la lombriz huya (aunque llegues a la salida).
+            LevelManager.Block(this);
             if (bodyRoot != null)
             {
                 bodyRoot.SetParent(transform.parent, true);
@@ -301,6 +305,7 @@ namespace HealingKnight.Gameplay.Enemies
             state = State.Escaped;
             Hide();
             WalkableArea.Unlock();
+            LevelManager.Unblock(this);
             GameplayEvents.RaiseBossEnded();
             if (!string.IsNullOrEmpty(escapeMessage)) GameplayEvents.RaiseMessage(escapeMessage);
             Shake(0.2f, 0.5f);

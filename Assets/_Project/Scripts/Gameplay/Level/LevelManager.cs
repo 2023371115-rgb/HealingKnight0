@@ -41,6 +41,17 @@ namespace HealingKnight.Gameplay.Level
         public Rect LevelBounds => levelBounds;
         public float ExitX => exitX;
 
+        /// <summary>
+        /// Cosas que impiden terminar el nivel aunque llegues a la salida (la persecución de la lombriz hasta que huye).
+        /// Se agregan con Block y se quitan con Unblock.
+        /// </summary>
+        public static readonly System.Collections.Generic.HashSet<Object> ExitBlockers = new System.Collections.Generic.HashSet<Object>();
+        public static void Block(Object who) { if (who != null) ExitBlockers.Add(who); }
+        public static void Unblock(Object who) => ExitBlockers.Remove(who);
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetBlockers() => ExitBlockers.Clear();
+
         private void Awake()
         {
             Current = this;
@@ -84,6 +95,7 @@ namespace HealingKnight.Gameplay.Level
         {
             if (completed || player == null || !player.Health.IsAlive) return;
             if (player.Position.x < exitX) return;
+            if (ExitBlockers.Count > 0) return;   // algo del nivel todavía no termina (ej. la lombriz no ha huido)
 
             foreach (ArenaZone a in arenas)
             {
