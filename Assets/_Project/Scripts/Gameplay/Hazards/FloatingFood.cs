@@ -14,11 +14,13 @@ namespace HealingKnight.Gameplay.Hazards
     ///  - Rebota:   la dona es esponjosa: al caer encima te lanza hacia arriba, como trampolín.
     ///  - Rueda:    la salchicha rueda hacia donde caminas (y te lleva), hasta la orilla del lago.
     ///  - Se hunde: la hamburguesa se va digiriendo: si te quedas encima se hunde poco a poco; al bajarte, sube.
+    ///  - Balsa:    (íleon) al subirte avanza sola río abajo hasta la orilla y te lleva, aunque brinques encima.
+    ///              Si te caes, se detiene y te espera; si mueres y reapareces atrás, regresa a su lugar.
     /// El objeto raíz marca la parte de ABAJO de la comida; el colisionador va a 'topHeight'.
     /// </summary>
     public class FloatingFood : MonoBehaviour
     {
-        public enum FoodKind { Normal, Bouncy, Rolling, Sinking }
+        public enum FoodKind { Normal, Bouncy, Rolling, Sinking, Raft }
 
         [SerializeField] private FoodKind kind = FoodKind.Normal;
         [SerializeField] private AcidLake lake;
@@ -44,9 +46,12 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private float sinkSpeed = 0.45f;
         [SerializeField] private float maxSink = 1.1f;
         [SerializeField] private float recoverSpeed = 0.6f;
+        [Header("Balsa (íleon)")]
+        [SerializeField] private float raftSpeed = 3.2f;
 
         private float bottom, velocity, seed, sink, squash, roll;
-        private bool playerWasOnTop;
+        private bool playerWasOnTop, raftStarted;
+        private float raftStartX;
         private Vector3 visualBase, visualScale = Vector3.one;
 
         /// <summary>¿El jugador está parado encima ahora? (lo usa, por ejemplo, el sushi con anisakis)</summary>
@@ -68,6 +73,7 @@ namespace HealingKnight.Gameplay.Hazards
         private void Start()
         {
             bottom = transform.position.y;
+            raftStartX = transform.position.x;
             seed = transform.position.x * 1.7f;
             if (visual != null)
             {
@@ -106,11 +112,30 @@ namespace HealingKnight.Gameplay.Hazards
                 roll -= dx / Mathf.Max(0.2f, height * 0.5f) * Mathf.Rad2Deg;
             }
 
+            // --- La balsa avanza sola mientras vas en ella (parado o brincando encima)
+            bool riding = false;
+            if (kind == FoodKind.Raft && lake != null && player != null && player.Motor != null)
+            {
+                if (PlayerOnTop) raftStarted = true;
+                Vector2 feet = player.Position;
+                riding = PlayerOnTop || (raftStarted && Mathf.Abs(feet.x - p.x) <= width * 0.5f + 0.6f && feet.y > p.y + topHeight - 0.1f);
+                float endX = lake.transform.position.x + lake.Width * 0.5f - width * 0.5f - 0.2f;
+                if (riding && p.x < endX) dx = Mathf.Min(raftSpeed * dt, endX - p.x);
+                // Reapareciste muy atrás: la balsa regresa al inicio del río.
+                if (raftStarted && !riding && player.Health.IsAlive && feet.x < p.x - 8f)
+                {
+                    raftStarted = false;
+                    dx = raftStartX - p.x;
+                }
+            }
+
             transform.position = new Vector3(p.x + dx, bottom, p.z);
 
             // --- Lleva al jugador (sube, baja y rueda con la comida sin rebotar)
             if (PlayerOnTop && (Mathf.Abs(dy) > 0.0001f || Mathf.Abs(dx) > 0.0001f))
                 player.Motor.Body.position += new Vector2(dx, dy);
+            else if (riding && !PlayerOnTop && Mathf.Abs(dx) > 0.0001f && Mathf.Abs(dx) < 1f)
+                player.Motor.Body.position += new Vector2(dx, 0f);   // brincando encima: no te quedas atrás
 
             // --- La dona rebota: al caer encima, te lanza
             if (kind == FoodKind.Bouncy && PlayerOnTop && !playerWasOnTop && player.Motor.Velocity.y <= 0.5f)

@@ -878,12 +878,112 @@ namespace HealingKnight.EditorTools
         // ---------- Elementos del Estómago (rediseño) ----------
 
         /// <summary>Chorro de ácido. 'groundY' = donde nace (piso o fondo del lago). 'offset' desfasa chorros vecinos.</summary>
-        private void Geyser(float x, float groundY, float height = 4.5f, float interval = 3.5f, float offset = 0f)
+        private AcidGeyser Geyser(float x, float groundY, float height = 4.5f, float interval = 3.5f, float offset = 0f)
         {
             var go = new GameObject("ChorroAcido");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, groundY, 0f);
-            go.AddComponent<AcidGeyser>().Configure(height, interval, offset);
+            var geyser = go.AddComponent<AcidGeyser>();
+            geyser.Configure(height, interval, offset);
+            return geyser;
+        }
+
+        // ---------- Elementos del Intestino delgado (rediseño) ----------
+
+        /// <summary>Chorro de bilis (sale por la ampolla de Vater): el mismo chorro del estómago, pero amarillo.</summary>
+        private AcidGeyser BileGeyser(float x, float groundY, float height = 4.5f, float interval = 3.2f, float offset = 0f)
+        {
+            AcidGeyser g = Geyser(x, groundY, height, interval, offset);
+            g.gameObject.name = "ChorroBilis";
+            g.SetColors(new Color(0.92f, 0.8f, 0.2f, 0.92f), new Color(0.3f, 0.22f, 0.04f, 1f), new Color(1f, 0.96f, 0.62f, 1f));
+            return g;
+        }
+
+        /// <summary>Gota de grasa flotando (plataforma). 'topY' = donde se pisa. Si hay un chorro de bilis abajo, la rompe.</summary>
+        private void FatDrop(float x, float topY, float width = 1.8f, AcidGeyser geyser = null)
+        {
+            var go = new GameObject("GotaGrasa");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, topY, 0f);
+            go.AddComponent<FatDroplet>().Configure(width, geyser);
+        }
+
+        /// <summary>Vellosidad que se mece (plataforma en la punta). 'baseY' = piso o fondo del lago. El rotavirus la aplana.</summary>
+        private void Villus(float x, float baseY, float height)
+        {
+            var go = new GameObject("Vellosidad");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, baseY, 0f);
+            go.AddComponent<SwayingVillus>().Configure(height, x * 0.77f, data.Rotavirus);
+        }
+
+        /// <summary>
+        /// Emboscada. Con 'hidden' se ve una Giardia agarrada (en 'y') que se te avienta cuando pasas cerca;
+        /// sin él, los enemigos aparecen 'ahead' unidades adelante del jugador (a la altura 'y').
+        /// </summary>
+        private void Ambush(float x, float y, EnemyHealth prefab, EnemyData enemyData, int count, float range, float ahead,
+            Vector2 velocity, bool hidden, string message = null)
+        {
+            var go = new GameObject("Emboscada_" + (enemyData != null ? enemyData.displayName : "?"));
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            Transform figure = null;
+            if (hidden && enemyData != null)
+            {
+                GameObject f = SetupUtils.Child(go.transform, "Escondida", Vector3.zero);
+                SetupUtils.SpriteChild(f.transform, "Contorno", PlaceholderArt.Circle, new Color(0.3f, 0.22f, 0.05f), Vector3.zero, new Vector2(0.78f, 0.9f), 3);
+                SetupUtils.SpriteChild(f.transform, "Cuerpo", PlaceholderArt.Circle, enemyData.tint, Vector3.zero, new Vector2(0.68f, 0.8f), 4);
+                SetupUtils.SpriteChild(f.transform, "Ojo", PlaceholderArt.Circle, Color.black, new Vector3(-0.12f, 0.12f, 0f), new Vector2(0.1f, 0.1f), 5);
+                SetupUtils.SpriteChild(f.transform, "Ojo", PlaceholderArt.Circle, Color.black, new Vector3(0.12f, 0.12f, 0f), new Vector2(0.1f, 0.1f), 5);
+                figure = f.transform;
+            }
+            go.AddComponent<AmbushSpawner>().Configure(prefab, enemyData, count, range, ahead, velocity, figure, message);
+        }
+
+        /// <summary>Suero oral: cura (sobre azul con gota).</summary>
+        private void OralSerum(float x, float y, float heal = 35f)
+        {
+            var go = new GameObject("SueroOral");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.08f, 0.15f, 0.3f), Vector3.zero, new Vector2(0.72f, 0.92f), 20);
+            SetupUtils.SpriteChild(art.transform, "Sobre", PlaceholderArt.SquareCentered, new Color(0.45f, 0.75f, 1f), Vector3.zero, new Vector2(0.62f, 0.82f), 21);
+            SetupUtils.SpriteChild(art.transform, "Gota", PlaceholderArt.Circle, Color.white, new Vector3(0f, -0.05f, 0f), new Vector2(0.3f, 0.36f), 22);
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.5f, 0.85f, 1f, 0.25f), Vector3.zero, new Vector2(1.5f, 1.5f), 19);
+            go.AddComponent<HealPickup>().Configure(art.transform, heal);
+        }
+
+        /// <summary>Placa de Peyer: punto de guardado (y cura un poco).</summary>
+        private void Peyer(float x)
+        {
+            var go = new GameObject("PlacaDePeyer");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, FloorY, 0f);
+            go.AddComponent<PeyerPatch>();
+        }
+
+        /// <summary>Persecución de la lombriz: empieza al pasar 'startX'; sale en cada punto; el último es la válvula ileocecal.</summary>
+        private void WormChaseAt(float startX, params float[] points)
+        {
+            var worm = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.LombrizHuye.gameObject);
+            worm.transform.SetParent(environment, true);
+            worm.transform.position = new Vector3(points.Length > 0 ? points[0] : startX, FloorY, 0f);
+            var chase = worm.GetComponent<WormChase>();
+            chase.Configure(startX, points);
+            // Es una instancia de prefab: hay que registrar el cambio para que se guarde con la escena.
+            PrefabUtility.RecordPrefabInstancePropertyModifications(chase);
+        }
+
+        /// <summary>Válvula ileocecal (la puerta al intestino grueso): solo de adorno, al final del nivel.</summary>
+        private void IleocecalValve(float x)
+        {
+            var go = new GameObject("ValvulaIleocecal");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, FloorY, 0f);
+            SetupUtils.SpriteChild(go.transform, "Contorno", PlaceholderArt.Circle, new Color(0.3f, 0.07f, 0.1f), new Vector3(0f, 2.3f, 0f), new Vector2(3.4f, 4.6f), -20);
+            SetupUtils.SpriteChild(go.transform, "Labios", PlaceholderArt.Circle, new Color(0.95f, 0.55f, 0.5f), new Vector3(0f, 2.3f, 0f), new Vector2(3.2f, 4.4f), -19);
+            SetupUtils.SpriteChild(go.transform, "Paso", PlaceholderArt.Circle, new Color(0.55f, 0.32f, 0.38f), new Vector3(0f, 2.3f, 0f), new Vector2(1.4f, 2.8f), -18);
         }
 
         /// <summary>Burbujas de gas que suben desde el ácido y te llevan hacia arriba.</summary>
@@ -1179,7 +1279,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildDelgado()
         {
-            BuildLevelBase(95f, new LevelStyle
+            // Rediseño (190 de largo): 1) duodeno (bilis y grasa) · 2) yeyuno (vellosidades y rotavirus) ·
+            // 3) tenia · 4) íleon (río de quimo en balsa) · 5) persecución de la lombriz hasta la válvula ileocecal.
+            BuildLevelBase(190f, new LevelStyle
             {
                 // Intestino delgado: tejido rosa coral con vellosidades y bilis amarilla verdosa.
                 background = new Color(0.11f, 0.03f, 0.05f),
@@ -1198,26 +1300,79 @@ namespace HealingKnight.EditorTools
                 detail = new Color(0.2f, 0.6f, 0.65f, 0.55f),
                 pitLiquid = new Color(0.8f, 0.95f, 0.2f, 1f),
                 drip = new Color(0.8f, 0.95f, 0.25f, 0.85f),
-                glow = new Color(0.75f, 1f, 0.3f, 1f)
-            }, "NODO: Intestino delgado. Aquí viven los parásitos: usa la cápsula Antiparasitario.",
-                new Vector2(28f, 2.5f), new Vector2(55f, 3f));
+                glow = new Color(0.75f, 1f, 0.3f, 1f),
+                // Lagos de bilis hundidos (x = inicio, ancho).
+                basins = new[]
+                {
+                    new Vector2(28f, 19f),    // 1) duodeno: gotas de grasa y chorros de bilis
+                    new Vector2(52f, 17f),    // 2) yeyuno: bosque de vellosidades sobre la bilis
+                    new Vector2(128f, 34f)    // 4) íleon: el río de quimo (balsa)
+                }
+            }, "NODO: Intestino delgado. Aquí se absorbe la comida... y viven los parásitos. Usa la cápsula Antiparasitario.");
 
+            const float bottom = FloorY - BasinDepth;   // fondo de los lagos de bilis
+
+            // ---------- 1) Duodeno ----------
             Platform(3f, 2.2f, 3f);
-
             Arena("Arena_1_Giardia", 10f, 18f, "Giardia: salta y se te pega (te frena y te daña). Dispárale para despegarla. Antiparasitario (el antibiótico también sirve).",
                 W(0.6f, E(prefabs.Giardia, data.Giardia, 2)),
                 W(1.0f, E(prefabs.Giardia, data.Giardia, 2, SpawnSide.Both)));
-            Platform(18f, 2.4f, 3.5f);
 
-            Arena("Arena_2_Rotavirus", 36f, 18f, "Rotavirus (rota = rueda): rueda voladora. Cuando gira más rápido y se echa para atrás, se va a lanzar: muévete o usa el escudo (rebota). Antiviral.",
+            SetMessage("NODO: Duodeno. La bilis rompe la grasa en gotitas (la emulsiona). Cruza las gotas ANTES de que llegue el chorro.", 26f);
+            AcidGeyser g1 = BileGeyser(32.8f, bottom, 4.5f, 3.2f, 0f);
+            AcidGeyser g2 = BileGeyser(38.4f, bottom, 4.5f, 3.2f, 1.1f);
+            AcidGeyser g3 = BileGeyser(44f, bottom, 4.5f, 3.2f, 2.2f);
+            FatDrop(30f, 1.4f);
+            FatDrop(32.8f, 1.9f, 1.8f, g1);
+            FatDrop(35.6f, 1.5f);
+            FatDrop(38.4f, 2f, 1.8f, g2);
+            FatDrop(41.2f, 1.6f);
+            FatDrop(44f, 1.9f, 1.8f, g3);
+
+            // ---------- 2) Yeyuno: vellosidades ----------
+            SetMessage("NODO: Yeyuno. Las vellosidades absorben la comida. Brinca de punta en punta... y cuidado con las Giardias pegadas.", 50f);
+            Villus(54f, bottom, 3f);
+            Villus(57.2f, bottom, 3.8f);
+            Villus(60.4f, bottom, 3.2f);
+            Villus(63.6f, bottom, 4f);
+            Villus(66.8f, bottom, 3.4f);
+            Ambush(60.4f, bottom + 3.2f + 0.45f, prefabs.Giardia, data.Giardia, 1, 2.4f, 0f, new Vector2(-3f, 6f), true);
+            Ambush(66.8f, bottom + 3.4f + 0.45f, prefabs.Giardia, data.Giardia, 1, 2.4f, 0f, new Vector2(-3f, 6f), true);
+
+            Villus(75.5f, FloorY, 2.6f);
+            Villus(79.5f, FloorY, 3.4f);
+            Villus(83.5f, FloorY, 2.8f);
+            Villus(87.5f, FloorY, 3.6f);
+            Villus(91f, FloorY, 2.6f);
+            Arena("Arena_2_Rotavirus", 74f, 22f, "Rotavirus (rota = rueda): APLANA las vellosidades (por eso da diarrea). Mátalo rápido o te quedas sin plataformas. Antiviral.",
                 W(0.6f, E(prefabs.Rotavirus, data.Rotavirus, 2)),
-                W(1.0f, E(prefabs.Rotavirus, data.Rotavirus, 1), E(prefabs.Giardia, data.Giardia, 2, SpawnSide.Left)));
-            Platform(40f, 2.2f, 3f);
-            Platform(47f, 3.4f, 3f);
+                W(1.0f, E(prefabs.Rotavirus, data.Rotavirus, 1), E(prefabs.Giardia, data.Giardia, 2, SpawnSide.Left)),
+                W(1.0f, E(prefabs.Rotavirus, data.Rotavirus, 2, SpawnSide.Both)));
 
-            // La lombriz aparece, pelea un rato y huye al intestino grueso. Arena sin plataformas.
-            Arena("Arena_3_Lombriz", 64f, 22f, null,
-                W(1.0f, E(prefabs.LombrizDelgado, data.Lombriz, 1)));
+            Peyer(97f);
+            OralSerum(99.5f, 1.3f);
+
+            // ---------- 3) Tenia ----------
+            Platform(109.5f, 2.4f, 2.6f);
+            Platform(115f, 3.6f, 2.6f);
+            Arena("Arena_3_Tenia", 106f, 20f, null,
+                W(1.2f, E(prefabs.Tenia, data.Tenia, 1)));
+
+            // ---------- 4) Íleon: el río de quimo ----------
+            Peyer(124.5f);
+            SetMessage("NODO: Íleon. Súbete a la salchicha: el quimo te lleva río abajo. Brinca los chorros de bilis.", 126f);
+            Food("Salchicha", 130f, 0.79f, FloatingFood.FoodKind.Raft);
+            BileGeyser(138f, bottom, 3.2f, 3.6f, 0f);
+            BileGeyser(146.5f, bottom, 3.2f, 3.6f, 1.2f);
+            BileGeyser(155f, bottom, 3.2f, 3.6f, 2.4f);
+            Ambush(134f, 4.2f, prefabs.Rotavirus, data.Rotavirus, 2, 0.5f, 9f, Vector2.zero, false);
+            Ambush(142f, 4.6f, prefabs.Rotavirus, data.Rotavirus, 1, 0.5f, 9f, Vector2.zero, false);
+            Ambush(150f, 4.2f, prefabs.Rotavirus, data.Rotavirus, 2, 0.5f, 9f, Vector2.zero, false);
+
+            // ---------- 5) Persecución de la lombriz ----------
+            Peyer(163.5f);
+            WormChaseAt(164f, 168f, 173f, 178f, 183f);
+            IleocecalValve(185f);
         }
 
         private void BuildGrueso()

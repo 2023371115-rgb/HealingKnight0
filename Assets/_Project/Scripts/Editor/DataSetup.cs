@@ -16,6 +16,7 @@ namespace HealingKnight.EditorTools
         public EffectivenessTable Table;
         public PlayerConfig PlayerConfig;
         public EnemyData HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
+        public EnemyData Tenia, TeniaSegmento, Proglotido, LombrizHuye;
         public EnemyData HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans, Lombriz;
         public EnemyData Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
         public EnemyData Mucosidad, Inflamacion, Colmena;
@@ -239,6 +240,50 @@ namespace HealingKnight.EditorTools
                 e.meleeDamageTakenMultiplier = 0.6f;
                 e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
                 e.tint = new Color(0.78f, 0.55f, 0.32f);
+            });
+
+            // Intestino delgado (rediseño): tenia (minijefe), sus pedazos y la lombriz que huye.
+            Tenia = Enemy("Jefe_Tenia", e =>
+            {
+                e.displayName = "Tenia (solitaria)";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "Gusano plano que puede medir varios metros. Se agarra a la pared del intestino con la cabeza (escólex), " +
+                    "que tiene ganchos y ventosas. Se contagia al comer carne de cerdo o res mal cocida. Se trata con antiparasitario.";
+                e.maxHealth = 260f;
+                e.meleeDamageTakenMultiplier = 0.7f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 5;
+                e.tint = new Color(0.98f, 0.93f, 0.8f);
+            });
+            TeniaSegmento = Enemy("Parasito_Tenia_Segmento", e =>
+            {
+                e.displayName = "Proglótido (cuerpo de la tenia)";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "El cuerpo de la tenia está hecho de pedacitos llamados proglótidos. Cada uno puede vivir solo.";
+                e.maxHealth = 22f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f;
+                e.tint = new Color(0.97f, 0.9f, 0.76f);
+            });
+            Proglotido = Enemy("Parasito_Proglotido", e =>
+            {
+                e.displayName = "Proglótido";
+                e.threat = ThreatType.Parasito;
+                e.behavior = EnemyBehavior.Walker;
+                e.biologia = "Pedazo del final de la tenia, lleno de huevos. Se suelta y sale con las heces: así se contagia.";
+                e.maxHealth = 16f; e.moveSpeed = 1.7f;
+                e.attackDistance = 0.9f; e.attackWindup = 0.45f; e.attackDamage = 6f;
+                e.tint = new Color(0.97f, 0.9f, 0.76f);
+                e.visualScale = 0.9f;
+            });
+            LombrizHuye = Enemy("Jefe_Lombriz_Huye", e =>
+            {
+                e.displayName = "Lombriz";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "Ascaris lumbricoides: lombriz redonda que puede medir 30 cm. Vive en el intestino delgado y se mueve " +
+                    "por él. Huevos en tierra o comida sucia: por eso hay que lavarse las manos y lavar la verdura.";
+                e.maxHealth = 160f;
+                e.meleeDamageTakenMultiplier = 0.6f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 4;
+                e.tint = new Color(0.95f, 0.62f, 0.6f);
             });
 
             Giardia = Enemy("Parasito_Giardia", e =>
@@ -658,7 +703,7 @@ namespace HealingKnight.EditorTools
             DigestivoEstomago = Level("Digestivo", "01_Estomago", "digestivo_estomago", "Estómago", "Digestivo_Estomago", false,
                 "Aprende a pelear y cruza el ácido gástrico eliminando a H. pylori.");
             DigestivoDelgado = Level("Digestivo", "02_IntestinoDelgado", "digestivo_delgado", "Intestino delgado", "Digestivo_IntestinoDelgado", false,
-                "Elimina Giardia y rotavirus. La lombriz aparece... y huye.");
+                "Bilis, vellosidades, la tenia y un río de quimo. Persigue a la lombriz hasta la válvula ileocecal.");
             DigestivoGrueso = Level("Digestivo", "03_IntestinoGrueso", "digestivo_grueso", "Intestino grueso", "Digestivo_IntestinoGrueso", true,
                 "Amebas, C. difficile y oxiuros. Acaba con la lombriz.");
             DigestivoBoca = Level("Digestivo", "99_Boca_Secreto", "digestivo_boca", "Boca", "Digestivo_Boca", false,

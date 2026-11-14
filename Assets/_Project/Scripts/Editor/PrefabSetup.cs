@@ -22,6 +22,7 @@ namespace HealingKnight.EditorTools
         public MedicineBomb Bomb;
         public PlayerController Player;
         public EnemyHealth HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
+        public EnemyHealth Tenia, Proglotido, LombrizHuye;
         public EnemyHealth HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans;
         public EnemyHealth LombrizDelgado, LombrizGrueso;
         public EnemyHealth Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
@@ -73,6 +74,11 @@ namespace HealingKnight.EditorTools
             });
             Anisakis = Enemy("Parasito_Anisakis", data.Anisakis, EnemyShape.Long);
             Bezoar = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Bezoar_Estomago.prefab", BuildBezoar);
+
+            // Intestino delgado (rediseño): proglótido suelto, la tenia y la lombriz que huye.
+            Proglotido = Enemy("Parasito_Proglotido", data.Proglotido, EnemyShape.Long);
+            Tenia = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Tenia_Delgado.prefab", BuildTenia);
+            LombrizHuye = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_Persecucion.prefab", BuildWormChase);
 
             LombrizDelgado = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_IntestinoDelgado.prefab",
                 () => BuildLombriz("Lombriz_IntestinoDelgado", 0.5f, null, null,
@@ -852,6 +858,123 @@ namespace HealingKnight.EditorTools
                 if (sp != null) chunkArt.Add(sp);
             }
             SetupUtils.SetRefArray(boss, "chunkSprites", chunkArt.ToArray());
+            return root;
+        }
+
+        /// <summary>
+        /// Minijefe Tenia (placeholder de figuras): la raíz es la CABEZA (escólex con ganchos y ventosas);
+        /// los pedazos del cuerpo son hijos con su propia vida (al cortarlos se vuelven proglótidos que caminan).
+        /// </summary>
+        private GameObject BuildTenia()
+        {
+            EnemyData d = data.Tenia;
+            Color outline = new Color(0.3f, 0.2f, 0.08f);
+            var root = new GameObject("Tenia_Delgado");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            GameObject head = SetupUtils.Child(root.transform, "Cabeza", Vector3.zero);
+            Transform h = head.transform;
+            var headParts = new System.Collections.Generic.List<Object>();
+            headParts.Add(SetupUtils.SpriteChild(h, "Contorno", PlaceholderArt.Circle, outline, Vector3.zero, new Vector2(1.36f, 1.3f), 10));
+            headParts.Add(SetupUtils.SpriteChild(h, "Escolex", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(1.24f, 1.18f), 11));
+            // Corona de ganchos arriba.
+            for (int i = 0; i < 7; i++)
+            {
+                float a = (150f - i * 20f) * Mathf.Deg2Rad;
+                SpriteRenderer hook = SetupUtils.SpriteChild(h, "Gancho" + i, PlaceholderArt.Capsule, outline,
+                    new Vector3(Mathf.Cos(a) * 0.62f, Mathf.Sin(a) * 0.6f, 0f), new Vector2(0.34f, 0.2f), 9);
+                hook.transform.localRotation = Quaternion.Euler(0f, 0f, a * Mathf.Rad2Deg);
+            }
+            // Cuatro ventosas.
+            Vector2[] suckers = { new Vector2(-0.38f, 0.05f), new Vector2(0.38f, 0.05f), new Vector2(-0.22f, -0.35f), new Vector2(0.22f, -0.35f) };
+            foreach (Vector2 sp in suckers)
+            {
+                SetupUtils.SpriteChild(h, "Ventosa", PlaceholderArt.Circle, outline, new Vector3(sp.x, sp.y, 0f), new Vector2(0.32f, 0.32f), 12);
+                SetupUtils.SpriteChild(h, "VentosaCentro", PlaceholderArt.Circle, new Color(0.75f, 0.45f, 0.4f), new Vector3(sp.x, sp.y, 0f), new Vector2(0.18f, 0.18f), 13);
+            }
+            // Ojos enojados (caricatura, para que se lea como enemigo).
+            for (int side = -1; side <= 1; side += 2)
+            {
+                SetupUtils.SpriteChild(h, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(side * 0.2f, 0.32f, 0f), new Vector2(0.24f, 0.2f), 13);
+                SetupUtils.SpriteChild(h, "Pupila", PlaceholderArt.Circle, outline, new Vector3(side * 0.18f, 0.3f, 0f), new Vector2(0.1f, 0.1f), 14);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", headParts.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(1.2f, 1.2f));
+
+            // Cuerpo: pedazos cada vez más anchos hacia la cola (así son los proglótidos).
+            const int count = 9;
+            var segments = new System.Collections.Generic.List<Object>();
+            for (int i = 0; i < count; i++)
+            {
+                GameObject seg = SetupUtils.Child(root.transform, "Proglotido" + i, new Vector3(0f, -0.7f * (i + 1), 0f));
+                seg.layer = PhysicsLayers.Enemy;
+                float w = Mathf.Lerp(0.55f, 1f, i / (float)(count - 1));
+                var parts = new System.Collections.Generic.List<Object>();
+                parts.Add(SetupUtils.SpriteChild(seg.transform, "Contorno", PlaceholderArt.Capsule, outline, Vector3.zero, new Vector2(w + 0.1f, 1.28f), 1));
+                parts.Add(SetupUtils.SpriteChild(seg.transform, "Pedazo", PlaceholderArt.Capsule, data.TeniaSegmento.tint, Vector3.zero, new Vector2(w, 1.08f), 2));
+                SetupUtils.SpriteChild(seg.transform, "Raya", PlaceholderArt.SquareCentered, new Color(0.85f, 0.72f, 0.55f), new Vector3(0f, 0.22f, 0f), new Vector2(w * 0.8f, 0.05f), 3);
+                if (i >= count - 3) // los últimos van llenos de huevos
+                    for (int k = 0; k < 3; k++)
+                        SetupUtils.SpriteChild(seg.transform, "Huevo", PlaceholderArt.Circle, new Color(0.75f, 0.62f, 0.4f),
+                            new Vector3((k - 1) * w * 0.25f, -0.03f, 0f), new Vector2(0.12f, 0.12f), 3);
+                var segHealth = seg.AddComponent<EnemyHealth>();
+                SetupUtils.SetRef(segHealth, "data", data.TeniaSegmento);
+                SetupUtils.SetRef(segHealth, "effectivenessTable", data.Table);
+                SetupUtils.SetRefArray(segHealth, "flashRenderers", parts.ToArray());
+                SetHurtbox(seg.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(w * 0.9f, 0.6f));
+                segments.Add(segHealth);
+            }
+
+            var boss = root.AddComponent<TeniaBoss>();
+            SetupUtils.SetRef(boss, "head", h);
+            SetupUtils.SetRefArray(boss, "segments", segments.ToArray());
+            SetupUtils.SetRef(boss, "walkerPrefab", Proglotido);
+            SetupUtils.SetRef(boss, "walkerData", data.Proglotido);
+            return root;
+        }
+
+        /// <summary>La lombriz de la persecución (íleon): cabeza con vida + cuerpo y montículo que se sueltan al empezar.</summary>
+        private GameObject BuildWormChase()
+        {
+            EnemyData d = data.LombrizHuye;
+            var root = new GameObject("Lombriz_Persecucion");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 5;
+
+            var head = new System.Collections.Generic.List<Object>();
+            head.Add(SetupUtils.SpriteChild(root.transform, "Contorno", PlaceholderArt.Circle, new Color(0.3f, 0.07f, 0.1f), Vector3.zero, new Vector2(1.5f, 1.38f), 1));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Cabeza", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(1.38f, 1.26f), 2));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Boca", PlaceholderArt.Circle, new Color(0.35f, 0.08f, 0.12f), new Vector3(0.5f, -0.08f, 0f), new Vector2(0.42f, 0.52f), 3));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(0.18f, 0.33f, 0f), new Vector2(0.32f, 0.3f), 3));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Pupila", PlaceholderArt.Circle, Color.black, new Vector3(0.24f, 0.31f, 0f), new Vector2(0.14f, 0.14f), 4));
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", head.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(1.3f, 1.2f));
+
+            GameObject body = SetupUtils.Child(root.transform, "Cuerpo", Vector3.zero);
+            for (int i = 0; i < 11; i++)
+            {
+                GameObject seg = SetupUtils.Child(body.transform, "Anillo" + i, Vector3.zero);
+                float size = Mathf.Lerp(1.2f, 0.7f, i / 10f);
+                SpriteRenderer sr = SetupUtils.SpriteChild(seg.transform, "Anillo", PlaceholderArt.Circle,
+                    Color.Lerp(d.tint, new Color(0.8f, 0.4f, 0.42f), (i % 2) * 0.35f), Vector3.zero, new Vector2(size, size), 3);
+                sr.sortingOrder = 3;
+            }
+            SpriteRenderer mound = SetupUtils.SpriteChild(root.transform, "Monticulo", PlaceholderArt.CircleBottom, new Color(0.62f, 0.3f, 0.36f, 0.95f),
+                Vector3.zero, new Vector2(2f, 0.55f), 30);
+
+            var chase = root.AddComponent<WormChase>();
+            SetupUtils.SetRef(chase, "bodyRoot", body.transform);
+            SetupUtils.SetRef(chase, "mound", mound);
+            SetupUtils.SetRefArray(chase, "headRenderers", head.ToArray());
             return root;
         }
 

@@ -10,6 +10,7 @@ namespace HealingKnight.Gameplay.Hazards
     /// Cada cierto tiempo burbujea como AVISO y luego dispara una columna de ácido hacia arriba que quema.
     /// Con omeprazol (AcidLake.Neutralize) no dispara.
     /// El objeto se pone donde nace el chorro (el fondo del lago o el piso); se dibuja solo por código.
+    /// Con SetColors sirve también para la bilis del intestino delgado (sale por la ampolla de Vater).
     /// </summary>
     public class AcidGeyser : MonoBehaviour
     {
@@ -34,6 +35,20 @@ namespace HealingKnight.Gameplay.Hazards
         private bool hitThisErupt;
         private SpriteRenderer column, columnOutline, cap, capOutline;
         private SpriteRenderer[] bubbles;
+
+        /// <summary>¿Está disparando ahora? (las gotas de grasa del intestino se rompen con el chorro de bilis)</summary>
+        public bool IsErupting => phase == Phase.Erupt;
+        /// <summary>Altura (Y del mundo) a la que llega la punta del chorro en este momento.</summary>
+        public float TopY => transform.position.y + current;
+        public float Width => width;
+
+        /// <summary>Colores del chorro (por ejemplo, bilis amarilla en el intestino delgado).</summary>
+        public void SetColors(Color columnColor, Color outlineColor, Color foamColor)
+        {
+            body = columnColor;
+            outline = outlineColor;
+            foam = foamColor;
+        }
 
         public void Configure(float columnHeight, float period, float startOffset)
         {

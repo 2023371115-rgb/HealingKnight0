@@ -93,6 +93,9 @@ namespace HealingKnight.Gameplay.Level
             StartCoroutine(CompleteLevel());
         }
 
+        /// <summary>Punto de reaparición nuevo (por ejemplo, la placa de Peyer). Solo avanza, nunca regresa.</summary>
+        public void SetCheckpoint(float x) => checkpointX = Mathf.Max(checkpointX, x);
+
         private void OnArenaCleared(ArenaZone arena)
         {
             checkpointX = Mathf.Max(checkpointX, arena.rightBound - 2f);

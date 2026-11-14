@@ -53,6 +53,14 @@ namespace HealingKnight.Gameplay.Player
             HealthChanged?.Invoke(current, Max);
         }
 
+        /// <summary>Recupera vida (por ejemplo, el suero oral). No pasa de la máxima.</summary>
+        public void Heal(float amount)
+        {
+            if (!IsAlive || amount <= 0f) return;
+            current = Mathf.Min(Max, current + amount);
+            HealthChanged?.Invoke(current, Max);
+        }
+
         public HitResult ApplyDamage(DamageInfo info)
         {
             if (!IsAlive || info.sourceTeam == Team.Player || Time.time < invulnerableUntil)

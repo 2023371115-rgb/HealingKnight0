@@ -148,6 +148,28 @@ En la escena puedes ajustar a mano cada lago: colores, ancho de columna de la ol
 daño y los tiempos de la marea (seco, aviso, subida, espera, bajada). Sirve igual para la bilis del intestino
 cambiando los colores.
 
+## Intestino delgado (rediseño)
+
+190 de largo, en las tres partes reales del intestino delgado:
+1. **Duodeno:** arena de Giardia y un lago de bilis con **gotas de grasa** (`Hazards/FatDroplet.cs`) que sirven de plataforma.
+   Los **chorros de bilis** (el mismo `AcidGeyser` del estómago con `SetColors`) las rompen en gotitas, como la bilis de verdad
+   (emulsiona la grasa); a los 2.8 s se vuelven a juntar.
+2. **Yeyuno:** **vellosidades** que se mecen (`Hazards/SwayingVillus.cs`; te paras en la punta y te lleva) sobre la bilis,
+   con **Giardias escondidas** que se te avientan (`Level/AmbushSpawner.cs`). En la arena del rotavirus, el **rotavirus
+   aplana las vellosidades** que tiene cerca (se recuperan despacio cuando ya no hay). Luego una **placa de Peyer**
+   (`Level/PeyerPatch.cs`: punto de guardado y cura un poco) y **suero oral** (`Level/HealPickup.cs`: cura 35).
+3. **Tenia (minijefe, Arena 3):** `Enemies/TeniaBoss.cs`. La cabeza cuelga arriba a la derecha; el cuerpo son 9 pedazos con
+   su propia vida: si cortas uno se vuelve un **proglótido** que camina (máximo 4). Ataques: latigazo (brinca), mordida
+   y cada 11 s suelta el último pedazo. Conviene pegarle a la cabeza.
+4. **Íleon, río de quimo:** te subes a la salchicha (`FloatingFood`, tipo `Raft`) y avanza sola río abajo, aunque brinques
+   encima; si te caes, se detiene. Hay chorros de bilis que brincar y rotavirus que llegan volando (emboscadas).
+5. **Persecución de la lombriz:** `Enemies/WormChase.cs`. Escarba bajo el piso y sale en arco adelante de ti
+   (antes tiembla el montículo). Solo puedes pegarle cuando está afuera. No muere aquí: se escapa por la
+   **válvula ileocecal** al intestino grueso.
+
+En `SceneSetup`: `BileGeyser`, `FatDrop`, `Villus`, `Ambush`, `OralSerum`, `Peyer`, `WormChaseAt` e `IleocecalValve`.
+Todo se dibuja con figuras por ahora; cuando haya sprites se conectan igual que los del estómago.
+
 ## Fondos de nivel (imagen)
 
 El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pintura estilo caricatura, 1672×941).
