@@ -22,12 +22,15 @@ namespace HealingKnight.Gameplay.Enemies
     {
         public static readonly List<FriendlyBacteria> All = new List<FriendlyBacteria>();
         private static float rallyUntil;
+        private static int lastVariant = -1;
         private static bool warned;
 
         [SerializeField] private MedicationData killer;          // el antibiótico
         [SerializeField] private EnemyHealth replacementPrefab;   // C. difficile
         [SerializeField] private EnemyData replacementData;
-        [SerializeField] private float wander = 2.5f;
+        [SerializeField] private float wander = 1.1f;
+        [Tooltip("Distancia mínima entre bacterias buenas (se separan si se juntan).")]
+        [SerializeField] private float personalSpace = 1.6f;
         [SerializeField] private float speed = 0.8f;
         [SerializeField] private float rallySpeed = 3.6f;
         [SerializeField] private float rallyRange = 8f;
@@ -54,6 +57,7 @@ namespace HealingKnight.Gameplay.Enemies
             All.Clear();
             rallyUntil = 0f;
             warned = false;
+            lastVariant = -1;
         }
 
         public void Configure(MedicationData antibiotic, EnemyHealth cdiffPrefab, EnemyData cdiffData)
@@ -84,9 +88,12 @@ namespace HealingKnight.Gameplay.Enemies
             home = transform.position;
             seed = home.x * 1.37f;
             dir = Mathf.Sin(seed) >= 0f ? 1f : -1f;
+            // Diseño al azar en cada partida, sin repetir el de la anterior (así las vecinas no salen iguales).
             if (body != null && variants != null && variants.Length > 1)
             {
-                int i = Mathf.Abs(Mathf.RoundToInt(home.x * 7.3f)) % variants.Length;
+                int i = Random.Range(0, variants.Length);
+                if (i == lastVariant) i = (i + 1 + Random.Range(0, variants.Length - 1)) % variants.Length;
+                lastVariant = i;
                 if (variants[i] != null) body.sprite = variants[i];
             }
         }
@@ -137,6 +144,18 @@ namespace HealingKnight.Gameplay.Enemies
                 else if (p.x > home.x + wander) dir = -1f;
                 else if (p.x < home.x - wander) dir = 1f;
                 vx = dir * speed;
+            }
+            // No se amontonan: si otra bacteria buena está muy cerca, se hace a un lado.
+            foreach (FriendlyBacteria other in All)
+            {
+                if (other == this || other == null) continue;
+                float d = p.x - other.transform.position.x;
+                if (Mathf.Abs(d) < personalSpace && Mathf.Abs(other.transform.position.y - p.y) < 1f)
+                {
+                    float push = (d >= 0f ? 1f : -1f) * (personalSpace - Mathf.Abs(d)) * 2f;
+                    vx += push;
+                    if (target == null) dir = Mathf.Sign(push);
+                }
             }
             float nx = Mathf.Clamp(p.x + vx * dt, WalkableArea.MinX + 0.5f, WalkableArea.MaxX - 0.5f);
             transform.position = new Vector3(nx, home.y, 0f);

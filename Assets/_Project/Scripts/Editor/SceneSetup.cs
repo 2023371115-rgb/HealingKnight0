@@ -1471,7 +1471,7 @@ namespace HealingKnight.EditorTools
             // ---------- 3) Colon transverso (arriba): la microbiota ----------
             SolidBlock(57f, 122f, top);
             SetMessage("NODO: Microbiota. Las bacterias verdes son BUENAS: no les dispares antibiótico o crecerá C. difficile.", 58f);
-            foreach (float fx in new[] { 61f, 63.5f, 66f, 68.5f, 71f, 73.5f }) FloraAt(fx, top);
+            foreach (float fx in new[] { 60.5f, 64f, 67.5f, 71f, 74.5f }) FloraAt(fx, top);
             Probiotic(66f, top + 1.6f);
             ArenaZone cdiff = Arena("Arena_2_CDifficile", 80f, 22f, "C. difficile: herida se vuelve espora y todo le rebota. Solo el antibiótico... ¡y cuidado con la flora buena!",
                 W(0.6f, E(prefabs.CDifficile, data.CDifficile, 2), E(prefabs.Oxiuro, data.Oxiuro, 1, SpawnSide.Left)),
@@ -1481,7 +1481,7 @@ namespace HealingKnight.EditorTools
             foreach (float fx in new[] { 83f, 88.5f, 94f }) FloraAt(fx, top);
             Platform(86f, top + 2.6f, 3f);
             Platform(93f, top + 2.6f, 3f);
-            foreach (float fx in new[] { 104f, 107f, 110f, 113f }) FloraAt(fx, top);
+            foreach (float fx in new[] { 103.5f, 107.5f, 111.5f }) FloraAt(fx, top);
             Probiotic(108.5f, top + 1.6f);
             Ambush(110f, top + 3f, prefabs.CDifficile, data.CDifficile, 2, 0.5f, 7f, new Vector2(0f, 2f), false);
             Ambush(116f, top + 3f, prefabs.Oxiuro, data.Oxiuro, 3, 0.5f, 7f, new Vector2(0f, 2f), false);
