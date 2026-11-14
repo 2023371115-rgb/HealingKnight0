@@ -83,7 +83,7 @@ namespace HealingKnight.Gameplay.Level
 
             if (art != null)
             {
-                CodeSprites.Art(transform, art, width * 1.05f, -4, new Vector2(0f, -0.35f));
+                CodeSprites.Art(transform, art, width * 1.05f, -4, new Vector2(0f, -0.42f));
                 return;
             }
             Sprite c = CodeSprites.Circle;

@@ -1542,7 +1542,7 @@ namespace HealingKnight.EditorTools
             var go = new GameObject("Haustra");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, FloorY, 0f);
-            go.AddComponent<HaustraPouch>().Configure(2.6f, 2.8f, offset, PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Haustra.png", 2.9f, new Vector2(0.5f, 0.05f)));
+            go.AddComponent<HaustraPouch>().Configure(2.6f, 2.8f, offset, PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Haustra.png", 2.9f, new Vector2(0.5f, 0.05f)), 1.2f);
         }
 
         private void Flood(float fromX, float toX, float topY, float speed)
@@ -1594,7 +1594,7 @@ namespace HealingKnight.EditorTools
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, y, 0f);
             GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
-            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Probiotico.png", 0.9f);
+            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Probiotico.png", 0.7f);
             if (pic != null) SetupUtils.SpriteChild(art.transform, "Frasco", pic, Color.white, Vector3.zero, Vector2.one, 21);
             else
             {

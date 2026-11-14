@@ -529,7 +529,7 @@ namespace HealingKnight.EditorTools
                 case "Virus_Rotavirus": folder = "Delgado"; prefix = "Rotavirus"; width = 1.35f; pivot = new Vector2(0.5f, 0.5f); break;
                 case "Parasito_Proglotido": folder = "Delgado"; prefix = "Proglotido"; width = 1.5f; break;
                 case "Parasito_Entamoeba": folder = "Grueso"; prefix = "Entamoeba"; width = 2f; break;
-                case "Bacteria_CDifficile": folder = "Grueso"; prefix = "CDifficile"; width = 1.6f; break;
+                case "Bacteria_CDifficile": folder = "Grueso"; prefix = "CDifficile"; width = 0.8f; break;
                 case "Parasito_Oxiuro": folder = "Grueso"; prefix = "Oxiuro"; width = 1.5f; break;
                 case "Parasito_Oxiuro_Huevo": folder = "Grueso"; prefix = "OxiuroHuevo"; width = 1.1f; movePose = "Normal"; attackPose = "Abre"; break;
                 default: return;
@@ -1101,7 +1101,7 @@ namespace HealingKnight.EditorTools
             GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
             Transform v = visual.transform;
             var parts = new System.Collections.Generic.List<Object>();
-            Sprite art = ArtByWidth($"{EnemyArtRoot}/Grueso/Flora_Normal.png", 1.4f, new Vector2(0.5f, 0f));
+            Sprite art = ArtByWidth($"{EnemyArtRoot}/Grueso/Flora_Normal.png", 0.75f, new Vector2(0.5f, 0f));
             if (art != null)
                 parts.Add(SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 1));
             else
@@ -1119,7 +1119,7 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(health, "data", d);
             SetupUtils.SetRef(health, "effectivenessTable", data.Table);
             SetupUtils.SetRefArray(health, "flashRenderers", parts.ToArray());
-            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 0.4f), new Vector2(1f, 0.8f));
+            SetHurtbox(root.AddComponent<Hurtbox>(), art != null ? new Vector2(0f, 0.7f) : new Vector2(0f, 0.4f), art != null ? new Vector2(0.7f, 1.4f) : new Vector2(1f, 0.8f));
 
             var flora = root.AddComponent<FriendlyBacteria>();
             flora.Configure(data.Antibiotico, CDifficile, data.CDifficile);

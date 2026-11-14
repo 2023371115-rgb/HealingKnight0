@@ -28,8 +28,9 @@ namespace HealingKnight.Gameplay.Level
         private float timer, squeeze;
         private bool warned;
 
-        public void Configure(float pouchWidth, float period, float startOffset, Sprite drawing)
+        public void Configure(float pouchWidth, float period, float startOffset, Sprite drawing, float topHeight = 0.9f)
         {
+            height = topHeight;
             width = pouchWidth;
             interval = period;
             offset = startOffset;
@@ -92,8 +93,7 @@ namespace HealingKnight.Gameplay.Level
             visual.SetParent(transform, false);
             if (art != null)
             {
-                SpriteRenderer r = CodeSprites.Art(visual, art, width * 1.1f, -6, Vector2.zero);
-                r.transform.localPosition = new Vector3(0f, 0f, 0f);
+                CodeSprites.Art(visual, art, width * 1.1f, -6, Vector2.zero);
                 return;
             }
             Sprite c = CodeSprites.Circle;
