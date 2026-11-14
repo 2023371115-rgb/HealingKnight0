@@ -919,9 +919,10 @@ namespace HealingKnight.EditorTools
         {
             var go = new GameObject("Vellosidad");
             go.transform.SetParent(environment, false);
-            go.transform.position = new Vector3(x, baseY, 0f);
+            // Un poco hundida en el piso para que se vea plantada (no parada encima).
+            go.transform.position = new Vector3(x, baseY - 0.2f, 0f);
             var villus = go.AddComponent<SwayingVillus>();
-            villus.Configure(height, x * 0.77f, data.Rotavirus);
+            villus.Configure(height + 0.2f, x * 0.77f, data.Rotavirus);
             villus.SetArt(PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Vellosidad.png", 2.1f, new Vector2(0.5f, 0f)),
                 PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Vellosidad_Danada.png", 2.1f, new Vector2(0.5f, 0f)));
         }
@@ -990,6 +991,16 @@ namespace HealingKnight.EditorTools
             chase.Configure(startX, points);
             // Es una instancia de prefab: hay que registrar el cambio para que se guarde con la escena.
             PrefabUtility.RecordPrefabInstancePropertyModifications(chase);
+        }
+
+        /// <summary>Columna de tejido de adorno (sin colisión), pegada al piso: la pared donde se agarra la tenia.</summary>
+        private void TissueColumn(float x, float topY, float width)
+        {
+            var go = new GameObject("ColumnaTejido");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, topY, 0f);
+            if (tissueFloor != null) TissueGround(go.transform, width, topY - FloorY, new Color(0.82f, 0.74f, 0.74f, 1f), true);
+            else SetupUtils.SpriteChild(go.transform, "Columna", PlaceholderArt.Square, new Color(0.6f, 0.25f, 0.3f), new Vector3(0f, FloorY - topY, 0f), new Vector2(width, topY - FloorY), -99);
         }
 
         /// <summary>Válvula ileocecal (la puerta al intestino grueso): solo de adorno, al final del nivel.</summary>
@@ -1354,14 +1365,15 @@ namespace HealingKnight.EditorTools
             FatDrop(44f, 1.9f, 1.8f, g3);
 
             // ---------- 2) Yeyuno: vellosidades ----------
-            SetMessage("NODO: Yeyuno. Las vellosidades absorben la comida. Brinca de punta en punta... y cuidado con las Giardias pegadas.", 50f);
+            SetMessage("NODO: Yeyuno. Las vellosidades absorben la comida. Brinca de punta en punta... y cuidado: hay Giardias escondidas en la bilis.", 50f);
             Villus(54f, bottom, 3f);
             Villus(57.2f, bottom, 3.8f);
             Villus(60.4f, bottom, 3.2f);
             Villus(63.6f, bottom, 4f);
             Villus(66.8f, bottom, 3.4f);
-            Ambush(60.4f, bottom + 3.2f + 0.45f, prefabs.Giardia, data.Giardia, 1, 2.4f, 0f, new Vector2(-3f, 6f), true);
-            Ambush(66.8f, bottom + 3.4f + 0.45f, prefabs.Giardia, data.Giardia, 1, 2.4f, 0f, new Vector2(-3f, 6f), true);
+            // Giardias escondidas en la bilis: brincan fuera cuando pasas por encima.
+            Ambush(61.8f, FloorY - 0.5f, prefabs.Giardia, data.Giardia, 1, 1.8f, 0f, new Vector2(-2f, 11f), false);
+            Ambush(68.2f, FloorY - 0.5f, prefabs.Giardia, data.Giardia, 1, 1.8f, 0f, new Vector2(-2f, 11f), false);
 
             Villus(75.5f, FloorY, 2.6f);
             Villus(79.5f, FloorY, 3.4f);
@@ -1381,6 +1393,7 @@ namespace HealingKnight.EditorTools
             Platform(115f, 3.6f, 2.6f);
             Arena("Arena_3_Tenia", 106f, 20f, null,
                 W(1.2f, E(prefabs.Tenia, data.Tenia, 1)));
+            TissueColumn(123.6f, 8f, 3f);   // pared de intestino donde se agarra la cabeza de la tenia
 
             // ---------- 4) Íleon: el río de quimo ----------
             Peyer(124.5f);

@@ -944,7 +944,6 @@ namespace HealingKnight.EditorTools
 
             Sprite segNeck = art ? ArtByWidth($"{teniaFolder}/Segmento_Cuello.png", 0.75f) : null;
             Sprite segBody = art ? ArtByWidth($"{teniaFolder}/Segmento.png", 1.15f) : null;
-            Sprite segEggs = art ? ArtByWidth($"{teniaFolder}/Segmento_Huevos.png", 1.3f) : null;
 
             // Cuerpo: pedazos cada vez más anchos hacia la cola (así son los proglótidos).
             const int count = 9;
@@ -955,7 +954,8 @@ namespace HealingKnight.EditorTools
                 seg.layer = PhysicsLayers.Enemy;
                 float w = Mathf.Lerp(0.55f, 1f, i / (float)(count - 1));
                 var parts = new System.Collections.Generic.List<Object>();
-                Sprite segArt = i < 2 ? segNeck : (i >= count - 3 ? segEggs : segBody);
+                // (Sin el dibujo con huevos: en la cadena se veía raro. Los 2 primeros son de cuello.)
+                Sprite segArt = i < 2 ? segNeck : segBody;
                 if (segArt != null)
                 {
                     // Dibujo: el pedazo ya trae contorno y huevos.
@@ -1025,10 +1025,11 @@ namespace HealingKnight.EditorTools
             {
                 foreach (Object part in head) Object.DestroyImmediate(((SpriteRenderer)part).gameObject);
                 head.Clear();
-                float ppu = wormTex.width / 2.1f;
-                Vector2 face = new Vector2(0.66f, 0.62f);
+                // La cabeza es solo la cara con un pedacito de cuerpo; los anillos salen de atrás de ella.
+                float ppu = wormTex.width / 1.35f;
+                Vector2 face = new Vector2(0.72f, 0.45f);
                 headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, face);
-                headRoar = LoadArtSprite($"{wormFolder}/Cabeza_Ruge.png", ppu, new Vector2(0.62f, 0.62f));
+                headRoar = LoadArtSprite($"{wormFolder}/Cabeza_Ruge.png", ppu, new Vector2(0.68f, 0.45f));
                 headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, face);
                 headArt = SetupUtils.SpriteChild(root.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
                 head.Add(headArt);
@@ -1048,7 +1049,7 @@ namespace HealingKnight.EditorTools
             for (int i = 0; i < 11; i++)
             {
                 GameObject seg = SetupUtils.Child(body.transform, "Anillo" + i, Vector3.zero);
-                float size = Mathf.Lerp(1.2f, 0.7f, i / 10f);
+                float size = Mathf.Lerp(wormTex != null ? 1.0f : 1.2f, 0.7f, i / 10f);
                 if (ringBig != null)
                 {
                     bool last = i == 10;

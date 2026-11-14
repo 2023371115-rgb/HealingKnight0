@@ -6,8 +6,8 @@ using UnityEngine;
 namespace HealingKnight.Gameplay.Hazards
 {
     /// <summary>
-    /// VELLOSIDAD intestinal gigante: un "dedo" de tejido que se mece como alga. Te paras en la punta (plataforma
-    /// de un solo sentido que se mueve y te lleva). Biología: las vellosidades cubren el intestino delgado y absorben
+    /// VELLOSIDAD intestinal gigante: un "dedo" de tejido plantado en el piso que se estira y se encoge despacio.
+    /// Te paras en la punta (plataforma de un solo sentido que sube y baja y te lleva). Biología: las vellosidades cubren el intestino delgado y absorben
     /// los nutrientes; el ROTAVIRUS las daña y las aplana (por eso da diarrea: el intestino ya no absorbe el agua).
     /// En el juego: si un rotavirus ('flattener') anda cerca de la punta, la vellosidad se va encogiendo;
     /// cuando ya no hay rotavirus cerca, se recupera despacio.
@@ -17,7 +17,10 @@ namespace HealingKnight.Gameplay.Hazards
     {
         [SerializeField] private float height = 3f;
         [SerializeField] private float tipWidth = 1.5f;
-        [SerializeField] private float swayAmount = 0.6f;
+        [Tooltip("Vaivén de lado (0 = bien plantada; solo sube y baja).")]
+        [SerializeField] private float swayAmount = 0f;
+        [Tooltip("Cuánto sube y baja la punta (se estira y se encoge como si respirara).")]
+        [SerializeField] private float bobAmount = 0.2f;
         [SerializeField] private float swaySpeed = 1.1f;
         [Header("Rotavirus")]
         [SerializeField] private EnemyData flattener;
@@ -71,7 +74,8 @@ namespace HealingKnight.Gameplay.Hazards
         private Vector2 TipPosition()
         {
             float sway = Mathf.Sin(Time.time * swaySpeed + seed) * swayAmount * (1f - flatten * 0.5f);
-            return (Vector2)transform.position + new Vector2(sway, CurrentHeight);
+            float bob = Mathf.Sin(Time.time * swaySpeed * 1.3f + seed) * bobAmount * (1f - flatten);
+            return (Vector2)transform.position + new Vector2(sway, CurrentHeight + bob);
         }
 
         private void FixedUpdate()

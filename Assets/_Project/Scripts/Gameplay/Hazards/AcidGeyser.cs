@@ -35,6 +35,10 @@ namespace HealingKnight.Gameplay.Hazards
         private bool hitThisErupt;
         private SpriteRenderer column, columnOutline, cap, capOutline;
         private SpriteRenderer[] bubbles;
+        // Dibujo caricatura: columna de "bolas" que se bambolean, corona de espuma, gotas que salpican y charco en la base.
+        private const int Lumps = 8, CrownBits = 5, Drops = 6;
+        private SpriteRenderer[] lumpFill, lumpLine, crownFill, crownLine, drops;
+        private SpriteRenderer shine, splashFill, splashLine;
 
         /// <summary>¿Está disparando ahora? (las gotas de grasa del intestino se rompen con el chorro de bilis)</summary>
         public bool IsErupting => phase == Phase.Erupt;
@@ -64,8 +68,27 @@ namespace HealingKnight.Gameplay.Hazards
             Sprite circle = MakeCircle();
             columnOutline = Make("Contorno", square, outline, sortingOrder);
             column = Make("Chorro", square, body, sortingOrder + 1);
-            capOutline = Make("EspumaContorno", circle, outline, sortingOrder + 2);
-            cap = Make("Espuma", circle, foam, sortingOrder + 3);
+            capOutline = Make("EspumaContorno", circle, outline, sortingOrder + 3);
+            cap = Make("Espuma", circle, foam, sortingOrder + 4);
+            lumpLine = new SpriteRenderer[Lumps];
+            lumpFill = new SpriteRenderer[Lumps];
+            for (int i = 0; i < Lumps; i++)
+            {
+                lumpLine[i] = Make("BolaContorno", circle, outline, sortingOrder);
+                lumpFill[i] = Make("Bola", circle, body, sortingOrder + 1);
+            }
+            shine = Make("Brillo", circle, new Color(1f, 1f, 1f, 0.55f), sortingOrder + 2);
+            crownLine = new SpriteRenderer[CrownBits];
+            crownFill = new SpriteRenderer[CrownBits];
+            for (int i = 0; i < CrownBits; i++)
+            {
+                crownLine[i] = Make("CoronaContorno", circle, outline, sortingOrder + 3);
+                crownFill[i] = Make("Corona", circle, foam, sortingOrder + 4);
+            }
+            drops = new SpriteRenderer[Drops];
+            for (int i = 0; i < Drops; i++) drops[i] = Make("Gota", circle, body, sortingOrder + 2);
+            splashLine = Make("CharcoContorno", circle, outline, sortingOrder + 2);
+            splashFill = Make("Charco", circle, foam, sortingOrder + 3);
             bubbles = new SpriteRenderer[5];
             for (int i = 0; i < bubbles.Length; i++) bubbles[i] = Make("Burbuja", circle, foam, sortingOrder + 3);
             Show(0f, false);
@@ -142,30 +165,96 @@ namespace HealingKnight.Gameplay.Hazards
         private void Show(float h, bool visible)
         {
             if (column == null) return;
-            column.enabled = columnOutline.enabled = cap.enabled = capOutline.enabled = visible;
-            float t = Time.time * 8f;
-            float w = width * (1f + Mathf.Sin(t) * 0.06f);
+            float t = Time.time;
+            bool erupting = phase == Phase.Erupt;
+            bool warning = phase == Phase.Warning;
+
+            // Columna recta de fondo (rellena los huecos entre las bolas).
+            column.enabled = columnOutline.enabled = visible && h > 0.4f;
+            float w = width * (0.82f + Mathf.Sin(t * 8f) * 0.05f);
             column.transform.localPosition = new Vector3(0f, h * 0.5f, 0f);
             column.transform.localScale = new Vector3(w, h, 1f);
             columnOutline.transform.localPosition = new Vector3(0f, h * 0.5f, 0f);
-            columnOutline.transform.localScale = new Vector3(w + 0.12f, h + 0.06f, 1f);
-            float capSize = w * 1.5f;
+            columnOutline.transform.localScale = new Vector3(w + 0.16f, h, 1f);
+
+            // Bolas que suben por la columna y se bambolean (se ve líquido y gordito, no un rectángulo).
+            for (int i = 0; i < Lumps; i++)
+            {
+                bool on = visible && h > 0.3f;
+                lumpFill[i].enabled = lumpLine[i].enabled = on;
+                if (!on) continue;
+                float k = Mathf.Repeat(i / (float)Lumps + t * (erupting ? 1.6f : 0.6f), 1f);
+                float y = h * k;
+                float x = Mathf.Sin(t * 5f + i * 1.7f) * width * 0.12f;
+                float size = width * (1.05f + Mathf.Sin(t * 7f + i) * 0.12f) * Mathf.Lerp(1.1f, 0.85f, k);
+                lumpFill[i].transform.localPosition = new Vector3(x, y, 0f);
+                lumpFill[i].transform.localScale = new Vector3(size, size * 0.9f, 1f);
+                lumpLine[i].transform.localPosition = new Vector3(x, y, 0f);
+                lumpLine[i].transform.localScale = new Vector3(size + 0.16f, size * 0.9f + 0.16f, 1f);
+            }
+
+            // Brillo vertical del lado izquierdo.
+            shine.enabled = visible && h > 0.8f;
+            shine.transform.localPosition = new Vector3(-width * 0.22f, h * 0.55f, 0f);
+            shine.transform.localScale = new Vector3(width * 0.16f, h * 0.6f, 1f);
+
+            // Corona de espuma arriba: una bola grande y cinco chicas alrededor que palpitan.
+            cap.enabled = capOutline.enabled = visible;
+            float capSize = width * (1.45f + Mathf.Sin(t * 10f) * 0.08f);
             cap.transform.localPosition = new Vector3(0f, h, 0f);
-            cap.transform.localScale = new Vector3(capSize, capSize * 0.7f, 1f);
+            cap.transform.localScale = new Vector3(capSize, capSize * 0.75f, 1f);
             capOutline.transform.localPosition = new Vector3(0f, h, 0f);
-            capOutline.transform.localScale = new Vector3(capSize + 0.12f, capSize * 0.7f + 0.12f, 1f);
+            capOutline.transform.localScale = new Vector3(capSize + 0.16f, capSize * 0.75f + 0.16f, 1f);
+            for (int i = 0; i < CrownBits; i++)
+            {
+                bool on = visible && h > 0.5f;
+                crownFill[i].enabled = crownLine[i].enabled = on;
+                if (!on) continue;
+                float a = Mathf.Lerp(20f, 160f, i / (float)(CrownBits - 1)) * Mathf.Deg2Rad;
+                float r = width * 0.75f;
+                float pulse = 1f + Mathf.Sin(t * 12f + i * 1.3f) * 0.15f;
+                Vector3 p = new Vector3(Mathf.Cos(a) * r, h + Mathf.Sin(a) * r * 0.6f, 0f);
+                float size = width * 0.55f * pulse;
+                crownFill[i].transform.localPosition = p;
+                crownFill[i].transform.localScale = new Vector3(size, size, 1f);
+                crownLine[i].transform.localPosition = p;
+                crownLine[i].transform.localScale = new Vector3(size + 0.14f, size + 0.14f, 1f);
+            }
+
+            // Gotas que salpican desde arriba en arcos (solo cuando dispara).
+            for (int i = 0; i < Drops; i++)
+            {
+                drops[i].enabled = erupting && h > 1f;
+                if (!drops[i].enabled) continue;
+                float k = Mathf.Repeat(t * 1.4f + i * 0.37f, 1f);
+                float side = i % 2 == 0 ? 1f : -1f;
+                float spread = (0.6f + (i % 3) * 0.35f) * side;
+                Vector3 p = new Vector3(spread * k * 1.6f, h + 1.4f * k - 3.2f * k * k, 0f);
+                float size = width * (0.32f - 0.12f * k);
+                drops[i].transform.localPosition = p;
+                drops[i].transform.localScale = new Vector3(size, size * 1.2f, 1f);
+            }
+
+            // Charco de espuma en la base (en el aviso se infla: ahí va a salir).
+            bool splash = warning || erupting || h > 0.05f;
+            splashFill.enabled = splashLine.enabled = splash;
+            float sw = width * (warning ? 1.4f + Mathf.Sin(t * 30f) * 0.12f : 1.9f);
+            splashFill.transform.localPosition = new Vector3(0f, 0.08f, 0f);
+            splashFill.transform.localScale = new Vector3(sw, sw * 0.32f, 1f);
+            splashLine.transform.localPosition = new Vector3(0f, 0.08f, 0f);
+            splashLine.transform.localScale = new Vector3(sw + 0.16f, sw * 0.32f + 0.16f, 1f);
 
             for (int i = 0; i < bubbles.Length; i++)
             {
-                bool on = phase == Phase.Warning || phase == Phase.Erupt;
+                bool on = warning || erupting;
                 bubbles[i].enabled = on;
                 if (!on) continue;
-                float k = Mathf.Repeat(Time.time * (1.2f + i * 0.17f) + i * 0.37f, 1f);
-                float y = phase == Phase.Warning ? k * 0.8f : h * k;
-                float x = Mathf.Sin(i * 2.3f + Time.time * 3f) * width * 0.6f;
-                float s = 0.12f + 0.06f * (i % 3);
+                float k = Mathf.Repeat(t * (1.2f + i * 0.17f) + i * 0.37f, 1f);
+                float y = warning ? k * 0.9f : h * k;
+                float x = Mathf.Sin(i * 2.3f + t * 3f) * width * 0.6f;
+                float s2 = 0.12f + 0.06f * (i % 3);
                 bubbles[i].transform.localPosition = new Vector3(x, y, 0f);
-                bubbles[i].transform.localScale = new Vector3(s, s, 1f);
+                bubbles[i].transform.localScale = new Vector3(s2, s2, 1f);
             }
         }
 
@@ -186,14 +275,14 @@ namespace HealingKnight.Gameplay.Hazards
         private static Sprite MakeCircle()
         {
             if (circle != null) return circle;
-            const int n = 32;
+            const int n = 64;
             var tex = new Texture2D(n, n) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
             var px = new Color[n * n];
             for (int y = 0; y < n; y++)
                 for (int x = 0; x < n; x++)
                 {
                     float dx = (x + 0.5f) / n * 2f - 1f, dy = (y + 0.5f) / n * 2f - 1f;
-                    px[y * n + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - Mathf.Sqrt(dx * dx + dy * dy)) * 16f));
+                    px[y * n + x] = new Color(1f, 1f, 1f, Mathf.Clamp01((1f - Mathf.Sqrt(dx * dx + dy * dy)) * 24f));
                 }
             tex.SetPixels(px);
             tex.Apply();

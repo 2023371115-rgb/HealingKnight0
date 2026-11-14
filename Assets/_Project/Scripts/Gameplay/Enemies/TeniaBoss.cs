@@ -34,6 +34,11 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private EnemyHealth walkerPrefab;       // proglótido suelto que camina
         [SerializeField] private EnemyData walkerData;
         [SerializeField] private int maxWalkers = 4;
+        [Tooltip("El cuerpo vuelve a crecer desde el cuello (así crece la tenia de verdad): un pedazo cada tantos segundos.")]
+        [SerializeField] private float regrowInterval = 4.5f;
+        [SerializeField] private int maxSegments = 9;
+        [Tooltip("Solo suelta pedazos con huevos si le quedan más de estos.")]
+        [SerializeField] private int minSegmentsToShed = 5;
 
         [Header("Dibujo de la cabeza (opcional)")]
         [SerializeField] private SpriteRenderer headRenderer;
@@ -65,6 +70,8 @@ namespace HealingKnight.Gameplay.Enemies
         private float floorY, timer, whip, shedTimer, contactCooldown, whipCooldown;
         private int attackCount;
         private bool shedWarned;
+        private GameObject segmentTemplate;
+        private float regrowTimer;
 
         private bool Angry => health != null && health.Health01 <= phase2At;
 
@@ -93,7 +100,17 @@ namespace HealingKnight.Gameplay.Enemies
                     EnemyHealth seg = s;
                     seg.Died += _ => OnSegmentCut(seg);
                 }
+            // Molde (apagado) para que el cuerpo vuelva a crecer: copia de un pedazo de en medio.
+            if (body.Count > 0)
+            {
+                GameObject source = body[Mathf.Min(2, body.Count - 1)].gameObject;
+                source.SetActive(false);
+                segmentTemplate = Instantiate(source, transform);
+                segmentTemplate.name = "MoldeProglotido";
+                source.SetActive(true);
+            }
             shedTimer = shedInterval;
+            regrowTimer = regrowInterval;
             timer = 1.4f;
             GameplayEvents.RaiseBossStarted(bossName, health);
             if (!string.IsNullOrEmpty(introMessage)) GameplayEvents.RaiseMessage(introMessage);
@@ -175,7 +192,7 @@ namespace HealingKnight.Gameplay.Enemies
             if (shedTimer <= 0f && state != State.Intro)
             {
                 shedTimer = shedInterval;
-                EnemyHealth last = LastSegment();
+                EnemyHealth last = body.Count > minSegmentsToShed ? LastSegment() : null;
                 if (last != null)
                 {
                     if (!shedWarned)
@@ -185,6 +202,14 @@ namespace HealingKnight.Gameplay.Enemies
                     }
                     last.Kill();
                 }
+            }
+
+            // Crece desde el cuello.
+            regrowTimer -= dt * speed;
+            if (regrowTimer <= 0f)
+            {
+                regrowTimer = regrowInterval;
+                if (body.Count < maxSegments) Regrow();
             }
 
             LayoutBody(dt);
@@ -232,6 +257,19 @@ namespace HealingKnight.Gameplay.Enemies
                 seg.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg + 90f);
                 prev = p;
             }
+        }
+
+        private void Regrow()
+        {
+            if (segmentTemplate == null) return;
+            GameObject clone = Instantiate(segmentTemplate, transform);
+            clone.name = "ProglotidoNuevo";
+            clone.transform.position = transform.position;
+            clone.SetActive(true);
+            EnemyHealth seg = clone.GetComponent<EnemyHealth>();
+            if (seg == null) { Destroy(clone); return; }
+            seg.Died += _ => OnSegmentCut(seg);
+            body.Insert(0, seg);
         }
 
         private void UpdateHeadArt()

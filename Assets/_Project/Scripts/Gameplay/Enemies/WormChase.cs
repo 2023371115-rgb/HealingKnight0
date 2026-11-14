@@ -4,6 +4,7 @@ using HealingKnight.Gameplay.Audio;
 using HealingKnight.Gameplay.CameraSystem;
 using HealingKnight.Gameplay.Combat;
 using HealingKnight.Gameplay.Level;
+using HealingKnight.Gameplay.Movement;
 using HealingKnight.Gameplay.Player;
 using UnityEngine;
 
@@ -11,10 +12,12 @@ namespace HealingKnight.Gameplay.Enemies
 {
     /// <summary>
     /// PERSECUCIÓN de la lombriz (Ascaris) en el íleon: la lombriz va escarbando bajo el piso hacia la válvula ileocecal
-    /// (la puerta al intestino grueso). Sale adelante de ti en un brinco (como delfín): ahí es cuando le puedes pegar.
+    /// (la puerta al intestino grueso). Sale del piso en un brinco (como delfín): ahí es cuando le puedes pegar.
     /// Antes de salir se ve el montículo temblando: si estás encima, te pega al salir.
-    /// No se muere aquí (le queda vida para la pelea final en el intestino grueso): al llegar a la válvula se escapa.
-    /// Si mueres, vuelve a salir adelante de donde reaparezcas.
+    /// La pantalla se CIERRA alrededor del punto donde está (no puedes adelantarte). Sale una y otra vez en ese punto
+    /// hasta que le bajas un pedazo de vida; entonces huye al siguiente punto y la pantalla avanza con ella.
+    /// En el último (la válvula) se escapa. No se muere aquí: la pelea final es en el intestino grueso.
+    /// Si mueres, lo que le bajaste se queda: retomas desde el punto en que ibas.
     /// Este objeto es la CABEZA (tiene la vida y el Hurtbox); el cuerpo y el montículo se sueltan al empezar.
     /// </summary>
     [RequireComponent(typeof(EnemyHealth))]
@@ -45,7 +48,15 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private Sprite headRoar;
         [SerializeField] private Sprite headHurt;
         [Tooltip("Cuánto se inclina la cabeza siguiendo el arco (grados máximos). El dibujo trae el cuerpo doblado.")]
-        [SerializeField] private float maxTilt = 35f;
+        [SerializeField] private float maxTilt = 90f;
+        [Tooltip("Distancia de la cara al primer anillo (el dibujo de la cabeza ya trae un pedazo de cuerpo).")]
+        [SerializeField] private float bodyStart = 0.75f;
+        [SerializeField] private float ringGap = 0.55f;
+
+        [Header("Pantalla cerrada")]
+        [SerializeField] private float lockBehind = 11f;
+        [SerializeField] private float lockAhead = 3f;
+        [SerializeField, TextArea] private string fleeMessage = "¡Se mete más adelante! Síguela.";
 
         private enum State { Waiting, Warn, Emerge, Buried, Escaped }
         private State state = State.Waiting;
@@ -56,6 +67,7 @@ namespace HealingKnight.Gameplay.Enemies
         private readonly List<Vector2> trail = new List<Vector2>();
         private float floorY, timer, centerX, contactCooldown;
         private bool lastEmergence, started;
+        private int pointIndex;
         private float hurtTimer;
 
         private void Awake()
@@ -64,8 +76,26 @@ namespace HealingKnight.Gameplay.Enemies
             hurtbox = GetComponent<Hurtbox>();
         }
 
-        private void OnEnable() => health.Hit += OnHit;
-        private void OnDisable() => health.Hit -= OnHit;
+        private void OnEnable()
+        {
+            health.Hit += OnHit;
+            GameplayEvents.PlayerDefeated += OnPlayerDefeated;
+        }
+
+        private void OnDisable()
+        {
+            health.Hit -= OnHit;
+            GameplayEvents.PlayerDefeated -= OnPlayerDefeated;
+        }
+
+        /// <summary>Moriste: se esconde y suelta la pantalla; al regresar empieza otra vez desde el punto en que iban.</summary>
+        private void OnPlayerDefeated()
+        {
+            if (state == State.Escaped || state == State.Waiting) return;
+            state = State.Waiting;
+            Hide();
+            WalkableArea.Unlock();
+        }
         private void OnHit(DamageInfo info, HitResult result) => hurtTimer = 0.3f;
 
         public void Configure(float fromX, float[] points)
@@ -111,7 +141,9 @@ namespace HealingKnight.Gameplay.Enemies
                         GameplayEvents.RaiseMessage(startMessage);
                         Sfx.Effect("Lombriz_Ruge", 1f);
                     }
-                    NextEmergence(player);
+                    pointIndex = ProgressIndex();
+                    LockScreen();
+                    StartWarn();
                     break;
 
                 case State.Warn:
@@ -163,7 +195,7 @@ namespace HealingKnight.Gameplay.Enemies
                     if (u >= 1f && BodyUnderground())
                     {
                         Sfx.EffectAt("Lombriz_Entra", transform.position, 0.8f);
-                        if (lastEmergence) Escape();
+                        if (lastEmergence && ReachedTarget()) Escape();
                         else { state = State.Buried; timer = buriedTime; Hide(); }
                     }
                     break;
@@ -171,20 +203,52 @@ namespace HealingKnight.Gameplay.Enemies
 
                 case State.Buried:
                     timer -= dt;
-                    if (timer <= 0f && alive) NextEmergence(player);
+                    if (timer <= 0f && alive) NextEmergence();
                     break;
             }
         }
 
-        /// <summary>Sale en el siguiente punto que esté adelante del jugador (así nunca sale detrás).</summary>
-        private void NextEmergence(PlayerController player)
+        private int Points => emergePoints != null ? emergePoints.Length : 0;
+
+        /// <summary>Vida a la que tiene que bajar para huir del punto 'index' (el último es el límite de vida).</summary>
+        private float TargetHealth(int index) => 1f - (1f - healthFloor) * (index + 1) / Mathf.Max(1, Points);
+
+        private bool ReachedTarget() => health.Health01 <= TargetHealth(pointIndex) + 0.001f;
+
+        /// <summary>En qué punto va, según cuánta vida le has bajado (por si moriste y regresas).</summary>
+        private int ProgressIndex()
         {
-            if (emergePoints == null || emergePoints.Length == 0) { Escape(); return; }
-            int index = emergePoints.Length - 1;
-            for (int i = 0; i < emergePoints.Length; i++)
-                if (emergePoints[i] > player.Position.x + 3.5f) { index = i; break; }
-            centerX = emergePoints[index];
-            lastEmergence = index == emergePoints.Length - 1;
+            for (int i = 0; i < Points; i++)
+                if (health.Health01 > TargetHealth(i) + 0.001f) return i;
+            return Mathf.Max(0, Points - 1);
+        }
+
+        private void LockScreen()
+        {
+            if (Points == 0) return;
+            float x = emergePoints[pointIndex];
+            WalkableArea.Lock(Mathf.Max(startX - 2f, x - lockBehind), x + lockAhead);
+        }
+
+        /// <summary>Si ya le bajaste suficiente, huye al siguiente punto; si no, vuelve a salir en el mismo.</summary>
+        private void NextEmergence()
+        {
+            if (Points == 0) { Escape(); return; }
+            if (ReachedTarget() && pointIndex < Points - 1)
+            {
+                pointIndex++;
+                LockScreen();
+                if (!string.IsNullOrEmpty(fleeMessage)) GameplayEvents.RaiseMessage(fleeMessage);
+                Sfx.Effect("Lombriz_Ruge", 0.8f);
+            }
+            StartWarn();
+        }
+
+        private void StartWarn()
+        {
+            if (Points == 0) { Escape(); return; }
+            centerX = emergePoints[pointIndex];
+            lastEmergence = pointIndex == Points - 1;
             state = State.Warn;
             timer = warnTime;
             Sfx.EffectAt("Lombriz_Retumbo", new Vector2(centerX, floorY), 0.7f);
@@ -193,12 +257,12 @@ namespace HealingKnight.Gameplay.Enemies
         private void LayoutBody()
         {
             if (segs == null) return;
-            const float gap = 0.5f;
+            float gap = ringGap;
             int t = 0;
             float travelled = 0f;
             for (int i = 0; i < segs.Length; i++)
             {
-                float want = gap * (i + 1);
+                float want = bodyStart + gap * i;
                 // Camina por la estela de la cabeza hasta la distancia de este pedazo.
                 while (t + 1 < trail.Count && travelled + Vector2.Distance(trail[t], trail[t + 1]) < want)
                 {
@@ -236,6 +300,7 @@ namespace HealingKnight.Gameplay.Enemies
         {
             state = State.Escaped;
             Hide();
+            WalkableArea.Unlock();
             GameplayEvents.RaiseBossEnded();
             if (!string.IsNullOrEmpty(escapeMessage)) GameplayEvents.RaiseMessage(escapeMessage);
             Shake(0.2f, 0.5f);

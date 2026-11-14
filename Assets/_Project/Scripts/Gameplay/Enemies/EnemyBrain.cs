@@ -394,6 +394,15 @@ namespace HealingKnight.Gameplay.Enemies
             stuckTimer = 0f;
         }
 
+        /// <summary>¿Qué tan abajo está el piso si se deja caer por esa orilla? (muy grande si no hay piso)</summary>
+        private float DropDepth(int dir)
+        {
+            Bounds b = motor.Collider.bounds;
+            Vector2 origin = new Vector2(b.center.x + dir * (b.extents.x + 0.6f), b.min.y - 0.2f);
+            RaycastHit2D hit = Physics2D.Raycast(origin, Vector2.down, 14f, groundMask);
+            return hit.collider != null ? b.min.y - hit.point.y : 99f;
+        }
+
         /// <summary>Si se deja caer por esa orilla, ¿cae en piso (y no en un hueco)?</summary>
         private bool SafeDrop(int dir)
         {
@@ -427,7 +436,9 @@ namespace HealingKnight.Gameplay.Enemies
                 int dir = vx > 0f ? 1 : -1;
                 if (!GroundAhead(dir))
                 {
-                    bool drop = playerBelow && SafeDrop(dir);
+                    // Se deja caer si abajo hay piso: siempre que vayas abajo, y si es poquito (bajar a un lago, de una plataforma baja)
+                    // también para seguirte de lado. Al vacío nunca.
+                    bool drop = SafeDrop(dir) && (playerBelow || DropDepth(dir) <= 2.6f);
                     if (!drop)
                     {
                         // No puede seguir: da la vuelta y patrulla su plataforma en vez de quedarse quieto.
@@ -486,6 +497,12 @@ namespace HealingKnight.Gameplay.Enemies
             }
 
             bool hasToken = AttackTokens.TryAcquire(this);
+            // Si está lejos (atorado del otro lado de un lago, en otra plataforma) suelta la ficha para que ataque otro.
+            if (hasToken && !IsFlying && Vector2.Distance(me, target) > 7f)
+            {
+                AttackTokens.Release(this);
+                hasToken = false;
+            }
             if (Behavior == EnemyBehavior.Roller) { ApproachWheel(player, hasToken); return; }
             if (Behavior == EnemyBehavior.Diver) { ApproachFlying(player, hasToken, data.flyHeight, 1.5f); return; }
             if (Behavior == EnemyBehavior.Frenzy) { ApproachFlying(player, hasToken, 0.8f, data.attackDistance); return; }
@@ -500,7 +517,9 @@ namespace HealingKnight.Gameplay.Enemies
             float distance = Mathf.Abs(target.x - me.x);
             bool lobber = Behavior == EnemyBehavior.Lobber;
             bool tankLob = Behavior == EnemyBehavior.Tank && distance > 4.5f; // tuberculosis: de lejos escupe gotitas
-            float desired = hasToken ? data.attackDistance * (lobber ? 1f : 0.85f) : waitDistance;
+            // Sin ficha no se queda clavado: se acerca y se aleja un poco (amaga), listo para entrar.
+            float shuffle = Mathf.Sin(age * 1.3f + bobPhase * 0.7f) * 1.2f;
+            float desired = hasToken ? data.attackDistance * (lobber ? 1f : 0.85f) : Mathf.Max(data.attackDistance + 0.6f, waitDistance + shuffle);
             if (lobber) desired = Mathf.Max(desired, data.attackDistance);
 
             float speed = data.moveSpeed;

@@ -163,9 +163,16 @@ cambiando los colores.
    y cada 11 s suelta el último pedazo. Conviene pegarle a la cabeza.
 4. **Íleon, río de quimo:** te subes a la salchicha (`FloatingFood`, tipo `Raft`) y avanza sola río abajo, aunque brinques
    encima; si te caes, se detiene. Hay chorros de bilis que brincar y rotavirus que llegan volando (emboscadas).
-5. **Persecución de la lombriz:** `Enemies/WormChase.cs`. Escarba bajo el piso y sale en arco adelante de ti
-   (antes tiembla el montículo). Solo puedes pegarle cuando está afuera. No muere aquí: se escapa por la
-   **válvula ileocecal** al intestino grueso.
+5. **Persecución de la lombriz:** `Enemies/WormChase.cs`. La pantalla se cierra alrededor del punto donde está la lombriz:
+   sale del piso una y otra vez (antes tiembla el montículo) y solo le puedes pegar cuando está afuera. Cuando le bajas
+   un pedazo de vida, huye al siguiente punto y la pantalla avanza. En la **válvula ileocecal** se escapa al intestino
+   grueso (no muere aquí). Si mueres, lo que le bajaste se queda.
+6. **Tenia:** su cabeza está agarrada a una columna de tejido; el cuerpo vuelve a crecer desde el cuello cada 4.5 s
+   (máximo 9 pedazos) y solo suelta pedazos con huevos si tiene más de 5.
+
+**Enemigos de suelo:** ahora atacan hasta 3 a la vez; los demás amagan acercándose y alejándose en vez de quedarse quietos.
+Se meten a los lagos (el ácido y la bilis no les hacen nada) y bajan de plataformas bajas para seguirte. Si uno con turno
+de ataque se queda lejos o atorado, suelta el turno para que otro ataque.
 
 En `SceneSetup`: `BileGeyser`, `FatDrop`, `Villus`, `Ambush`, `OralSerum`, `Peyer`, `WormChaseAt` e `IleocecalValve`.
 Dibujos (fondo verde ya quitado):
