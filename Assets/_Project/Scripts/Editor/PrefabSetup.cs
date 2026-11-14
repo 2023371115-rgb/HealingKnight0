@@ -606,9 +606,9 @@ namespace HealingKnight.EditorTools
             if (wormTex != null)
             {
                 while (visual.transform.childCount > 0) Object.DestroyImmediate(visual.transform.GetChild(0).gameObject);
-                float ppu = wormTex.width / 1.6f;
-                headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, new Vector2(0.72f, 0.45f));
-                headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, new Vector2(0.72f, 0.45f));
+                float ppu = wormTex.width / 1.3f;
+                headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, new Vector2(0.5f, 0.5f));
+                headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, new Vector2(0.5f, 0.5f));
                 head = SetupUtils.SpriteChild(visual.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
                 ring = ArtByWidth($"{wormFolder}/Anillo.png", 1f);
             }
@@ -1057,11 +1057,11 @@ namespace HealingKnight.EditorTools
             {
                 foreach (Object part in head) Object.DestroyImmediate(((SpriteRenderer)part).gameObject);
                 head.Clear();
-                // La cabeza es solo la cara con un pedacito de cuerpo; los anillos salen de atrás de ella.
-                float ppu = wormTex.width / 1.35f;
-                Vector2 face = new Vector2(0.72f, 0.45f);
+                // La cabeza es un círculo del tamaño de los anillos: el cuerpo sale justo detrás.
+                float ppu = wormTex.width / 1.15f;
+                Vector2 face = new Vector2(0.5f, 0.5f);
                 headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, face);
-                headRoar = LoadArtSprite($"{wormFolder}/Cabeza_Ruge.png", ppu, new Vector2(0.68f, 0.45f));
+                headRoar = LoadArtSprite($"{wormFolder}/Cabeza_Ruge.png", ppu, face);
                 headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, face);
                 headArt = SetupUtils.SpriteChild(root.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
                 head.Add(headArt);
@@ -1111,6 +1111,7 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(chase, "headOut", headOut);
                 SetupUtils.SetRef(chase, "headRoar", headRoar);
                 SetupUtils.SetRef(chase, "headHurt", headHurt);
+                SetupUtils.SetFloat(chase, "bodyStart", 0.7f);
             }
             return root;
         }
