@@ -39,6 +39,14 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private SpriteRenderer mound;         // montículo de tierra/tejido que tiembla
         [SerializeField] private SpriteRenderer[] headRenderers;
 
+        [Header("Dibujo de la cabeza (opcional)")]
+        [SerializeField] private SpriteRenderer headArt;
+        [SerializeField] private Sprite headOut;
+        [SerializeField] private Sprite headRoar;
+        [SerializeField] private Sprite headHurt;
+        [Tooltip("Cuánto se inclina la cabeza siguiendo el arco (grados máximos). El dibujo trae el cuerpo doblado.")]
+        [SerializeField] private float maxTilt = 35f;
+
         private enum State { Waiting, Warn, Emerge, Buried, Escaped }
         private State state = State.Waiting;
         private EnemyHealth health;
@@ -48,12 +56,17 @@ namespace HealingKnight.Gameplay.Enemies
         private readonly List<Vector2> trail = new List<Vector2>();
         private float floorY, timer, centerX, contactCooldown;
         private bool lastEmergence, started;
+        private float hurtTimer;
 
         private void Awake()
         {
             health = GetComponent<EnemyHealth>();
             hurtbox = GetComponent<Hurtbox>();
         }
+
+        private void OnEnable() => health.Hit += OnHit;
+        private void OnDisable() => health.Hit -= OnHit;
+        private void OnHit(DamageInfo info, HitResult result) => hurtTimer = 0.3f;
 
         public void Configure(float fromX, float[] points)
         {
@@ -128,7 +141,18 @@ namespace HealingKnight.Gameplay.Enemies
                     Vector2 before = transform.position;
                     transform.position = new Vector2(x, y);
                     Vector2 dir = (Vector2)transform.position - before;
-                    if (dir.sqrMagnitude > 1e-6f) transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
+                    if (dir.sqrMagnitude > 1e-6f)
+                    {
+                        float angle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
+                        if (headArt != null) angle = Mathf.Clamp(angle, -maxTilt, maxTilt);
+                        transform.rotation = Quaternion.Euler(0f, 0f, angle);
+                    }
+                    if (headArt != null)
+                    {
+                        hurtTimer -= dt;
+                        Sprite face = hurtTimer > 0f && headHurt != null ? headHurt : (u < 0.45f && headRoar != null ? headRoar : headOut);
+                        if (face != null && headArt.sprite != face) headArt.sprite = face;
+                    }
                     if (mound != null && u > 0.15f) mound.enabled = false;
                     trail.Insert(0, transform.position);
                     if (trail.Count > 240) trail.RemoveAt(trail.Count - 1);
@@ -183,7 +207,10 @@ namespace HealingKnight.Gameplay.Enemies
                 }
                 Vector2 p = trail.Count > 0 ? trail[Mathf.Min(t, trail.Count - 1)] : (Vector2)transform.position;
                 if (t + 1 >= trail.Count) p = new Vector2(centerX - emergeLength * 0.5f, floorY - 1f);   // aún no sale este pedazo
+                Vector2 ahead = i == 0 ? (Vector2)transform.position : (Vector2)segs[i - 1].position;
+                Vector2 d = ahead - p;
                 segs[i].position = p;
+                if (d.sqrMagnitude > 1e-5f) segs[i].rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
                 if (segRenderers[i] != null) segRenderers[i].enabled = p.y > floorY - 0.15f;
             }
         }

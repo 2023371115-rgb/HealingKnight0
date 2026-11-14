@@ -17,11 +17,22 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private Color off = new Color(0.55f, 0.42f, 0.7f, 1f);
         [SerializeField] private Color on = new Color(0.85f, 0.75f, 1f, 1f);
         [SerializeField] private Color outline = new Color(0.2f, 0.08f, 0.25f, 1f);
+        [Header("Dibujo (opcional; pivote abajo al centro)")]
+        [SerializeField] private Sprite offArt;
+        [SerializeField] private Sprite onArt;
+        [SerializeField] private float artWidth = 2.8f;
 
         private SpriteRenderer[] follicles;
         private SpriteRenderer glow;
         private bool active;
         private float pulse;
+        private SpriteRenderer offRenderer, onRenderer;
+
+        public void SetArt(Sprite dim, Sprite lit)
+        {
+            offArt = dim;
+            onArt = lit;
+        }
 
         private void Start() => Build();
 
@@ -34,6 +45,18 @@ namespace HealingKnight.Gameplay.Level
                 if (player != null && player.Health.IsAlive && player.Position.x >= transform.position.x - 0.5f) Activate(player);
             }
             pulse = Mathf.MoveTowards(pulse, 0f, Time.deltaTime);
+            if (offRenderer != null)
+            {
+                // Con dibujo: cambia del dibujo apagado al encendido y late un poco.
+                offRenderer.enabled = !active || onRenderer == null;
+                if (onRenderer != null) onRenderer.enabled = active;
+                float sc = 1f + pulse * 0.25f + (active ? Mathf.Sin(t * 3f) * 0.02f : 0f);
+                offRenderer.transform.parent.localScale = new Vector3(sc, sc, 1f);
+                Color gg = glow.color;
+                gg.a = active ? 0.2f + Mathf.Sin(t * 2f) * 0.06f + pulse * 0.4f : 0f;
+                glow.color = gg;
+                return;
+            }
             for (int i = 0; i < follicles.Length; i++)
             {
                 float k = active ? 0.85f + Mathf.Sin(t * 3f + i) * 0.15f : 0f;
@@ -60,6 +83,20 @@ namespace HealingKnight.Gameplay.Level
         {
             Sprite circle = Circle();
             glow = Make(transform, circle, new Color(on.r, on.g, on.b, 0f), -12, new Vector2(0f, 0.8f), new Vector2(4f, 2.4f));
+            if (offArt != null)
+            {
+                var holder = new GameObject("Dibujo").transform;
+                holder.SetParent(transform, false);
+                float k = artWidth / Mathf.Max(0.01f, offArt.bounds.size.x);
+                offRenderer = Make(holder, offArt, Color.white, -10, Vector2.zero, new Vector2(k, k));
+                if (onArt != null)
+                {
+                    onRenderer = Make(holder, onArt, Color.white, -10, Vector2.zero, new Vector2(k, k));
+                    onRenderer.enabled = false;
+                }
+                follicles = new SpriteRenderer[0];
+                return;
+            }
             Vector2[] pos = { new Vector2(-1.1f, 0.35f), new Vector2(-0.35f, 0.55f), new Vector2(0.45f, 0.5f), new Vector2(1.15f, 0.3f), new Vector2(0.05f, 1.15f), new Vector2(-0.75f, 1.05f), new Vector2(0.8f, 1.05f) };
             follicles = new SpriteRenderer[pos.Length];
             for (int i = 0; i < pos.Length; i++)

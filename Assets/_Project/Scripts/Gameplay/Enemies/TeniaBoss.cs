@@ -35,6 +35,14 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private EnemyData walkerData;
         [SerializeField] private int maxWalkers = 4;
 
+        [Header("Dibujo de la cabeza (opcional)")]
+        [SerializeField] private SpriteRenderer headRenderer;
+        [SerializeField] private Sprite headIdle;
+        [SerializeField] private Sprite headBite;
+        [SerializeField] private Sprite headDefeated;
+        [Tooltip("Centro de la cabeza respecto al objeto (el objeto está en el cuello, donde empieza el cuerpo).")]
+        [SerializeField] private Vector2 headCenterOffset = Vector2.zero;
+
         [Header("Cuerpo")]
         [SerializeField] private float anchorHeight = 5.2f;
         [SerializeField] private float spacing = 0.72f;
@@ -180,6 +188,7 @@ namespace HealingKnight.Gameplay.Enemies
             }
 
             LayoutBody(dt);
+            UpdateHeadArt();
             if (alive) TryContact(player);
         }
 
@@ -193,7 +202,8 @@ namespace HealingKnight.Gameplay.Enemies
             {
                 state = State.WindBite;
                 timer = 0.65f;
-                float y = Mathf.Max(floorY + 1.1f, player.Position.y + 0.9f);
+                float y = Mathf.Max(floorY + 1.1f, player.Position.y + 0.9f) - headCenterOffset.y;
+                y = Mathf.Max(floorY + 0.3f, y);
                 biteTarget = new Vector2(Mathf.Clamp(player.Position.x, WalkableArea.MinX + 1f, anchor.x), y);
             }
             else
@@ -224,6 +234,16 @@ namespace HealingKnight.Gameplay.Enemies
             }
         }
 
+        private void UpdateHeadArt()
+        {
+            if (headRenderer == null) return;
+            bool biting = state == State.WindBite || state == State.Bite || state == State.WindWhip;
+            Sprite s = biting && headBite != null ? headBite : headIdle;
+            if (s != null && headRenderer.sprite != s) headRenderer.sprite = s;
+        }
+
+        private Vector2 HeadCenter => (Vector2)transform.position + headCenterOffset;
+
         private EnemyHealth LastSegment()
         {
             for (int i = body.Count - 1; i >= 0; i--)
@@ -238,9 +258,9 @@ namespace HealingKnight.Gameplay.Enemies
             if (box == null || !box.IsAlive) return;
 
             bool biting = state == State.Bite || state == State.BiteBack;
-            if (box.OverlapsCircle(transform.position, 0.8f))
+            if (box.OverlapsCircle(HeadCenter, 0.8f))
             {
-                Hit(box, biting ? biteDamage : contactDamage, transform.position);
+                Hit(box, biting ? biteDamage : contactDamage, HeadCenter);
                 return;
             }
             bool whipping = state == State.Whip;
@@ -289,6 +309,7 @@ namespace HealingKnight.Gameplay.Enemies
         private void OnDied(EnemyHealth _)
         {
             state = State.Dead;
+            if (headRenderer != null && headDefeated != null) headRenderer.sprite = headDefeated;
             // El cuerpo se deshace sin soltar más proglótidos.
             foreach (EnemyHealth seg in body)
                 if (seg != null) Destroy(seg.gameObject);

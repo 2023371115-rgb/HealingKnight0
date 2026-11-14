@@ -30,14 +30,26 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private Color shade = new Color(0.86f, 0.42f, 0.42f, 1f);
         [SerializeField] private Color outline = new Color(0.3f, 0.07f, 0.1f, 1f);
         [SerializeField] private Color sick = new Color(0.72f, 0.5f, 0.42f, 1f);
+        [Header("Dibujo (opcional; pivote abajo al centro)")]
+        [SerializeField] private Sprite healthyArt;
+        [SerializeField] private Sprite damagedArt;
+        [SerializeField] private float artWidth = 2.1f;
 
         private Transform tip;
         private Transform[] stalk;
         private SpriteRenderer[] tissueRenderers;
         private float flatten, seed;
         private Vector2 lastTip;
+        private Transform artRoot;
+        private SpriteRenderer healthyRenderer, damagedRenderer;
 
         public float Flatten01 => flatten;
+
+        public void SetArt(Sprite healthy, Sprite damaged)
+        {
+            healthyArt = healthy;
+            damagedArt = damaged;
+        }
 
         public void Configure(float villusHeight, float phase, EnemyData rotavirus)
         {
@@ -96,6 +108,7 @@ namespace HealingKnight.Gameplay.Hazards
 
         private void Update()
         {
+            if (artRoot != null) { UpdateArt(); return; }
             if (stalk == null) return;
             // El tallo es una curva de la base a la punta (se dobla con el vaivén).
             Vector2 b = transform.position;
@@ -109,6 +122,30 @@ namespace HealingKnight.Gameplay.Hazards
             }
             Color c = Color.Lerp(tissue, sick, flatten / Mathf.Max(0.01f, maxFlatten));
             foreach (SpriteRenderer r in tissueRenderers) r.color = c;
+        }
+
+        /// <summary>Con dibujo: se estira a la altura actual, se inclina hacia la punta y se pasa al dibujo dañado al aplanarse.</summary>
+        private void UpdateArt()
+        {
+            Vector2 b = transform.position;
+            Vector2 t = tip.position;
+            float h = Mathf.Max(0.3f, t.y - b.y);
+            float angle = -Mathf.Atan2(t.x - b.x, h) * Mathf.Rad2Deg;
+            artRoot.localRotation = Quaternion.Euler(0f, 0f, angle);
+            float k = Mathf.Clamp01(flatten / Mathf.Max(0.01f, maxFlatten));
+            Fit(healthyRenderer, h, 1f - k);
+            Fit(damagedRenderer, h, k);
+        }
+
+        private void Fit(SpriteRenderer r, float h, float alpha)
+        {
+            if (r == null || r.sprite == null) return;
+            Vector2 size = r.sprite.bounds.size;
+            r.transform.localScale = new Vector3(artWidth / size.x, h / size.y, 1f);
+            Color c = r.color;
+            c.a = alpha;
+            r.color = c;
+            r.enabled = alpha > 0.02f;
         }
 
         // ---------- dibujo por código ----------
@@ -126,6 +163,15 @@ namespace HealingKnight.Gameplay.Hazards
             var effector = tip.gameObject.AddComponent<PlatformEffector2D>();
             effector.useOneWay = true;
             effector.surfaceArc = 160f;
+
+            if (healthyArt != null)
+            {
+                artRoot = new GameObject("Dibujo").transform;
+                artRoot.SetParent(transform, false);
+                healthyRenderer = ArtChild(artRoot, healthyArt, -7);
+                if (damagedArt != null) damagedRenderer = ArtChild(artRoot, damagedArt, -6);
+                return;
+            }
 
             var tissueList = new System.Collections.Generic.List<SpriteRenderer>();
             int n = Mathf.Max(4, Mathf.CeilToInt(height / 0.45f));
@@ -145,6 +191,16 @@ namespace HealingKnight.Gameplay.Hazards
             tissueList.Add(Add(tip, circle, tissue, -4, new Vector2(0f, -0.3f), new Vector2(tipWidth, 0.7f)));
             Add(tip, circle, new Color(1f, 0.88f, 0.84f, 0.9f), -3, new Vector2(-tipWidth * 0.2f, -0.15f), new Vector2(tipWidth * 0.3f, 0.14f));
             tissueRenderers = tissueList.ToArray();
+        }
+
+        private static SpriteRenderer ArtChild(Transform parent, Sprite sprite, int order)
+        {
+            var go = new GameObject(sprite.name);
+            go.transform.SetParent(parent, false);
+            var r = go.AddComponent<SpriteRenderer>();
+            r.sprite = sprite;
+            r.sortingOrder = order;
+            return r;
         }
 
         private static SpriteRenderer Add(Transform parent, Sprite sprite, Color color, int order, Vector2 pos, Vector2 size)

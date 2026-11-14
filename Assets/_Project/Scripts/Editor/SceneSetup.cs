@@ -890,6 +890,8 @@ namespace HealingKnight.EditorTools
 
         // ---------- Elementos del Intestino delgado (rediseño) ----------
 
+        private const string SmallIntestineArt = "Assets/_Project/Art/Delgado";
+
         /// <summary>Chorro de bilis (sale por la ampolla de Vater): el mismo chorro del estómago, pero amarillo.</summary>
         private AcidGeyser BileGeyser(float x, float groundY, float height = 4.5f, float interval = 3.2f, float offset = 0f)
         {
@@ -905,7 +907,11 @@ namespace HealingKnight.EditorTools
             var go = new GameObject("GotaGrasa");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, topY, 0f);
-            go.AddComponent<FatDroplet>().Configure(width, geyser);
+            var drop = go.AddComponent<FatDroplet>();
+            drop.Configure(width, geyser);
+            // Dibujos (todas las gotas miden 1.8 de ancho); pivote cerca de arriba, donde se pisa.
+            drop.SetArt(PrefabSetup.ArtByWidth($"{SmallIntestineArt}/GotaGrasa.png", 1.8f, new Vector2(0.5f, 0.9f)),
+                PrefabSetup.ArtByWidth($"{SmallIntestineArt}/GotaGrasa_Rota.png", 1.8f, new Vector2(0.5f, 0.75f)));
         }
 
         /// <summary>Vellosidad que se mece (plataforma en la punta). 'baseY' = piso o fondo del lago. El rotavirus la aplana.</summary>
@@ -914,7 +920,10 @@ namespace HealingKnight.EditorTools
             var go = new GameObject("Vellosidad");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, baseY, 0f);
-            go.AddComponent<SwayingVillus>().Configure(height, x * 0.77f, data.Rotavirus);
+            var villus = go.AddComponent<SwayingVillus>();
+            villus.Configure(height, x * 0.77f, data.Rotavirus);
+            villus.SetArt(PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Vellosidad.png", 2.1f, new Vector2(0.5f, 0f)),
+                PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Vellosidad_Danada.png", 2.1f, new Vector2(0.5f, 0f)));
         }
 
         /// <summary>
@@ -947,9 +956,15 @@ namespace HealingKnight.EditorTools
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, y, 0f);
             GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
-            SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.08f, 0.15f, 0.3f), Vector3.zero, new Vector2(0.72f, 0.92f), 20);
-            SetupUtils.SpriteChild(art.transform, "Sobre", PlaceholderArt.SquareCentered, new Color(0.45f, 0.75f, 1f), Vector3.zero, new Vector2(0.62f, 0.82f), 21);
-            SetupUtils.SpriteChild(art.transform, "Gota", PlaceholderArt.Circle, Color.white, new Vector3(0f, -0.05f, 0f), new Vector2(0.3f, 0.36f), 22);
+            Sprite packet = PrefabSetup.ArtByWidth($"{SmallIntestineArt}/SueroOral.png", 0.85f);
+            if (packet != null)
+                SetupUtils.SpriteChild(art.transform, "Sobre", packet, Color.white, Vector3.zero, Vector2.one, 21);
+            else
+            {
+                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.08f, 0.15f, 0.3f), Vector3.zero, new Vector2(0.72f, 0.92f), 20);
+                SetupUtils.SpriteChild(art.transform, "Sobre", PlaceholderArt.SquareCentered, new Color(0.45f, 0.75f, 1f), Vector3.zero, new Vector2(0.62f, 0.82f), 21);
+                SetupUtils.SpriteChild(art.transform, "Gota", PlaceholderArt.Circle, Color.white, new Vector3(0f, -0.05f, 0f), new Vector2(0.3f, 0.36f), 22);
+            }
             SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.5f, 0.85f, 1f, 0.25f), Vector3.zero, new Vector2(1.5f, 1.5f), 19);
             go.AddComponent<HealPickup>().Configure(art.transform, heal);
         }
@@ -960,7 +975,9 @@ namespace HealingKnight.EditorTools
             var go = new GameObject("PlacaDePeyer");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, FloorY, 0f);
-            go.AddComponent<PeyerPatch>();
+            go.AddComponent<PeyerPatch>().SetArt(
+                PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Peyer_Apagada.png", 2.8f, new Vector2(0.5f, 0.02f)),
+                PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Peyer_Encendida.png", 2.8f, new Vector2(0.5f, 0.02f)));
         }
 
         /// <summary>Persecución de la lombriz: empieza al pasar 'startX'; sale en cada punto; el último es la válvula ileocecal.</summary>
@@ -981,6 +998,13 @@ namespace HealingKnight.EditorTools
             var go = new GameObject("ValvulaIleocecal");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3(x, FloorY, 0f);
+            // Dibujo: abierta (la lombriz se escapa por ahí). Mide 5 de ancho.
+            Sprite valve = PrefabSetup.ArtByWidth($"{SmallIntestineArt}/Valvula_Abierta.png", 5f, new Vector2(0.5f, 0.03f));
+            if (valve != null)
+            {
+                SetupUtils.SpriteChild(go.transform, "Dibujo", valve, Color.white, Vector3.zero, Vector2.one, -18);
+                return;
+            }
             SetupUtils.SpriteChild(go.transform, "Contorno", PlaceholderArt.Circle, new Color(0.3f, 0.07f, 0.1f), new Vector3(0f, 2.3f, 0f), new Vector2(3.4f, 4.6f), -20);
             SetupUtils.SpriteChild(go.transform, "Labios", PlaceholderArt.Circle, new Color(0.95f, 0.55f, 0.5f), new Vector3(0f, 2.3f, 0f), new Vector2(3.2f, 4.4f), -19);
             SetupUtils.SpriteChild(go.transform, "Paso", PlaceholderArt.Circle, new Color(0.55f, 0.32f, 0.38f), new Vector3(0f, 2.3f, 0f), new Vector2(1.4f, 2.8f), -18);

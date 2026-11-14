@@ -503,32 +503,37 @@ namespace HealingKnight.EditorTools
 
         // ---------- Arte dibujado de enemigos (reemplaza las figuras de colores) ----------
 
-        public const string EnemyArtFolder = "Assets/_Project/Art/Enemigos/Estomago";
+        public const string EnemyArtRoot = "Assets/_Project/Art/Enemigos";
 
         /// <summary>
-        /// Si hay PNG para este enemigo (Art/Enemigos/Estomago/&lt;prefijo&gt;_&lt;Pose&gt;.png), quita las figuras de colores
-        /// y pone el dibujo con sus poses. 'width' = ancho en unidades de la pose Normal (las demás usan la misma escala).
+        /// Si hay PNG para este enemigo (Art/Enemigos/&lt;Nivel&gt;/&lt;prefijo&gt;_&lt;Pose&gt;.png), quita las figuras de colores
+        /// y pone el dibujo con sus poses. 'width' = ancho en unidades de la pose con la que camina (las demás usan la misma escala).
         /// Poses: Normal (quieto), Mueve, Ataca, Dano (le pegan), Muere. Las que falten usan la más parecida.
+        /// Los voladores (rotavirus) llevan el pivote al centro; los de suelo, abajo.
         /// </summary>
         private void ApplyEnemyArt(GameObject root, string name, EnemyHealth health)
         {
-            string prefix, idlePose = "Normal", movePose = "Normal", attackPose = "Ataca", hurtPose = "Dano", deadPose = "Muere";
+            string prefix, folder = "Estomago", idlePose = "Normal", movePose = "Normal", attackPose = "Ataca", hurtPose = "Dano", deadPose = "Muere";
             float width;
+            Vector2 pivot = new Vector2(0.5f, 0f);
             switch (name)
             {
                 case "Bacteria_HPylori": prefix = "HPylori"; width = 1.7f; break;
                 case "Bacteria_HPylori_Madre": prefix = "HPyloriMadre"; width = 3f; attackPose = "Suelta"; break;
                 case "Bacteria_HPylori_Ureasa": prefix = "HPyloriUreasa"; width = 1.85f; break;
                 case "Parasito_Anisakis": prefix = "Anisakis"; width = 2.2f; idlePose = "Dormido"; movePose = "Arrastra"; break;
+                case "Parasito_Giardia": folder = "Delgado"; prefix = "Giardia"; width = 1.7f; break;
+                case "Virus_Rotavirus": folder = "Delgado"; prefix = "Rotavirus"; width = 1.35f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Parasito_Proglotido": folder = "Delgado"; prefix = "Proglotido"; width = 1.5f; break;
                 default: return;
             }
 
-            string Path(string pose) => $"{EnemyArtFolder}/{prefix}_{pose}.png";
+            string Path(string pose) => $"{EnemyArtRoot}/{folder}/{prefix}_{pose}.png";
             // La escala sale de la pose en que camina (para el anisakis es "Arrastra").
             var reference = AssetDatabase.LoadAssetAtPath<Texture2D>(Path(movePose));
             if (reference == null) return;
             float ppu = reference.width / width;
-            Sprite Load(string pose) => LoadArtSprite(Path(pose), ppu, new Vector2(0.5f, 0f));
+            Sprite Load(string pose) => LoadArtSprite(Path(pose), ppu, pivot);
 
             Sprite idle = Load(idlePose), move = Load(movePose), attack = Load(attackPose), hurt = Load(hurtPose), dead = Load(deadPose);
 
@@ -547,6 +552,15 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(poses, "attack", attack);
             SetupUtils.SetRef(poses, "hurt", hurt);
             SetupUtils.SetRef(poses, "dead", dead);
+        }
+
+        /// <summary>Carga un PNG de arte para que mida 'worldWidth' de ancho (pivote al centro). Null si no existe.</summary>
+        public static Sprite ArtByWidth(string path, float worldWidth) => ArtByWidth(path, worldWidth, new Vector2(0.5f, 0.5f));
+
+        public static Sprite ArtByWidth(string path, float worldWidth, Vector2 pivot)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            return tex != null ? LoadArtSprite(path, tex.width / worldWidth, pivot) : null;
         }
 
         /// <summary>Carga un PNG de arte (para la escena: omeprazol, contracción, píloro). Null si no existe.</summary>
@@ -900,11 +914,37 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SpriteChild(h, "Pupila", PlaceholderArt.Circle, outline, new Vector3(side * 0.18f, 0.3f, 0f), new Vector2(0.1f, 0.1f), 14);
             }
 
+            // Con dibujo (Art/Jefes/Tenia): la cabeza es un solo dibujo con 3 caras; el cuello queda en el origen.
+            const string teniaFolder = "Assets/_Project/Art/Jefes/Tenia";
+            const float headHeight = 1.9f;
+            var headTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{teniaFolder}/Cabeza_Normal.png");
+            bool art = headTex != null;
+            SpriteRenderer headArt = null;
+            Sprite headIdle = null, headBite = null, headDead = null;
+            Vector2 headCenter = Vector2.zero;
+            if (art)
+            {
+                while (h.childCount > 0) Object.DestroyImmediate(h.GetChild(0).gameObject);
+                headParts.Clear();
+                float ppu = headTex.height / headHeight;
+                Vector2 neck = new Vector2(0.5f, 0.04f);
+                headIdle = LoadArtSprite($"{teniaFolder}/Cabeza_Normal.png", ppu, neck);
+                headBite = LoadArtSprite($"{teniaFolder}/Cabeza_Muerde.png", ppu, neck);
+                headDead = LoadArtSprite($"{teniaFolder}/Cabeza_Derrotada.png", ppu, neck);
+                headArt = SetupUtils.SpriteChild(h, "Dibujo", headIdle, Color.white, Vector3.zero, Vector2.one, 11);
+                headParts.Add(headArt);
+                headCenter = new Vector2(0f, headHeight * 0.55f);
+            }
+
             var health = root.AddComponent<EnemyHealth>();
             SetupUtils.SetRef(health, "data", d);
             SetupUtils.SetRef(health, "effectivenessTable", data.Table);
             SetupUtils.SetRefArray(health, "flashRenderers", headParts.ToArray());
-            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(1.2f, 1.2f));
+            SetHurtbox(root.AddComponent<Hurtbox>(), headCenter, art ? new Vector2(1.6f, 1.6f) : new Vector2(1.2f, 1.2f));
+
+            Sprite segNeck = art ? ArtByWidth($"{teniaFolder}/Segmento_Cuello.png", 0.75f) : null;
+            Sprite segBody = art ? ArtByWidth($"{teniaFolder}/Segmento.png", 1.15f) : null;
+            Sprite segEggs = art ? ArtByWidth($"{teniaFolder}/Segmento_Huevos.png", 1.3f) : null;
 
             // Cuerpo: pedazos cada vez más anchos hacia la cola (así son los proglótidos).
             const int count = 9;
@@ -915,6 +955,20 @@ namespace HealingKnight.EditorTools
                 seg.layer = PhysicsLayers.Enemy;
                 float w = Mathf.Lerp(0.55f, 1f, i / (float)(count - 1));
                 var parts = new System.Collections.Generic.List<Object>();
+                Sprite segArt = i < 2 ? segNeck : (i >= count - 3 ? segEggs : segBody);
+                if (segArt != null)
+                {
+                    // Dibujo: el pedazo ya trae contorno y huevos.
+                    parts.Add(SetupUtils.SpriteChild(seg.transform, "Dibujo", segArt, Color.white, Vector3.zero, Vector2.one, 2));
+                    var segHealthArt = seg.AddComponent<EnemyHealth>();
+                    SetupUtils.SetRef(segHealthArt, "data", data.TeniaSegmento);
+                    SetupUtils.SetRef(segHealthArt, "effectivenessTable", data.Table);
+                    SetupUtils.SetRefArray(segHealthArt, "flashRenderers", parts.ToArray());
+                    Vector2 sz = segArt.bounds.size;
+                    SetHurtbox(seg.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(sz.x * 0.85f, Mathf.Max(0.45f, sz.y)));
+                    segments.Add(segHealthArt);
+                    continue;
+                }
                 parts.Add(SetupUtils.SpriteChild(seg.transform, "Contorno", PlaceholderArt.Capsule, outline, Vector3.zero, new Vector2(w + 0.1f, 1.28f), 1));
                 parts.Add(SetupUtils.SpriteChild(seg.transform, "Pedazo", PlaceholderArt.Capsule, data.TeniaSegmento.tint, Vector3.zero, new Vector2(w, 1.08f), 2));
                 SetupUtils.SpriteChild(seg.transform, "Raya", PlaceholderArt.SquareCentered, new Color(0.85f, 0.72f, 0.55f), new Vector3(0f, 0.22f, 0f), new Vector2(w * 0.8f, 0.05f), 3);
@@ -935,6 +989,15 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRefArray(boss, "segments", segments.ToArray());
             SetupUtils.SetRef(boss, "walkerPrefab", Proglotido);
             SetupUtils.SetRef(boss, "walkerData", data.Proglotido);
+            if (art)
+            {
+                SetupUtils.SetRef(boss, "headRenderer", headArt);
+                SetupUtils.SetRef(boss, "headIdle", headIdle);
+                SetupUtils.SetRef(boss, "headBite", headBite);
+                SetupUtils.SetRef(boss, "headDefeated", headDead);
+                SetupUtils.SetVector2(boss, "headCenterOffset", headCenter);
+                SetupUtils.SetFloat(boss, "spacing", 0.55f);
+            }
             return root;
         }
 
@@ -953,28 +1016,69 @@ namespace HealingKnight.EditorTools
             head.Add(SetupUtils.SpriteChild(root.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(0.18f, 0.33f, 0f), new Vector2(0.32f, 0.3f), 3));
             head.Add(SetupUtils.SpriteChild(root.transform, "Pupila", PlaceholderArt.Circle, Color.black, new Vector3(0.24f, 0.31f, 0f), new Vector2(0.14f, 0.14f), 4));
 
+            // Con dibujo (Art/Jefes/Lombriz): la cabeza trae el cuerpo doblado; el origen queda en la cara.
+            const string wormFolder = "Assets/_Project/Art/Jefes/Lombriz";
+            var wormTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{wormFolder}/Cabeza_Sale.png");
+            SpriteRenderer headArt = null;
+            Sprite headOut = null, headRoar = null, headHurt = null;
+            if (wormTex != null)
+            {
+                foreach (Object part in head) Object.DestroyImmediate(((SpriteRenderer)part).gameObject);
+                head.Clear();
+                float ppu = wormTex.width / 2.1f;
+                Vector2 face = new Vector2(0.66f, 0.62f);
+                headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, face);
+                headRoar = LoadArtSprite($"{wormFolder}/Cabeza_Ruge.png", ppu, new Vector2(0.62f, 0.62f));
+                headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, face);
+                headArt = SetupUtils.SpriteChild(root.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
+                head.Add(headArt);
+            }
+
             var health = root.AddComponent<EnemyHealth>();
             SetupUtils.SetRef(health, "data", d);
             SetupUtils.SetRef(health, "effectivenessTable", data.Table);
             SetupUtils.SetRefArray(health, "flashRenderers", head.ToArray());
             SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(1.3f, 1.2f));
 
+            Sprite ringBig = wormTex != null ? ArtByWidth($"{wormFolder}/Anillo.png", 1f) : null;
+            Sprite ringSmall = wormTex != null ? ArtByWidth($"{wormFolder}/Anillo_Chico.png", 1f) : null;
+            Sprite tail = wormTex != null ? ArtByWidth($"{wormFolder}/Cola.png", 1.2f) : null;
+
             GameObject body = SetupUtils.Child(root.transform, "Cuerpo", Vector3.zero);
             for (int i = 0; i < 11; i++)
             {
                 GameObject seg = SetupUtils.Child(body.transform, "Anillo" + i, Vector3.zero);
                 float size = Mathf.Lerp(1.2f, 0.7f, i / 10f);
+                if (ringBig != null)
+                {
+                    bool last = i == 10;
+                    Sprite art = last && tail != null ? tail : (i < 6 ? ringBig : ringSmall);
+                    // La cola apunta hacia atrás (el dibujo trae la punta a la derecha: se voltea).
+                    Vector2 scale = last ? new Vector2(-1f, 1f) : new Vector2(size, size);
+                    SetupUtils.SpriteChild(seg.transform, "Anillo", art, Color.white, Vector3.zero, scale, 3);
+                    continue;
+                }
                 SpriteRenderer sr = SetupUtils.SpriteChild(seg.transform, "Anillo", PlaceholderArt.Circle,
                     Color.Lerp(d.tint, new Color(0.8f, 0.4f, 0.42f), (i % 2) * 0.35f), Vector3.zero, new Vector2(size, size), 3);
                 sr.sortingOrder = 3;
             }
-            SpriteRenderer mound = SetupUtils.SpriteChild(root.transform, "Monticulo", PlaceholderArt.CircleBottom, new Color(0.62f, 0.3f, 0.36f, 0.95f),
-                Vector3.zero, new Vector2(2f, 0.55f), 30);
+            Sprite moundArt = wormTex != null ? LoadArtSprite($"{wormFolder}/Monticulo.png", 513f / 2.3f, new Vector2(0.5f, 0.05f)) : null;
+            SpriteRenderer mound = moundArt != null
+                ? SetupUtils.SpriteChild(root.transform, "Monticulo", moundArt, Color.white, Vector3.zero, Vector2.one, 30)
+                : SetupUtils.SpriteChild(root.transform, "Monticulo", PlaceholderArt.CircleBottom, new Color(0.62f, 0.3f, 0.36f, 0.95f),
+                    Vector3.zero, new Vector2(2f, 0.55f), 30);
 
             var chase = root.AddComponent<WormChase>();
             SetupUtils.SetRef(chase, "bodyRoot", body.transform);
             SetupUtils.SetRef(chase, "mound", mound);
             SetupUtils.SetRefArray(chase, "headRenderers", head.ToArray());
+            if (headArt != null)
+            {
+                SetupUtils.SetRef(chase, "headArt", headArt);
+                SetupUtils.SetRef(chase, "headOut", headOut);
+                SetupUtils.SetRef(chase, "headRoar", headRoar);
+                SetupUtils.SetRef(chase, "headHurt", headHurt);
+            }
             return root;
         }
 

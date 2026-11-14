@@ -168,7 +168,14 @@ cambiando los colores.
    **válvula ileocecal** al intestino grueso.
 
 En `SceneSetup`: `BileGeyser`, `FatDrop`, `Villus`, `Ambush`, `OralSerum`, `Peyer`, `WormChaseAt` e `IleocecalValve`.
-Todo se dibuja con figuras por ahora; cuando haya sprites se conectan igual que los del estómago.
+Dibujos (fondo verde ya quitado):
+- `Art/Enemigos/Delgado/`: `Giardia_*`, `Rotavirus_*` (Normal, Ataca, Dano, Muere) y `Proglotido_Normal` / `_Ataca`.
+- `Art/Jefes/Tenia/`: `Cabeza_Normal`, `Cabeza_Muerde`, `Cabeza_Derrotada` (el cuello abajo es donde nace el cuerpo) y
+  `Segmento`, `Segmento_Cuello`, `Segmento_Huevos` (los 2 primeros pedazos son de cuello y los 3 últimos llevan huevos).
+- `Art/Jefes/Lombriz/`: `Cabeza_Sale`, `Cabeza_Ruge`, `Cabeza_Dano`, `Anillo`, `Anillo_Chico`, `Cola` y `Monticulo`.
+- `Art/Delgado/`: `GotaGrasa` (+ `_Rota`), `Vellosidad` (+ `_Danada`, se mezclan al aplanarse), `SueroOral`,
+  `Peyer_Apagada` / `_Encendida` y `Valvula_Abierta` / `_Cerrada`.
+Si borras un PNG, ese objeto vuelve a dibujarse con figuras.
 
 ## Fondos de nivel (imagen)
 

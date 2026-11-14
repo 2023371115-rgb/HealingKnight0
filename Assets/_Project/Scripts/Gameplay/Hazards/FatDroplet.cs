@@ -23,6 +23,9 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private Color fill = new Color(1f, 0.93f, 0.55f, 0.95f);
         [SerializeField] private Color outline = new Color(0.36f, 0.24f, 0.05f, 1f);
         [SerializeField] private Color shine = new Color(1f, 1f, 0.92f, 0.95f);
+        [Header("Dibujo (opcional; pivote en la parte de arriba)")]
+        [SerializeField] private Sprite wholeArt;
+        [SerializeField] private Sprite brokenArt;
 
         private BoxCollider2D floor;
         private Transform whole;
@@ -31,8 +34,15 @@ namespace HealingKnight.Gameplay.Hazards
         private float brokenTimer, breakAnim, seed;
         private Vector3 basePos;
         private bool broken;
+        private Transform brokenVisual;
 
         public bool IsBroken => broken;
+
+        public void SetArt(Sprite whole, Sprite brokenDrops)
+        {
+            wholeArt = whole;
+            brokenArt = brokenDrops;
+        }
 
         public void Configure(float dropWidth, AcidGeyser linkedGeyser)
         {
@@ -112,6 +122,24 @@ namespace HealingKnight.Gameplay.Hazards
         {
             if (whole == null) return;
             float t = Time.time;
+            if (brokenVisual != null)
+            {
+                // Con dibujo: la gota entera o las gotitas, que se abren y luego se vuelven a juntar.
+                whole.gameObject.SetActive(!broken);
+                brokenVisual.gameObject.SetActive(broken);
+                if (broken)
+                {
+                    breakAnim += Time.deltaTime;
+                    float spread = Mathf.Clamp01(breakAnim / 0.3f) * (1f - Mathf.Clamp01(1f - brokenTimer / 0.6f));
+                    brokenVisual.localScale = new Vector3(0.6f + spread * 0.55f, 0.8f + spread * 0.2f, 1f);
+                }
+                else
+                {
+                    float sq = Mathf.Sin(t * 3f + seed) * 0.04f;
+                    whole.localScale = new Vector3(1f + sq, 1f - sq, 1f);
+                }
+                return;
+            }
             if (broken)
             {
                 // Se dispersa en gotitas, y al final del tiempo se vuelven a juntar.
@@ -149,9 +177,23 @@ namespace HealingKnight.Gameplay.Hazards
             effector.useOneWay = true;
             effector.surfaceArc = 160f;
 
-            Sprite circle = Circle();
             whole = new GameObject("Gota").transform;
             whole.SetParent(transform, false);
+            if (wholeArt != null)
+            {
+                float k = width / Mathf.Max(0.01f, wholeArt.bounds.size.x);
+                AddSprite(whole, wholeArt, k, 2);
+                if (brokenArt != null)
+                {
+                    brokenVisual = new GameObject("Gotitas").transform;
+                    brokenVisual.SetParent(transform, false);
+                    AddSprite(brokenVisual, brokenArt, k, 2);
+                    brokenVisual.gameObject.SetActive(false);
+                }
+                bits = new Transform[0];
+                return;
+            }
+            Sprite circle = Circle();
             Vector2 c = new Vector2(0f, -height * 0.5f);
             Add(whole, circle, outline, 1, c, new Vector2(width + 0.12f, height + 0.12f));
             Add(whole, circle, fill, 2, c, new Vector2(width, height));
@@ -171,6 +213,16 @@ namespace HealingKnight.Gameplay.Hazards
                 bits[i] = b;
                 b.gameObject.SetActive(false);
             }
+        }
+
+        private static void AddSprite(Transform parent, Sprite sprite, float scale, int order)
+        {
+            var go = new GameObject("Dibujo");
+            go.transform.SetParent(parent, false);
+            go.transform.localScale = new Vector3(scale, scale, 1f);
+            var r = go.AddComponent<SpriteRenderer>();
+            r.sprite = sprite;
+            r.sortingOrder = order;
         }
 
         private static void Add(Transform parent, Sprite sprite, Color color, int order, Vector2 pos, Vector2 size)
