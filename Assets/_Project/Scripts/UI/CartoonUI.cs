@@ -153,7 +153,10 @@ namespace HealingKnight.UI
             return body;
         }
 
-        /// <summary>Texto con letra del juego, contorno oscuro y sombra.</summary>
+        /// <summary>
+        /// Texto con la letra del juego. Con 'outline' > 0 lleva contorno oscuro y sombra (para títulos y botones
+        /// principales); con 0 es texto limpio (para nombres, estados y textos pequeños: se lee mejor).
+        /// </summary>
         public static TextMeshProUGUI Text(Transform parent, string text, float size, Color color, bool title = false,
             TextAlignmentOptions alignment = TextAlignmentOptions.Center, float outline = 0.22f)
         {
@@ -191,7 +194,8 @@ namespace HealingKnight.UI
             UIFactory.Stretch(text.rectTransform, 10f);
 
             var juicy = root.AddComponent<CartoonButton>();
-            juicy.Init(body, color);
+            Transform line = root.transform.Find("Contorno");
+            juicy.Init(body, color, line != null ? line.GetComponent<Image>() : null);
             return button;
         }
 
@@ -213,6 +217,32 @@ namespace HealingKnight.UI
             TextMeshProUGUI t = Text(body.transform, text, fontSize, Cream, true);
             UIFactory.Stretch(t.rectTransform);
             return t;
+        }
+
+        /// <summary>Candado dibujado (cuerpo redondo + arco) para lo que está bloqueado.</summary>
+        public static void Padlock(Transform parent, float size, Color color)
+        {
+            var root = new GameObject("Candado", typeof(RectTransform));
+            root.transform.SetParent(parent, false);
+            UIFactory.Place(UIFactory.Rect(root), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(size, size));
+            float w = size * 0.13f;
+            foreach (float side in new[] { -1f, 1f })
+            {
+                Image leg = Image(root.transform, "Pata", Rounded, Outline, true, 0.15f);
+                UIFactory.Place(leg.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(side * size * 0.22f, size * 0.17f), new Vector2(w + 4f, size * 0.42f));
+                Image legFill = Image(root.transform, "PataRelleno", Rounded, color, true, 0.12f);
+                UIFactory.Place(legFill.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(side * size * 0.22f, size * 0.17f), new Vector2(w, size * 0.42f - 4f));
+            }
+            Image topLine = Image(root.transform, "Arco", Rounded, Outline, true, 0.15f);
+            UIFactory.Place(topLine.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, size * 0.36f), new Vector2(size * 0.44f + w + 4f, w + 4f));
+            Image topFill = Image(root.transform, "ArcoRelleno", Rounded, color, true, 0.12f);
+            UIFactory.Place(topFill.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, size * 0.36f), new Vector2(size * 0.44f + w, w));
+            Image bodyLine = Image(root.transform, "Cuerpo", Rounded, Outline, true, 0.25f);
+            UIFactory.Place(bodyLine.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -size * 0.14f), new Vector2(size * 0.72f, size * 0.56f));
+            Image bodyFill = Image(root.transform, "CuerpoRelleno", Rounded, color, true, 0.2f);
+            UIFactory.Place(bodyFill.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -size * 0.14f), new Vector2(size * 0.72f - 8f, size * 0.56f - 8f));
+            Image hole = Image(root.transform, "Cerradura", Circle, Outline);
+            UIFactory.Place(hole.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -size * 0.12f), new Vector2(size * 0.14f, size * 0.14f));
         }
 
         /// <summary>Palomita dibujada con dos barras redondas (la letra del juego no trae el símbolo ✓).</summary>

@@ -2,17 +2,21 @@ using HealingKnight.Core.Flow;
 using HealingKnight.Core.Progression;
 using TMPro;
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 namespace HealingKnight.UI
 {
     /// <summary>
-    /// Mapa del cuerpo: los sistemas (I–IV) y sus niveles según el progreso guardado, con el estilo de caricatura
-    /// del juego. Cada sistema es una tarjeta con la pintura de su primer órgano arriba, su número en una insignia
-    /// y su estado; cada nivel es un botón con una "foto" redonda de su fondo y una palomita si ya lo completaste.
-    /// - Sistema bloqueado: gris con candado. Nivel sin escena todavía: "Próximamente". Secretos: no se muestran.
+    /// Mapa del cuerpo: los sistemas (I–IV) y sus órganos (niveles) según el progreso guardado.
+    /// Jerarquía de la pantalla (de lo más importante a lo menos):
+    ///  1) SIGUIENTE MISIÓN: el órgano que toca jugar, con botón grande "¡Entrar!" (ya viene seleccionado).
+    ///  2) Tarjetas de los sistemas, todas del mismo tamaño: pintura, número, nombre, estado con icono y avance (2/3),
+    ///     y la lista de órganos (filas iguales; el siguiente con contorno amarillo que late).
+    ///  3) Título discreto, fórmulas obtenidas y ayuda de controles abajo.
+    /// Estados con palabra + icono (no solo color): Desinfectado (palomita), En curso (avance), Bloqueado (candado).
+    /// Los efectos de letra (contorno y sombra) solo van en títulos y botones principales; lo demás es texto limpio.
     /// Todo sale del GameCatalog: agregar un sistema o nivel no requiere tocar esta pantalla.
-    /// Los dibujos (fondos de nivel, microbios) y la letra los asigna SceneSetup.
     /// </summary>
     public class BodyMapScreen : MonoBehaviour
     {
@@ -24,7 +28,13 @@ namespace HealingKnight.UI
         [SerializeField] private string[] levelIds;
         [SerializeField] private Sprite[] levelArt;
 
-        private Button firstPlayable;
+        private static readonly Color Panel = new Color(0.1f, 0.04f, 0.08f, 1f);
+        private static readonly Color TextSoft = new Color(1f, 0.9f, 0.92f, 1f);
+        private static readonly Color TextDim = new Color(0.85f, 0.8f, 0.84f, 1f);
+
+        private Button focus;
+        private LevelData nextLevel;
+        private SystemData nextSystem;
 
         private void Awake()
         {
@@ -33,7 +43,14 @@ namespace HealingKnight.UI
             Build();
         }
 
-        private void Start() => UIFactory.Select(firstPlayable);
+        private void Start() => UIFactory.Select(focus);
+
+        private void Update()
+        {
+            bool back = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
+                        || (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame);
+            if (back) GameSession.GoToMainMenu();
+        }
 
         private Sprite ArtFor(LevelData level)
         {
@@ -46,45 +63,55 @@ namespace HealingKnight.UI
         private void Build()
         {
             Canvas canvas = UIFactory.CreateCanvas("BodyMap Canvas", 0, transform);
-            Image bg = UIFactory.Panel(canvas.transform, "Fondo", new Color(0.14f, 0.05f, 0.1f, 1f));
+            Image bg = UIFactory.Panel(canvas.transform, "Fondo", new Color(0.16f, 0.05f, 0.11f, 1f));
             UIFactory.Stretch(bg.rectTransform);
-            var bugs = new GameObject("Microbios", typeof(RectTransform));
-            bugs.transform.SetParent(canvas.transform, false);
-            UIFactory.Stretch(UIFactory.Rect(bugs));
-            bugs.AddComponent<FloatingMicrobes>().Init(microbes, 14);
-            Image vig = CartoonUI.Image(canvas.transform, "Viñeta", CartoonUI.Vignette, new Color(0.05f, 0f, 0.03f, 0.9f));
+            Image glow = CartoonUI.Image(canvas.transform, "Luz", CartoonUI.Glow, new Color(0.9f, 0.3f, 0.45f, 0.18f));
+            UIFactory.Place(glow.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 120f), new Vector2(2200f, 1400f));
+            Image vig = CartoonUI.Image(canvas.transform, "Viñeta", CartoonUI.Vignette, new Color(0.04f, 0f, 0.02f, 0.9f));
             UIFactory.Stretch(vig.rectTransform, -200f);
-
-            // Título en una cinta.
-            Image ribbon = CartoonUI.Blob(canvas.transform, "Cinta", CartoonUI.Red, new Vector2(1180f, 104f), 7f, 1f);
-            RectTransform rr = (RectTransform)ribbon.transform.parent;
-            UIFactory.Place(rr, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -28f), new Vector2(1180f, 104f));
-            rr.gameObject.AddComponent<UIBob>().height = 4f;
-            TextMeshProUGUI title = CartoonUI.Text(ribbon.transform, "MAPA DEL CUERPO  ·  PACIENTE 001", 54f, CartoonUI.Cream, true);
-            UIFactory.Stretch(title.rectTransform, 6f);
 
             GameCatalog catalog = GameSession.Catalog;
             ProgressService progress = GameSession.Progress;
             if (catalog == null || progress == null)
             {
-                var error = CartoonUI.Text(canvas.transform, "Falta el GameCatalog. Ejecuta 'Healing Knight > Crear proyecto base'.", 36f, Color.red);
+                var error = CartoonUI.Text(canvas.transform, "Falta el GameCatalog. Ejecuta 'Healing Knight > Crear proyecto base'.", 36f, Color.red, false, TextAlignmentOptions.Center, 0f);
                 UIFactory.Place(error.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), Vector2.zero, new Vector2(1600f, 200f));
                 return;
             }
 
+            FindNextMission(catalog, progress);
+
+            // 3) Título discreto y fórmulas (arriba).
+            TextMeshProUGUI title = CartoonUI.Text(canvas.transform, "MAPA DEL CUERPO", 44f, CartoonUI.Cream, true, TextAlignmentOptions.Left, 0.18f);
+            UIFactory.Place(title.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(250f, -30f), new Vector2(600f, 60f));
+            TextMeshProUGUI patient = CartoonUI.Text(canvas.transform, "Paciente 001  ·  elige un órgano para entrar", 22f, TextDim, false, TextAlignmentOptions.Left, 0f);
+            UIFactory.Place(patient.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(252f, -86f), new Vector2(700f, 34f));
             BuildFormulas(canvas.transform, GameSession.Save.formulas.Count, catalog.systems.Count);
 
+            Button back = CartoonUI.Button(canvas.transform, "Menú", GameSession.GoToMainMenu, new Vector2(180f, 70f), new Color(0.42f, 0.25f, 0.4f), 28f);
+            UIFactory.Place((RectTransform)back.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -30f), new Vector2(180f, 70f));
+
+            // 1) Siguiente misión.
+            BuildNextMission(canvas.transform);
+
+            // 2) Tarjetas.
             var row = new GameObject("Sistemas", typeof(RectTransform));
             row.transform.SetParent(canvas.transform, false);
-            UIFactory.Place(UIFactory.Rect(row), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -80f), new Vector2(1840f, 800f));
-            UIFactory.HorizontalLayout(row, 26f);
-
+            UIFactory.Place(UIFactory.Rect(row), new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 70f), new Vector2(1800f, 700f));
+            UIFactory.HorizontalLayout(row, 28f);
+            SystemData previous = null;
             foreach (SystemData system in catalog.systems)
-                if (system != null) BuildSystemCard(row.transform, system, progress);
+            {
+                if (system == null) continue;
+                BuildSystemCard(row.transform, system, progress, previous);
+                previous = system;
+            }
 
-            Button back = CartoonUI.Button(canvas.transform, "Menú", GameSession.GoToMainMenu, new Vector2(260f, 82f), new Color(0.55f, 0.3f, 0.5f), 32f);
-            UIFactory.Place((RectTransform)back.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(36f, -36f), new Vector2(260f, 82f));
-            if (firstPlayable == null) firstPlayable = back;
+            // Ayuda de controles.
+            TextMeshProUGUI help = CartoonUI.Text(canvas.transform, "Flechas / stick: elegir     Enter / A: entrar     Esc / B: menú", 20f, new Color(1f, 1f, 1f, 0.55f), false, TextAlignmentOptions.Center, 0f);
+            UIFactory.Place(help.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(1400f, 30f));
+
+            if (focus == null) focus = back;
 
             Image fade = UIFactory.Panel(canvas.transform, "Fundido", Color.black);
             UIFactory.Stretch(fade.rectTransform);
@@ -92,135 +119,218 @@ namespace HealingKnight.UI
             fade.gameObject.AddComponent<UIFadeIn>();
         }
 
+        /// <summary>El primer órgano jugable que no se ha completado (en el orden del catálogo).</summary>
+        private void FindNextMission(GameCatalog catalog, ProgressService progress)
+        {
+            foreach (SystemData system in catalog.systems)
+            {
+                if (system == null || !progress.IsSystemUnlocked(system)) continue;
+                foreach (LevelData level in system.levels)
+                {
+                    if (level == null || level.hidden || !progress.IsLevelVisible(level)) continue;
+                    if (progress.IsLevelPlayable(level) && !progress.IsLevelCompleted(level))
+                    {
+                        nextLevel = level;
+                        nextSystem = system;
+                        return;
+                    }
+                }
+            }
+        }
+
+        private void BuildNextMission(Transform parent)
+        {
+            Color accent = nextSystem != null ? nextSystem.mapColor : CartoonUI.Mint;
+            Image card = CartoonUI.Blob(parent, "SiguienteMision", Color.Lerp(accent, Panel, 0.55f), new Vector2(1000f, 150f), 7f, 1f);
+            RectTransform cr = (RectTransform)card.transform.parent;
+            UIFactory.Place(cr, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(60f, -132f), new Vector2(1000f, 150f));
+            Transform c = card.transform;
+
+            if (nextLevel == null)
+            {
+                TextMeshProUGUI done = CartoonUI.Text(c, "¡Todo lo disponible está desinfectado!", 40f, CartoonUI.Mint, true);
+                UIFactory.Stretch(done.rectTransform, 10f);
+                return;
+            }
+
+            var photo = new GameObject("Foto", typeof(RectTransform));
+            photo.transform.SetParent(c, false);
+            UIFactory.Place(UIFactory.Rect(photo), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(18f, 0f), new Vector2(112f, 112f));
+            CartoonUI.RoundPicture(photo.transform, ArtFor(nextLevel), 112f, accent);
+
+            TextMeshProUGUI tag = CartoonUI.Text(c, "SIGUIENTE MISIÓN", 22f, CartoonUI.Yellow, false, TextAlignmentOptions.Left, 0f);
+            UIFactory.Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(150f, -18f), new Vector2(480f, 30f));
+            TextMeshProUGUI name = CartoonUI.Text(c, nextLevel.displayName, 46f, CartoonUI.Cream, true, TextAlignmentOptions.Left, 0.15f);
+            UIFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(148f, -48f), new Vector2(520f, 58f));
+            TextMeshProUGUI where = CartoonUI.Text(c, $"{nextSystem.mapNumber} · {nextSystem.displayName}", 22f, TextSoft, false, TextAlignmentOptions.Left, 0f);
+            UIFactory.Place(where.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(150f, -106f), new Vector2(520f, 30f));
+
+            LevelData captured = nextLevel;
+            Button go = CartoonUI.Button(c, "¡ENTRAR!", () => GameSession.StartLevel(captured), new Vector2(270f, 100f), CartoonUI.Red, 44f);
+            UIFactory.Place((RectTransform)go.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(270f, 100f));
+            go.GetComponent<CartoonButton>().Highlight = true;
+            focus = go;
+        }
+
         /// <summary>Contador de fórmulas: una cápsula por sistema, llena si ya obtuviste su fórmula.</summary>
         private void BuildFormulas(Transform parent, int got, int total)
         {
             var box = new GameObject("Formulas", typeof(RectTransform));
             box.transform.SetParent(parent, false);
-            UIFactory.Place(UIFactory.Rect(box), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -150f), new Vector2(900f, 60f));
-            UIFactory.HorizontalLayout(box, 14f);
-            TextMeshProUGUI label = CartoonUI.Text(box.transform, "FÓRMULAS", 30f, CartoonUI.Sky, true);
-            label.rectTransform.sizeDelta = new Vector2(220f, 60f);
+            UIFactory.Place(UIFactory.Rect(box), new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -40f), new Vector2(560f, 56f));
+            UIFactory.HorizontalLayout(box, 10f);
+            TextMeshProUGUI label = CartoonUI.Text(box.transform, $"Fórmulas {got}/{total}", 24f, CartoonUI.Sky, false, TextAlignmentOptions.Right, 0f);
+            label.rectTransform.sizeDelta = new Vector2(190f, 56f);
             for (int i = 0; i < total; i++)
             {
                 bool on = i < got;
-                Image pill = CartoonUI.Blob(box.transform, "Capsula", on ? CartoonUI.Sky : new Color(0.25f, 0.18f, 0.25f), new Vector2(84f, 42f), 5f, 0.6f, true, on);
-                if (on)
-                {
-                    Image half = CartoonUI.Image(pill.transform, "Mitad", CartoonUI.Rounded, CartoonUI.Cream, true, 0.4f);
-                    RectTransform hr = half.rectTransform;
-                    hr.anchorMin = new Vector2(0.5f, 0f); hr.anchorMax = Vector2.one; hr.offsetMin = hr.offsetMax = Vector2.zero;
-                }
+                Image pill = CartoonUI.Blob(box.transform, "Capsula", on ? CartoonUI.Sky : new Color(0.28f, 0.2f, 0.28f), new Vector2(70f, 36f), 5f, 0.5f, false, on);
+                if (!on) continue;
+                Image half = CartoonUI.Image(pill.transform, "Mitad", CartoonUI.Rounded, CartoonUI.Cream, true, 0.35f);
+                RectTransform hr = half.rectTransform;
+                hr.anchorMin = new Vector2(0.5f, 0f); hr.anchorMax = Vector2.one; hr.offsetMin = hr.offsetMax = Vector2.zero;
             }
-            TextMeshProUGUI count = CartoonUI.Text(box.transform, $"{got} / {total}", 30f, CartoonUI.Cream, true);
-            count.rectTransform.sizeDelta = new Vector2(110f, 60f);
         }
 
-        private void BuildSystemCard(Transform parent, SystemData system, ProgressService progress)
+        private void BuildSystemCard(Transform parent, SystemData system, ProgressService progress, SystemData previous)
         {
             bool unlocked = progress.IsSystemUnlocked(system);
             bool completed = progress.IsSystemCompleted(system);
             Color tone = unlocked ? system.mapColor : CartoonUI.Locked;
-            Color cardColor = unlocked ? Color.Lerp(system.mapColor, new Color(0.12f, 0.03f, 0.08f), 0.62f) : new Color(0.2f, 0.18f, 0.2f, 1f);
+            Color cardColor = unlocked ? Color.Lerp(system.mapColor, Panel, 0.68f) : new Color(0.22f, 0.2f, 0.23f, 1f);
 
-            Image card = CartoonUI.Blob(parent, "Sistema_" + system.id, cardColor, new Vector2(438f, 780f), 8f, 1.3f);
+            // Cuenta de órganos (sin los secretos que aún no aparecen).
+            int total = 0, done = 0;
+            foreach (LevelData l in system.levels)
+            {
+                if (l == null || !progress.IsLevelVisible(l)) continue;
+                total++;
+                if (progress.IsLevelCompleted(l)) done++;
+            }
+
+            const float W = 420f, H = 700f, Pad = 18f;
+            Image card = CartoonUI.Blob(parent, "Sistema_" + system.id, cardColor, new Vector2(W, H), 7f, 1.1f);
             Transform c = card.transform;
 
-            // Pintura del primer órgano del sistema arriba (recortada en la tarjeta).
+            // Pintura del primer órgano arriba.
             Sprite header = null;
             foreach (LevelData l in system.levels) { header = ArtFor(l); if (header != null) break; }
             var top = new GameObject("Portada", typeof(RectTransform));
             top.transform.SetParent(c, false);
             RectTransform tr = UIFactory.Rect(top);
-            tr.anchorMin = new Vector2(0f, 1f); tr.anchorMax = new Vector2(1f, 1f); tr.pivot = new Vector2(0.5f, 1f);
-            tr.sizeDelta = new Vector2(-28f, 180f); tr.anchoredPosition = new Vector2(0f, -14f);
-            Image frame = CartoonUI.Image(top.transform, "Marco", CartoonUI.Rounded, CartoonUI.Outline, true, 0.7f);
+            UIFactory.Place(tr, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -Pad), new Vector2(W - Pad * 2f - 14f, 150f));
+            Image frame = CartoonUI.Image(top.transform, "Marco", CartoonUI.Rounded, CartoonUI.Outline, true, 0.6f);
             UIFactory.Stretch(frame.rectTransform);
-            Image maskImg = CartoonUI.Image(top.transform, "Mascara", CartoonUI.Rounded, Color.white, true, 0.6f);
+            Image maskImg = CartoonUI.Image(top.transform, "Mascara", CartoonUI.Rounded, Color.Lerp(tone, Color.black, 0.5f), true, 0.5f);
             UIFactory.Stretch(maskImg.rectTransform, 5f);
             maskImg.gameObject.AddComponent<Mask>().showMaskGraphic = true;
-            maskImg.color = Color.Lerp(tone, Color.black, 0.4f);
-            if (header != null)
-            {
-                Image pic = CartoonUI.Cover(maskImg.transform, header, new Vector2(410f, 172f));
-                pic.color = unlocked ? Color.white : new Color(0.35f, 0.35f, 0.35f, 1f);
-            }
+            if (header != null && unlocked) CartoonUI.Cover(maskImg.transform, header, new Vector2(W - Pad * 2f - 24f, 140f));
+            if (!unlocked) CartoonUI.Padlock(maskImg.transform, 82f, new Color(0.75f, 0.72f, 0.76f));
 
-            // Número del sistema en una insignia, montada sobre la portada.
-            TextMeshProUGUI num = CartoonUI.Badge(c, system.mapNumber, unlocked ? tone : CartoonUI.Locked, 104f, system.mapNumber.Length > 2 ? 40f : 50f);
-            RectTransform nb = (RectTransform)num.transform.parent.parent;
-            UIFactory.Place(nb, new Vector2(0.5f, 1f), new Vector2(0.5f, 0.5f), new Vector2(0f, -194f), new Vector2(104f, 104f));
-            if (unlocked && !completed) nb.gameObject.AddComponent<UIBob>().height = 5f;
+            // Número del sistema en una insignia, en la esquina de la pintura.
+            TextMeshProUGUI num = CartoonUI.Badge(c, system.mapNumber, tone, 70f, system.mapNumber.Length > 2 ? 28f : 34f);
+            UIFactory.Place((RectTransform)num.transform.parent.parent, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(Pad + 26f, -Pad - 8f), new Vector2(70f, 70f));
 
-            TextMeshProUGUI name = CartoonUI.Text(c, system.displayName, 34f, unlocked ? CartoonUI.Cream : Color.gray, true);
-            UIFactory.Place(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -250f), new Vector2(410f, 50f));
+            TextMeshProUGUI name = CartoonUI.Text(c, system.displayName, 32f, unlocked ? CartoonUI.Cream : TextDim, true, TextAlignmentOptions.Center, unlocked ? 0.12f : 0f);
+            UIFactory.Place(name.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -Pad - 162f), new Vector2(W - 30f, 44f));
 
-            // Estado en una pastilla de color.
-            string status = completed ? "Desinfectado" : unlocked ? "¡Infección activa!" : "Bloqueado";
-            Color statusColor = completed ? CartoonUI.Mint : unlocked ? CartoonUI.Red : CartoonUI.Locked;
-            Image pill = CartoonUI.Blob(c, "Estado", statusColor, new Vector2(300f, 50f), 5f, 0.6f, false, true);
-            UIFactory.Place((RectTransform)pill.transform.parent, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -304f), new Vector2(300f, 50f));
-            TextMeshProUGUI st = CartoonUI.Text(pill.transform, status, 26f, CartoonUI.Cream, true, TextAlignmentOptions.Center, 0.18f);
+            // Estado: icono + palabra + explicación corta.
+            string status, detail;
+            Color chip;
+            if (completed) { status = "Desinfectado"; detail = "Fórmula obtenida"; chip = new Color(0.2f, 0.55f, 0.35f); }
+            else if (unlocked) { status = $"En curso  {done}/{total}"; detail = "Limpia todos sus órganos"; chip = new Color(0.62f, 0.2f, 0.28f); }
+            else { status = "Bloqueado"; detail = previous != null ? $"Termina: {previous.displayName}" : "Aún no disponible"; chip = new Color(0.34f, 0.31f, 0.35f); }
+
+            Image pill = CartoonUI.Blob(c, "Estado", chip, new Vector2(W - 70f, 46f), 5f, 0.5f, false, false);
+            UIFactory.Place((RectTransform)pill.transform.parent, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -Pad - 212f), new Vector2(W - 70f, 46f));
+            var icon = new GameObject("Icono", typeof(RectTransform));
+            icon.transform.SetParent(pill.transform, false);
+            UIFactory.Place(UIFactory.Rect(icon), new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(26f, 0f), new Vector2(30f, 30f));
+            if (completed) CartoonUI.CheckMark(icon.transform, 26f);
+            else if (!unlocked) CartoonUI.Padlock(icon.transform, 28f, TextDim);
+            else ProgressDots(icon.transform, done, total);
+            TextMeshProUGUI st = CartoonUI.Text(pill.transform, status, 24f, Color.white, false, TextAlignmentOptions.Center, 0f);
             UIFactory.Stretch(st.rectTransform, 2f);
-            if (unlocked && !completed) pill.transform.parent.gameObject.AddComponent<UIBob>().height = 3f;
+            st.rectTransform.offsetMin = new Vector2(44f, 2f);
 
-            var column = new GameObject("Niveles", typeof(RectTransform));
+            TextMeshProUGUI det = CartoonUI.Text(c, detail, 19f, TextDim, false, TextAlignmentOptions.Center, 0f);
+            UIFactory.Place(det.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -Pad - 262f), new Vector2(W - 40f, 26f));
+
+            var column = new GameObject("Organos", typeof(RectTransform));
             column.transform.SetParent(c, false);
-            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -366f), new Vector2(410f, 370f));
-            UIFactory.VerticalLayout(column, 8f, TextAnchor.UpperCenter);
+            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -Pad - 300f), new Vector2(W - Pad * 2f, 360f));
+            UIFactory.VerticalLayout(column, 10f, TextAnchor.UpperCenter);
 
             foreach (LevelData level in system.levels)
             {
                 if (level == null || !progress.IsLevelVisible(level)) continue; // los secretos no se muestran
-                BuildLevelButton(column.transform, level, progress, unlocked, tone);
-            }
-
-            if (!unlocked)
-            {
-                TextMeshProUGUI lockText = CartoonUI.Text(c, "Completa los sistemas\nanteriores para entrar", 24f, new Color(1f, 1f, 1f, 0.6f), false);
-                UIFactory.Place(lockText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 26f), new Vector2(400f, 70f));
+                BuildLevelRow(column.transform, level, progress, unlocked, tone, W - Pad * 2f - 12f);
             }
         }
 
-        private void BuildLevelButton(Transform parent, LevelData level, ProgressService progress, bool systemUnlocked, Color tone)
+        /// <summary>Bolitas de avance (llenas = órganos limpios).</summary>
+        private static void ProgressDots(Transform parent, int done, int total)
+        {
+            Image ring = CartoonUI.Image(parent, "Aro", CartoonUI.Circle, CartoonUI.Outline);
+            UIFactory.Stretch(ring.rectTransform);
+            Image fill = CartoonUI.Image(parent, "Avance", CartoonUI.Circle, CartoonUI.Yellow);
+            UIFactory.Stretch(fill.rectTransform, 4f);
+            fill.type = Image.Type.Filled;
+            fill.fillMethod = Image.FillMethod.Radial360;
+            fill.fillOrigin = 2;
+            fill.fillAmount = total > 0 ? (float)done / total : 0f;
+        }
+
+        private void BuildLevelRow(Transform parent, LevelData level, ProgressService progress, bool systemUnlocked, Color tone, float width)
         {
             bool playable = progress.IsLevelPlayable(level);
             bool done = progress.IsLevelCompleted(level);
+            bool next = level == nextLevel;
 
             string label = level.hidden ? "Secreto: " + level.displayName : level.displayName;
-            string sub = done ? "Completado" : systemUnlocked && !level.HasScene ? "Próximamente" : !playable ? "Bloqueado" : "¡Entra!";
+            string sub = done ? "Completado" : next ? "Siguiente" : systemUnlocked && !level.HasScene ? "Próximamente" : !playable ? "Bloqueado" : "Disponible";
 
             LevelData captured = level;
-            Color color = done ? Color.Lerp(tone, new Color(0.25f, 0.1f, 0.15f), 0.35f) : Color.Lerp(tone, CartoonUI.Red, 0.35f);
-            Button button = CartoonUI.Button(parent, "", () => GameSession.StartLevel(captured), new Vector2(392f, 84f), color, 28f);
+            Color color = done ? Color.Lerp(tone, Panel, 0.45f) : Color.Lerp(tone, CartoonUI.Red, 0.3f);
+            Button button = CartoonUI.Button(parent, "", () => GameSession.StartLevel(captured), new Vector2(width, 76f), color, 26f);
             button.interactable = playable;
-            Transform body = button.GetComponent<CartoonButton>() != null ? button.transform.Find("Relleno") : button.transform;
+            CartoonButton juicy = button.GetComponent<CartoonButton>();
+            if (next && juicy != null) juicy.Highlight = true;
+            Transform body = button.transform.Find("Relleno");
 
-            // Foto redonda del nivel a la izquierda.
-            var photoHolder = new GameObject("FotoNivel", typeof(RectTransform));
-            photoHolder.transform.SetParent(body, false);
-            UIFactory.Place(UIFactory.Rect(photoHolder), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(6f, 0f), new Vector2(66f, 66f));
-            CartoonUI.RoundPicture(photoHolder.transform, ArtFor(level), 66f, tone);
+            // Foto redonda del órgano (o candado si está bloqueado).
+            var photo = new GameObject("FotoOrgano", typeof(RectTransform));
+            photo.transform.SetParent(body, false);
+            UIFactory.Place(UIFactory.Rect(photo), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(8f, 0f), new Vector2(58f, 58f));
+            if (playable || done) CartoonUI.RoundPicture(photo.transform, ArtFor(level), 58f, tone);
+            else
+            {
+                Image disc = CartoonUI.Image(photo.transform, "Disco", CartoonUI.Circle, new Color(0.18f, 0.16f, 0.19f));
+                UIFactory.Stretch(disc.rectTransform);
+                CartoonUI.Padlock(photo.transform, 32f, TextDim);
+            }
 
-            // Nombre y estado.
+            // Nombre y estado: texto limpio (sin contorno) para que se lea.
             TextMeshProUGUI text = body.GetComponentInChildren<TextMeshProUGUI>();
             if (text != null)
             {
-                text.text = $"{label}\n<size=62%><color=#{(done ? "B8FFC8" : playable ? "FFE9A0" : "CCCCCC")}>{sub}</color></size>";
+                text.outlineWidth = 0f;
+                text.fontMaterial.DisableKeyword(ShaderUtilities.Keyword_Underlay);
+                string subColor = done ? "C9FFD8" : next ? "FFE27A" : playable ? "FFFFFF" : "DDD5DB";
+                text.text = $"{label}\n<size=70%><color=#{subColor}>{sub}</color></size>";
                 text.alignment = TextAlignmentOptions.MidlineLeft;
-                text.rectTransform.offsetMin = new Vector2(84f, 4f);
-                text.fontSize = label.Length > 16 ? 25f : 28f;
+                text.color = playable || done ? Color.white : TextDim;
+                text.rectTransform.offsetMin = new Vector2(78f, 4f);
+                text.rectTransform.offsetMax = new Vector2(done ? -48f : -10f, -4f);
+                text.fontSize = label.Length > 16 ? 23f : 26f;
             }
 
             if (done)
             {
-                TextMeshProUGUI check = CartoonUI.Badge(button.transform, "", CartoonUI.Mint, 46f, 28f);
-                UIFactory.Place((RectTransform)check.transform.parent.parent, new Vector2(1f, 1f), new Vector2(0.5f, 0.5f), new Vector2(-14f, -14f), new Vector2(46f, 46f));
-                CartoonUI.CheckMark(check.transform.parent, 30f);
+                TextMeshProUGUI check = CartoonUI.Badge(body, "", CartoonUI.Mint, 36f, 20f);
+                UIFactory.Place((RectTransform)check.transform.parent.parent, new Vector2(1f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(-26f, 0f), new Vector2(36f, 36f));
+                CartoonUI.CheckMark(check.transform.parent, 22f);
             }
-
-            // Selecciona por defecto el primer nivel jugable que no se haya completado.
-            if (playable && !done && firstPlayable == null) firstPlayable = button;
         }
     }
 }

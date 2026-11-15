@@ -11,17 +11,21 @@ namespace HealingKnight.UI
     public class CartoonButton : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerDownHandler, IPointerUpHandler,
         ISelectHandler, IDeselectHandler, ISubmitHandler
     {
-        private Image fill;
+        private Image fill, outline;
         private Color baseColor;
         private Button button;
         private bool hover, selected, pressed;
         private float squash, seed;
 
-        public void Init(Image fillImage, Color color)
+        public void Init(Image fillImage, Color color, Image outlineImage = null)
         {
             fill = fillImage;
             baseColor = color;
+            outline = outlineImage;
         }
+
+        /// <summary>Contorno amarillo que late (para marcar "la siguiente misión" aunque no esté seleccionado).</summary>
+        public bool Highlight { get; set; }
 
         /// <summary>Cambia el color base (por ejemplo, para un nivel completado).</summary>
         public void SetColor(Color color)
@@ -57,6 +61,15 @@ namespace HealingKnight.UI
             transform.localScale = new Vector3(s + wob, s - wob, 1f);
             float tilt = active ? Mathf.Sin(Time.unscaledTime * 3f + seed) * 1.5f : 0f;
             transform.localRotation = Quaternion.Euler(0f, 0f, Mathf.Lerp(transform.localEulerAngles.z > 180f ? transform.localEulerAngles.z - 360f : transform.localEulerAngles.z, tilt, 1f - Mathf.Exp(-10f * dt)));
+
+            if (outline != null)
+            {
+                // Seleccionado: contorno amarillo (no solo más grande), para que se note con control o teclado.
+                Color line = CartoonUI.Outline;
+                if (active) line = CartoonUI.Yellow;
+                else if (Highlight && Interactable) line = Color.Lerp(CartoonUI.Outline, CartoonUI.Yellow, 0.5f + 0.5f * Mathf.Sin(Time.unscaledTime * 4f));
+                outline.color = Color.Lerp(outline.color, line, 1f - Mathf.Exp(-14f * dt));
+            }
 
             if (fill == null) return;
             Color c = !Interactable ? CartoonUI.Locked : active ? Color.Lerp(baseColor, Color.white, 0.18f) : baseColor;
