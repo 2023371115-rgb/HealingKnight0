@@ -28,6 +28,8 @@ namespace HealingKnight.Gameplay.Level
         public bool Alerted => uveitis > 0f;
         /// <summary>¿El jugador está escondido ahora (agachado tras algo, dentro de una mosca volante o en el punto ciego)?</summary>
         public bool PlayerHidden { get; private set; }
+        /// <summary>El ojo está parpadeando (párpados cerrados): nadie ve nada.</summary>
+        public bool Blinking { get; set; }
 
         private float lastSpotted = -10f, uveitis;
         private readonly HashSet<Projectile> heard = new HashSet<Projectile>();
@@ -44,7 +46,7 @@ namespace HealingKnight.Gameplay.Level
         /// <summary>Alguien te está viendo: sube la barra 'perSecond' por segundo.</summary>
         public void Spot(float perSecond)
         {
-            if (PlayerHidden || Alerted) return;
+            if (PlayerHidden || Alerted || Blinking) return;
             Level = Mathf.Min(1f, Level + perSecond * Time.deltaTime);
             lastSpotted = Time.time;
         }

@@ -382,6 +382,28 @@ namespace HealingKnight.EditorTools
         /// Los fondos son pinturas lisas: filtro Bilinear, sin compresión y con píxeles por unidad tal que
         /// la imagen mida 1.2 veces el alto de la pantalla (10.8 unidades). LevelBackdrop igual lo reescala si hace falta.
         /// </summary>
+        /// <summary>
+        /// Ojo: si existe 'Fondo_Ojo_Iris.png' (el iris recortado del fondo), lo pone encima en su lugar y le agrega
+        /// EyeBackdrop (el iris te sigue con la mirada y el ojo parpadea).
+        /// </summary>
+        private static void AddEyeIris(GameObject back, string backdropName, Sprite backdrop)
+        {
+            if (backdropName != "Fondo_Ojo") return;
+            string path = $"{BackdropFolder}/Fondo_Ojo_Iris.png";
+            if (AssetDatabase.LoadAssetAtPath<Texture2D>(path) == null) return;
+            float ppu = backdrop.rect.height / (10.8f * 1.2f);
+            Sprite irisSprite = PrefabSetup.ArtSprite(path, ppu, new Vector2(0.5f, 0.5f));
+            var iris = new GameObject("Iris");
+            iris.transform.SetParent(back.transform, false);
+            // El iris estaba centrado en (906, 201) del dibujo de 1774 x 887.
+            Vector2 px = new Vector2(906f, 201f);
+            iris.transform.localPosition = new Vector3((px.x - backdrop.rect.width * 0.5f) / ppu, (backdrop.rect.height * 0.5f - px.y) / ppu, 0f);
+            var r = iris.AddComponent<SpriteRenderer>();
+            r.sprite = irisSprite;
+            r.sortingOrder = -299;
+            back.AddComponent<EyeBackdrop>().Configure(iris.transform);
+        }
+
         private static Sprite LoadBackdrop(string name)
         {
             if (string.IsNullOrEmpty(name)) return null;
@@ -438,6 +460,7 @@ namespace HealingKnight.EditorTools
                 renderer.sprite = backdrop;
                 renderer.sortingOrder = -300;
                 back.AddComponent<LevelBackdrop>().Configure(startX, endX);
+                AddEyeIris(back, style.backdrop, backdrop);
                 style.decor = Decor.None; // la imagen ya trae su decorado
             }
             else

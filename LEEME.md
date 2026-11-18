@@ -316,6 +316,9 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - Se esconde en quistes.
   - Si llegas sin que te detecten, lo sorprendes: se marea y le puedes pegar (antiparasitario).
   - Si te ve, huye a otro quiste.
+- **El fondo está vivo** (`EyeBackdrop`).
+  - El iris (`Art/Fondos/Fondo_Ojo_Iris.png`, recortado del fondo) te sigue con la mirada y tiembla si la inflamación sube.
+  - Cada ~10 s el ojo **parpadea**: los párpados cierran la pantalla un momento y mientras están cerrados nadie te ve.
 - **Premio:** el **escáner** (`SecretRewards`). Sobre cada enemigo aparece un puntito con el color del medicamento que le gana, en todos los niveles (secreto `premio_escaneo`).
 - Arte opcional:
   - En `Art/Ojo/`: Macrofago, Cristalino.
