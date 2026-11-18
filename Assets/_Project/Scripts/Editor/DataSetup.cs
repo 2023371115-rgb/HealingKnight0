@@ -1080,18 +1080,19 @@ namespace HealingKnight.EditorTools
                 e.ally = e.kind == "Aliada";
             }
             Bestiary.entries = list;
+            AssignBestiaryPortraits(false);   // SceneSetup vuelve a correr DataSetup: sin esto se perdían los dibujos
             EditorUtility.SetDirty(Bestiary);
         }
 
         /// <summary>Pone el dibujo de cada ficha (después de PrefabSetup, que ya importó los PNG como sprites).</summary>
-        public void AssignBestiaryPortraits()
+        public void AssignBestiaryPortraits(bool allowImport = true)
         {
             if (Bestiary == null) return;
             foreach (BestiaryEntry e in Bestiary.entries)
             {
                 if (string.IsNullOrEmpty(e.portraitPath)) continue;
                 Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(e.portraitPath);
-                if (s == null && AssetImporter.GetAtPath(e.portraitPath) is TextureImporter importer)
+                if (s == null && allowImport && AssetImporter.GetAtPath(e.portraitPath) is TextureImporter importer)
                 {
                     importer.textureType = TextureImporterType.Sprite;
                     importer.spriteImportMode = SpriteImportMode.Single;
@@ -1099,7 +1100,8 @@ namespace HealingKnight.EditorTools
                     importer.SaveAndReimport();
                     s = AssetDatabase.LoadAssetAtPath<Sprite>(e.portraitPath);
                 }
-                e.portrait = s;
+                if (s != null) e.portrait = s;
+                else if (allowImport) Debug.LogWarning($"[Bestiario] No se encontró el dibujo de '{e.name}': {e.portraitPath}");
             }
             EditorUtility.SetDirty(Bestiary);
         }
