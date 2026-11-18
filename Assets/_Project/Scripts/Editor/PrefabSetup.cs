@@ -1294,6 +1294,27 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
             SetupUtils.SetRef(boss, "minionPrefab", Neumococo);
             SetupUtils.SetRef(boss, "minionData", data.Neumococo);
+
+            // Dibujo (Art/Jefes/Colmena/Nave_*.png): la nave de tuberculosis reemplaza las figuras.
+            const string nave = "Assets/_Project/Art/Jefes/Colmena";
+            Sprite naveNormal = ArtByWidth($"{nave}/Nave_Normal.png", 4.2f);
+            if (naveNormal != null)
+            {
+                var old = new System.Collections.Generic.List<GameObject>();
+                foreach (Transform child in v) old.Add(child.gameObject);
+                foreach (GameObject go in old) Object.DestroyImmediate(go);
+                float ppu = AssetDatabase.LoadAssetAtPath<Texture2D>($"{nave}/Nave_Normal.png").width / 4.2f;
+                Vector2 mid = new Vector2(0.5f, 0.5f);
+                SpriteRenderer drawn = SetupUtils.SpriteChild(v, "Dibujo", naveNormal, Color.white, Vector3.zero, Vector2.one, 0);
+                SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { drawn });
+                SetupUtils.SetRefArray(boss, "cellRenderers", new Object[0]);
+                SetupUtils.SetRef(boss, "art", drawn);
+                SetupUtils.SetRef(boss, "idleSprite", naveNormal);
+                SetupUtils.SetRef(boss, "attackSprite", LoadArtSprite($"{nave}/Nave_Ataca.png", ppu, mid));
+                SetupUtils.SetRef(boss, "hurtSprite", LoadArtSprite($"{nave}/Nave_Dano.png", ppu, mid));
+                SetupUtils.SetRef(boss, "deadSprite", LoadArtSprite($"{nave}/Nave_Derrotada.png", ppu, mid));
+                SetHurtbox(hurtbox, Vector2.zero, new Vector2(3.8f, 2.8f));
+            }
             return root;
         }
 

@@ -573,7 +573,7 @@ namespace HealingKnight.EditorTools
             // Jefe de los Pulmones: colmena voladora de tuberculosis (estilo nave de Metal Slug).
             Colmena = Enemy("Jefe_Colmena", e =>
             {
-                e.displayName = "Colmena de tuberculosis";
+                e.displayName = "Nave de tuberculosis";
                 e.threat = ThreatType.Bacteria;
                 e.movement = EnemyMovement.Flying; e.flyHeight = 4.5f;
                 e.maxHealth = 420f;

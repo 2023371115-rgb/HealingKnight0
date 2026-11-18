@@ -4,7 +4,7 @@
 
 **Entrega de diciembre:** Sistema Digestivo: Estómago → Intestino delgado (la lombriz aparece y huye) → Intestino grueso (pelea final con la lombriz). La **Boca** es un nivel secreto: se desbloquea al tocar un pasaje escondido en el Estómago.
 
-**Siguiente (prototipo listo):** Sistema Respiratorio: Nariz (rinovirus, polen, S. aureus) → Tráquea (tos ferina) → Pulmones (neumonía, influenza y el jefe volador: la **colmena de tuberculosis**; da la fórmula 2 y cierra con el aviso de que la infección va al cerebro). Mecánica del GDD: el paso por los bronquiolos está bloqueado por **mucosidad** (Mucolítico; te frena si la tocas) e **inflamación** (Antiinflamatorio; se contrae al dañarla). El **polen** es un alérgeno: Antihistamínico.
+**Siguiente (prototipo listo):** Sistema Respiratorio: Nariz (rinovirus, polen, S. aureus) → Tráquea (tos ferina) → Pulmones (neumonía, influenza y el jefe volador: la **nave de tuberculosis**; da la fórmula 2 y cierra con el aviso de que la infección va al cerebro). Mecánica del GDD: el paso por los bronquiolos está bloqueado por **mucosidad** (Mucolítico; te frena si la tocas) e **inflamación** (Antiinflamatorio; se contrae al dañarla). El **polen** es un alérgeno: Antihistamínico.
 
 **Prototipo del Sistema Nervioso:** Médula espinal (poliovirus, meningococo, rabia; aprendes las **tormentas eléctricas**: un destello avisa 1 s dónde cae el rayo de 2 u y el escudo no protege) → Cerebro (herpes y los demás entre **neuronas sanas**: tus cápsulas las atraviesan, pero los disparos enemigos las dañan (−3 de **salud del cerebro**) y las infectan. Las neuronas rojas sueltan descargas y desgastan el cerebro hasta que las calmas. Si la salud del cerebro llega a 0, desenlace negativo y se reinicia el nivel) → **Hipocampo** (jefe: el **virus de la rabia** como el ciempiés de Centipede: una cadena de viriones que baja de riel en cada orilla, se parte en dos si rompes el medio, invoca rayos, infecta neuronas y en furia corre a ras de piso; da la fórmula 3). El **Anticonvulsivo** es la cápsula regional: calma neuronas rojas (+5 cerebro) y su bomba deja un campo neuroprotector.
 
@@ -269,6 +269,7 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 - Jefes y bloqueos con dibujo:
   - `Art/Jefes/TosFerina/` (Normal, Infla, Tose, Dano, Derrotada).
   - `Art/Jefes/Rabia/` (Cabeza_Normal/Ataca/Miedo/Derrotada, Segmento, Segmento_Dano, Cola). Al asustarse con el agua, la cabeza pone cara de pánico.
+  - `Art/Jefes/Colmena/Nave_*` (Normal, Ataca, Dano, Derrotada): la nave de tuberculosis, jefe de los Pulmones.
   - `Art/Nervioso/Neurona_*` (Sana, Danada, Roja, Calmada): al calmar una roja aparece dormida un momento.
   - `Art/Respiratorio/Mucosidad_*` e `Inflamacion_*` (Normal, Dano, Disuelta/Desinflada): al tratarlos dejan su charco en el piso.
 

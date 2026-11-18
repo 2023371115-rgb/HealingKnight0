@@ -11,7 +11,7 @@ using UnityEngine;
 namespace HealingKnight.Gameplay.Enemies
 {
     /// <summary>
-    /// Jefe volador de los Pulmones: la colmena de tuberculosis (estilo nave de Metal Slug).
+    /// Jefe volador de los Pulmones: la nave de tuberculosis (estilo nave de Metal Slug), blindada con cera como la bacteria real.
     /// Flota arriba de la arena siguiendo al jugador y alterna ataques:
     ///  - Ráfaga: abre sus celdas (brillan como aviso) y dispara un abanico apuntado al jugador.
     ///  - Bombardeo: cruza la arena soltando esporas que caen en línea recta. Se esquivan moviéndote o con la burbuja.
@@ -26,14 +26,18 @@ namespace HealingKnight.Gameplay.Enemies
         private enum Attack { Spray, Bombing, Swarm }
 
         [Header("Identidad")]
-        [SerializeField] private string bossName = "COLMENA DE TUBERCULOSIS";
-        [SerializeField, TextArea] private string introMessage = "NODO: ¡El foco! Una colmena de M. tuberculosis. Antibiótico, y no dejes de moverte.";
-        [SerializeField, TextArea] private string defeatMessage = "NODO: Foco eliminado. Despeja el último bloqueo.";
+        [SerializeField] private string bossName = "NAVE DE TUBERCULOSIS";
+        [SerializeField, TextArea] private string introMessage = "NODO: ¡El foco! Una nave nodriza de M. tuberculosis, blindada con su capa de cera. Antibiótico, y no dejes de moverte.";
+        [SerializeField, TextArea] private string defeatMessage = "NODO: Nave derribada. Despeja el último bloqueo.";
 
         [Header("Partes")]
         [SerializeField] private Transform visual;
         [Tooltip("Celdas que brillan antes de disparar (el aviso).")]
         [SerializeField] private SpriteRenderer[] cellRenderers;
+        [Header("Dibujo (opcional): poses de la nave")]
+        [SerializeField] private SpriteRenderer art;
+        [SerializeField] private Sprite idleSprite, attackSprite, hurtSprite, deadSprite;
+        private float hurtTimer;
         [SerializeField] private Color cellIdleColor = new Color(0.25f, 0.1f, 0.15f);
         [SerializeField] private Color cellWarnColor = new Color(1f, 0.85f, 0.3f);
 
@@ -96,8 +100,22 @@ namespace HealingKnight.Gameplay.Enemies
             health = GetComponent<EnemyHealth>();
         }
 
-        private void OnEnable() => health.Died += OnDied;
-        private void OnDisable() => health.Died -= OnDied;
+        private void OnEnable() { health.Died += OnDied; health.Hit += OnHit; }
+        private void OnDisable() { health.Died -= OnDied; health.Hit -= OnHit; }
+
+        private void OnHit(DamageInfo info, HitResult result) => hurtTimer = 0.25f;
+
+        private void UpdateArt()
+        {
+            if (art == null) return;
+            hurtTimer -= Time.deltaTime;
+            Sprite s = state == State.Dead ? deadSprite
+                : hurtTimer > 0f ? hurtSprite
+                : state == State.Telegraph || state == State.Spray || state == State.Swarm || state == State.Bombing ? attackSprite
+                : idleSprite;
+            if (s == null) s = idleSprite;
+            if (s != null && art.sprite != s) art.sprite = s;
+        }
 
         private void OnDestroy()
         {
@@ -124,6 +142,7 @@ namespace HealingKnight.Gameplay.Enemies
 
         private void Update()
         {
+            UpdateArt();
             if (state == State.Dead) return;
             float dt = Time.deltaTime;
             bobPhase += dt * 2f;
