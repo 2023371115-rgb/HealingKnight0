@@ -129,7 +129,9 @@ namespace HealingKnight.Gameplay.Level
 
             if (art != null)
             {
-                CodeSprites.Art(transform, art, width * 1.05f, -4, new Vector2(0f, -0.42f));
+                SpriteRenderer drawn = CodeSprites.Art(transform, art, width * 1.05f, -4, new Vector2(0f, -0.42f));
+                // Glóbulo rojo / impulso: que la orilla de arriba del dibujo quede justo donde te paras.
+                if (style != Style.Bolus) drawn.transform.localPosition = new Vector3(0f, 0.08f - drawn.bounds.size.y * 0.5f, 0f);
                 return;
             }
             Sprite c = CodeSprites.Circle;

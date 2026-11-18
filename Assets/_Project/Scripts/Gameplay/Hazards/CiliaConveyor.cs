@@ -141,7 +141,7 @@ namespace HealingKnight.Gameplay.Hazards
                 b.root.SetParent(transform, true);
                 b.art = new GameObject("Dibujo").transform;
                 b.art.SetParent(b.root, false);
-                b.art.localPosition = new Vector3(0f, 0.5f, 0f);
+                b.art.localPosition = new Vector3(0f, ballArt != null ? 0.32f : 0.5f, 0f);
                 if (ballArt != null) CodeSprites.Art(b.art, ballArt, 1f, 20, Vector2.zero);
                 else
                 {

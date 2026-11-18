@@ -1241,11 +1241,11 @@ namespace HealingKnight.EditorTools
             Transform v = visual.transform;
             var body = new System.Collections.Generic.List<Object>();
             Transform mouth;
-            Sprite art = ArtByWidth("Assets/_Project/Art/Jefes/TosFerina/TosFerina_Normal.png", 4.2f, new Vector2(0.5f, 0.02f));
+            Sprite art = ArtByWidth("Assets/_Project/Art/Jefes/TosFerina/TosFerina_Normal.png", 3.6f, new Vector2(0.5f, 0.02f));
             if (art != null)
             {
                 body.Add(SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 0));
-                mouth = SetupUtils.Child(v, "Boca", new Vector3(0f, 1.2f, 0f)).transform;
+                mouth = SetupUtils.Child(v, "Boca", new Vector3(-0.3f, 4f, 0f)).transform;
             }
             else
             {
@@ -1293,7 +1293,8 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
 
             var hurtbox = root.AddComponent<Hurtbox>();
-            SetHurtbox(hurtbox, new Vector2(0f, 1.55f), new Vector2(3.4f, 3f));
+            if (art != null) SetHurtbox(hurtbox, new Vector2(0f, 2.5f), new Vector2(2.4f, 4.8f));   // el dibujo es alto
+            else SetHurtbox(hurtbox, new Vector2(0f, 1.55f), new Vector2(3.4f, 3f));
 
             var boss = root.AddComponent<PertussisQueenBoss>();
             SetupUtils.SetRef(boss, "visual", v);

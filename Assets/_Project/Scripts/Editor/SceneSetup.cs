@@ -2081,7 +2081,7 @@ namespace HealingKnight.EditorTools
         private void MucusGland(float x, float period, float offset, int facing = -1)
         {
             Node("GlandulaMoco", x, FloorY).AddComponent<MucusCannon>().Configure(period, offset, facing,
-                PrefabSetup.ArtByWidth($"{RespArt}/GlandulaMoco.png", 1.8f, new Vector2(0.5f, 0.05f)),
+                PrefabSetup.ArtByWidth($"{RespArt}/GlandulaMoco.png", 2.2f, new Vector2(0.5f, 0.03f)),
                 PrefabSetup.ArtByWidth($"{RespArt}/BolaMoco.png", 0.8f));
         }
 
@@ -2100,7 +2100,7 @@ namespace HealingKnight.EditorTools
         }
 
         private void NasalHairAt(float x) =>
-            Node("PelosNasales", x, FloorY).AddComponent<NasalHair>().Configure(3.4f, PrefabSetup.ArtByWidth($"{RespArt}/PeloNasal.png", 1.6f, new Vector2(0.5f, 0.02f)));
+            Node("PelosNasales", x, FloorY).AddComponent<NasalHair>().Configure(3.4f, PrefabSetup.ArtByWidth($"{RespArt}/PeloNasal.png", 2.1f, new Vector2(0.5f, 0.02f)));
 
         /// <summary>Cornete (pliegue de hueso de la nariz): montículo sólido; detrás de él el estornudo no te avienta.</summary>
         private void Turbinate(float x, float width, float height)
@@ -2114,7 +2114,7 @@ namespace HealingKnight.EditorTools
         {
             GameObject go = Node("AnilloCartilago", x, FloorY);
             go.AddComponent<WindAnchor>().Configure(1.8f, 4f);
-            Sprite ring = PrefabSetup.ArtByWidth($"{RespArt}/AnilloCartilago.png", 2.6f, new Vector2(0.5f, 0.02f));
+            Sprite ring = PrefabSetup.ArtByWidth($"{RespArt}/AnilloCartilago.png", 3.6f, new Vector2(0.5f, 0.02f));
             if (ring != null) { SetupUtils.SpriteChild(go.transform, "Anillo", ring, Color.white, Vector3.zero, Vector2.one, -40); return; }
             Color line = new Color(0.12f, 0.08f, 0.28f), fill = new Color(0.78f, 0.72f, 0.95f);
             for (int s = -1; s <= 1; s += 2)

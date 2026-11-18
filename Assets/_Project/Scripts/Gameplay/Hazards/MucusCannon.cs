@@ -163,7 +163,7 @@ namespace HealingKnight.Gameplay.Hazards
                     b.root.position = hit.point + Vector2.up * 0.02f;
                     b.floor.enabled = true;
                     b.art.localRotation = Quaternion.identity;
-                    b.art.localScale = new Vector3(1.6f, 0.7f, 1f);
+                    b.art.localScale = ballArt != null ? new Vector3(1.6f, 1.1f, 1f) : new Vector3(1.6f, 0.7f, 1f);
                     Sfx.EffectAt("Alveolo_Desinfla", hit.point, 0.4f);
                     return;
                 }
@@ -183,7 +183,7 @@ namespace HealingKnight.Gameplay.Hazards
                 if (Mathf.Abs(feet.x - top.x) < 0.8f && Mathf.Abs(feet.y - top.y) < 0.2f) player.ApplySlow(0.75f, 0.2f);
             }
             float s = b.life < 0.6f ? Mathf.Max(0.05f, b.life / 0.6f) : 1f;
-            b.art.localScale = new Vector3(1.6f * s, 0.7f * s, 1f);
+            b.art.localScale = new Vector3(1.6f * s, (ballArt != null ? 1.1f : 0.7f) * s, 1f);
             if (b.life <= 0f) Pop(b);
         }
 
@@ -228,7 +228,7 @@ namespace HealingKnight.Gameplay.Hazards
         {
             glandVisual = new GameObject("Glandula").transform;
             glandVisual.SetParent(transform, false);
-            if (glandArt != null) { CodeSprites.Art(glandVisual, glandArt, 1.8f, -4, new Vector2(0f, 0.4f)); return; }
+            if (glandArt != null) { CodeSprites.Art(glandVisual, glandArt, 2.2f, -4, Vector2.zero); return; }   // pivote abajo
             Sprite c = CodeSprites.Circle;
             CodeSprites.Add(glandVisual, c, outline, -6, new Vector2(0f, 0.35f), new Vector2(1.9f, 1.3f));
             CodeSprites.Add(glandVisual, c, gland, -5, new Vector2(0f, 0.35f), new Vector2(1.76f, 1.16f));

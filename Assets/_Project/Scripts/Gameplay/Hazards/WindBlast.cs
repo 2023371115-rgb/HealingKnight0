@@ -256,7 +256,7 @@ namespace HealingKnight.Gameplay.Hazards
                 s.SetParent(transform, false);
                 float x = art != null ? 0f : (i - 1.5f) * 0.32f;
                 s.localPosition = new Vector3(x, 0f, 0f);
-                if (art != null) CodeSprites.Art(s, art, 1.6f, -30, new Vector2(0f, height * 0.5f));
+                if (art != null) CodeSprites.Art(s, art, 2.1f, -30, Vector2.zero);   // pivote abajo
                 else
                 {
                     float h = height * (0.8f + (i % 2) * 0.2f);
