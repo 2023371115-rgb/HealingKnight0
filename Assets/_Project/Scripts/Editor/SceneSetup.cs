@@ -382,6 +382,28 @@ namespace HealingKnight.EditorTools
         /// Los fondos son pinturas lisas: filtro Bilinear, sin compresión y con píxeles por unidad tal que
         /// la imagen mida 1.2 veces el alto de la pantalla (10.8 unidades). LevelBackdrop igual lo reescala si hace falta.
         /// </summary>
+        /// <summary>Partículas de adorno y "latido" del fondo según el órgano (AmbientLife).</summary>
+        private static void AddAmbientLife(GameObject back, string backdropName)
+        {
+            AmbientLife.Theme theme;
+            int count = 30;
+            switch (backdropName)
+            {
+                case "Fondo_Nariz": case "Fondo_Traquea": theme = AmbientLife.Theme.Air; count = 40; break;
+                case "Fondo_Pulmones": theme = AmbientLife.Theme.Lungs; count = 36; break;
+                case "Fondo_Estomago": theme = AmbientLife.Theme.Acid; break;
+                case "Fondo_Delgado": theme = AmbientLife.Theme.Gut; break;
+                case "Fondo_Grueso": theme = AmbientLife.Theme.Colon; count = 24; break;
+                case "Fondo_Boca": theme = AmbientLife.Theme.Mouth; break;
+                case "Fondo_Medula": case "Fondo_Cerebro": theme = AmbientLife.Theme.Nerve; count = 34; break;
+                case "Fondo_Hipocampo": theme = AmbientLife.Theme.Memory; break;
+                case "Fondo_Amigdalas": theme = AmbientLife.Theme.Throat; break;
+                case "Fondo_Ojo": theme = AmbientLife.Theme.Eye; count = 24; break;
+                default: return;
+            }
+            back.AddComponent<AmbientLife>().Configure(theme, count);
+        }
+
         /// <summary>
         /// Ojo: si existe 'Fondo_Ojo_Iris.png' (el iris recortado del fondo), lo pone encima en su lugar y le agrega
         /// EyeBackdrop (el iris te sigue con la mirada y el ojo parpadea).
@@ -461,6 +483,7 @@ namespace HealingKnight.EditorTools
                 renderer.sortingOrder = -300;
                 back.AddComponent<LevelBackdrop>().Configure(startX, endX);
                 AddEyeIris(back, style.backdrop, backdrop);
+                AddAmbientLife(back, style.backdrop);
                 style.decor = Decor.None; // la imagen ya trae su decorado
             }
             else

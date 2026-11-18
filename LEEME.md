@@ -368,6 +368,23 @@ El importador lo deja solo en Sprite, filtro Bilinear (pintura lisa) y tamaño �
 En la escena, el objeto `Environment/Fondo` tiene opciones para ajustar a mano: cuánto se desliza, subirlo o bajarlo
 y cuánto se queda atrás cuando la cámara sube. Si borras el PNG, el nivel vuelve a su fondo de placeholder.
 
+## Fondos vivos
+
+Cada nivel tiene vida de adorno en el fondo (`AmbientLife`). Es solo decoración: no hace daño ni estorba. Se pone sola según la imagen de fondo.
+
+| Fondo | Partículas | Movimiento del fondo |
+|---|---|---|
+| Nariz, Tráquea | polvo y polen flotando con el aire | respira despacio |
+| Pulmones | partículas que el aire lleva (al inhalar van hacia adelante, al exhalar hacia atrás) | respira al ritmo del nivel y se ilumina un poco al inhalar; racimos de alvéolos de fondo que se inflan y desinflan |
+| Estómago | burbujas de ácido que suben | peristalsis lenta |
+| Intestino delgado | partículas de nutrientes | peristalsis lenta |
+| Intestino grueso | partículas | peristalsis lenta |
+| Boca | gotas de saliva que caen y burbujitas | — |
+| Médula, Cerebro | chispas eléctricas | destellos de las neuronas |
+| Hipocampo | burbujas de memoria | destellos |
+| Amígdalas | burbujitas de saliva | late como si estuviera inflamado |
+| Ojo | moscas volantes y polvo | el iris te sigue y el ojo parpadea (`EyeBackdrop`) |
+
 ## Easter egg: el diente
 
 En el Estómago, en la plataforma más alta entre la primera y la segunda arena, flota un diente con cara. Es la entrada secreta a la **Boca**: al tocarlo brinca, gira, avisa y te lleva ahí. Desde ese momento la Boca aparece también en el mapa del cuerpo. La imagen está en `Art/Secreto/Diente_Secreto.png` y su sonido es `Diente_Secreto`.
