@@ -266,6 +266,11 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - Respiratorio: Rinovirus, Polen, SAureus, SAureusCoco, Pertussis, Neumococo, Influenza, Tuberculosis.
   - Nervioso: Poliovirus, Meningococo, Herpes, Rabia.
 
+- Jefes y bloqueos con dibujo:
+  - `Art/Jefes/TosFerina/` (Normal, Infla, Tose, Dano, Derrotada).
+  - `Art/Jefes/Rabia/` (Cabeza_Normal/Ataca/Miedo/Derrotada, Segmento, Segmento_Dano, Cola). Al asustarse con el agua, la cabeza pone cara de pánico.
+  - `Art/Respiratorio/Mucosidad_*` e `Inflamacion_*` (Normal, Dano, Disuelta/Desinflada): al tratarlos dejan su charco en el piso.
+
 ## Menú y mapa del cuerpo (estilo caricatura)
 
 El menú principal y el mapa del cuerpo se dibujan por código con el estilo del juego (`UI/CartoonUI.cs`): formas

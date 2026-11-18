@@ -220,7 +220,7 @@ namespace HealingKnight.Gameplay.Enemies
                 c.stun -= dt;
                 int look = Mathf.Sin(Time.time * 18f) > 0f ? 1 : -1;
                 foreach (RabiesSegment s in c.segments)
-                    if (s != null) s.SetFacing(look, false);
+                    if (s != null) { s.SetFacing(look, false); s.Scare(0.15f); }
                 return;
             }
             Vector2 p = head.transform.position;
@@ -278,6 +278,7 @@ namespace HealingKnight.Gameplay.Enemies
                 if (c.shootCooldown <= 0f && !c.changingRail)
                 {
                     Shoot(head.transform.position, player);
+                    head.Attack(0.5f);
                     c.shootCooldown = (Phase == 3 ? 2f : 3f) + Random.value;
                 }
 
@@ -334,7 +335,11 @@ namespace HealingKnight.Gameplay.Enemies
         private static void RefreshHeads(Chain c)
         {
             for (int i = 0; i < c.segments.Count; i++)
-                if (c.segments[i] != null) c.segments[i].SetHead(i == 0);
+                if (c.segments[i] != null)
+                {
+                    c.segments[i].SetHead(i == 0);
+                    c.segments[i].SetTail(i == c.segments.Count - 1 && c.segments.Count > 1);
+                }
         }
 
         private void TryInfectNear(Chain c, Vector2 headPos)

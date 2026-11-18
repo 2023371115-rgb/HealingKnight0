@@ -28,7 +28,14 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField, Range(0.1f, 1f)] private float slowMultiplier = 0.5f;
         [SerializeField] private float touchPadding = 0.3f;
 
+        [Header("Dibujo (opcional)")]
+        [SerializeField] private SpriteRenderer art;
+        [SerializeField] private Sprite hurtSprite;
+        [SerializeField] private Sprite deadSprite;
+        [SerializeField] private float deadWidth = 3.4f;
+
         private EnemyHealth health;
+        private Sprite normalSprite;
         private BoxCollider2D wall;
         private Vector3 visualBaseScale = Vector3.one;
         private float wobbleSeed;
@@ -39,6 +46,19 @@ namespace HealingKnight.Gameplay.Hazards
             wall = GetComponent<BoxCollider2D>();
             if (visual != null) visualBaseScale = visual.localScale;
             wobbleSeed = Random.value * 10f;
+            if (art != null) normalSprite = art.sprite;
+        }
+
+        private void OnEnable() => GetComponent<EnemyHealth>().Died += OnDied;
+        private void OnDisable() => GetComponent<EnemyHealth>().Died -= OnDied;
+
+        /// <summary>Deja el charco (mucosidad disuelta / tejido desinflado) en el piso como adorno.</summary>
+        private void OnDied(EnemyHealth _)
+        {
+            if (deadSprite == null) return;
+            var go = new GameObject(name + "_Resto");
+            go.transform.position = transform.position;
+            CodeSprites.Art(go.transform, deadSprite, deadWidth, 2, Vector2.zero);   // pivote abajo
         }
 
         private void Update()
@@ -53,6 +73,12 @@ namespace HealingKnight.Gameplay.Hazards
                     visualBaseScale.x * (shrinkWidth ? k : Mathf.Lerp(0.8f, 1f, health.Health01)) * wobble,
                     visualBaseScale.y * k,
                     visualBaseScale.z);
+            }
+
+            if (art != null && hurtSprite != null)
+            {
+                Sprite want = health.Health01 < 0.5f ? hurtSprite : normalSprite;
+                if (art.sprite != want) art.sprite = want;
             }
 
             if (slowsOnTouch && wall != null) SlowPlayerIfTouching();

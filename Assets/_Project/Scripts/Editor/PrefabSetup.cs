@@ -821,6 +821,30 @@ namespace HealingKnight.EditorTools
             var seg = root.AddComponent<RabiesSegment>();
             SetupUtils.SetRef(seg, "visual", v);
             SetupUtils.SetRefArray(seg, "headParts", new Object[] { headGroup });
+
+            // Dibujo (Art/Jefes/Rabia): quita las figuras y usa un solo sprite que cambia (cabeza, cuerpo, cola).
+            const string rab = "Assets/_Project/Art/Jefes/Rabia";
+            var segTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{rab}/Segmento.png");
+            var headTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{rab}/Cabeza_Normal.png");
+            if (segTex != null && headTex != null)
+            {
+                var old = new System.Collections.Generic.List<GameObject>();
+                foreach (Transform child in v) if (child != headGroup.transform) old.Add(child.gameObject);
+                foreach (GameObject go in old) Object.DestroyImmediate(go);
+                Vector2 mid = new Vector2(0.5f, 0.5f);
+                float segPpu = segTex.width / 1.3f, headPpu = headTex.width / 1.55f;
+                System.Func<string, float, Sprite> S = (file, ppu) => LoadArtSprite($"{rab}/{file}.png", ppu, mid);
+                SpriteRenderer drawn = SetupUtils.SpriteChild(v, "Dibujo", S("Segmento", segPpu), Color.white, Vector3.zero, Vector2.one, 0);
+                SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { drawn });
+                SetupUtils.SetRef(seg, "art", drawn);
+                SetupUtils.SetRef(seg, "bodySprite", S("Segmento", segPpu));
+                SetupUtils.SetRef(seg, "bodyHurt", S("Segmento_Dano", segPpu));
+                SetupUtils.SetRef(seg, "tailSprite", S("Cola", segPpu));
+                SetupUtils.SetRef(seg, "headIdle", S("Cabeza_Normal", headPpu));
+                SetupUtils.SetRef(seg, "headAttack", S("Cabeza_Ataca", headPpu));
+                SetupUtils.SetRef(seg, "headScared", S("Cabeza_Miedo", headPpu));
+                SetupUtils.SetRef(seg, "headDead", S("Cabeza_Derrotada", headPpu));
+            }
             return root;
         }
 
@@ -1318,6 +1342,20 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
             SetupUtils.SetRef(boss, "minionPrefab", Pertussis);
             SetupUtils.SetRef(boss, "minionData", data.Pertussis);
+            if (art != null)
+            {
+                const string tf = "Assets/_Project/Art/Jefes/TosFerina";
+                var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{tf}/TosFerina_Normal.png");
+                float ppu = tex.width / 3.6f;
+                Vector2 feet = new Vector2(0.5f, 0.02f);
+                System.Func<string, Sprite> P = pose => LoadArtSprite($"{tf}/TosFerina_{pose}.png", ppu, feet);
+                SetupUtils.SetRef(boss, "art", (SpriteRenderer)body[0]);
+                SetupUtils.SetRef(boss, "idleSprite", art);
+                SetupUtils.SetRef(boss, "inflateSprite", P("Infla"));
+                SetupUtils.SetRef(boss, "coughSprite", P("Tose"));
+                SetupUtils.SetRef(boss, "hurtSprite", P("Dano"));
+                SetupUtils.SetRef(boss, "deadSprite", P("Derrotada"));
+            }
             return root;
         }
 
@@ -1360,6 +1398,22 @@ namespace HealingKnight.EditorTools
                         new Vector3(0f, 1.2f + i * 2.4f, 0f), new Vector2(1f, 0.18f), 2).transform.localRotation = Quaternion.Euler(0f, 0f, i % 2 == 0 ? 25f : -25f);
             }
 
+            // Dibujo (Art/Respiratorio/Mucosidad_*.png o Inflamacion_*.png): va abajo, al frente de la columna.
+            string artName = mucus ? "Mucosidad" : "Inflamacion";
+            string artDir = "Assets/_Project/Art/Respiratorio";
+            Vector2 bottom = new Vector2(0.5f, 0.02f);
+            var normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{artDir}/{artName}_Normal.png");
+            SpriteRenderer drawn = null;
+            Sprite hurtArt = null, deadArt = null;
+            if (normalTex != null)
+            {
+                float ppu = normalTex.width / 3.4f;
+                drawn = SetupUtils.SpriteChild(visual.transform, "Dibujo", LoadArtSprite($"{artDir}/{artName}_Normal.png", ppu, bottom), Color.white, Vector3.zero, Vector2.one, 5);
+                renderers.Add(drawn);
+                hurtArt = LoadArtSprite($"{artDir}/{artName}_Dano.png", ppu, bottom);
+                deadArt = LoadArtSprite($"{artDir}/{artName}_{(mucus ? "Disuelta" : "Desinflada")}.png", ppu, bottom);
+            }
+
             var health = root.AddComponent<EnemyHealth>();
             SetupUtils.SetRef(health, "data", obstacleData);
             SetupUtils.SetRef(health, "effectivenessTable", data.Table);
@@ -1374,6 +1428,13 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetBool(obstacle, "slowsOnTouch", mucus);
             SetupUtils.SetBool(obstacle, "shrinkWidth", !mucus);
             SetupUtils.SetFloat(obstacle, "minScale", mucus ? 0.45f : 0.55f);
+            if (drawn != null)
+            {
+                SetupUtils.SetRef(obstacle, "art", drawn);
+                SetupUtils.SetRef(obstacle, "hurtSprite", hurtArt);
+                SetupUtils.SetRef(obstacle, "deadSprite", deadArt);
+                SetupUtils.SetFloat(obstacle, "deadWidth", 3.6f);
+            }
             return root;
         }
 

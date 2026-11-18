@@ -47,6 +47,11 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private LayerMask groundMask = 1 << 6;
         [SerializeField] private Color waveColor = new Color(0.75f, 0.92f, 1f, 0.85f);
 
+        [Header("Dibujo (opcional): poses")]
+        [SerializeField] private SpriteRenderer art;
+        [SerializeField] private Sprite idleSprite, inflateSprite, coughSprite, hurtSprite, deadSprite;
+        private float hurtTimer;
+
         private class CoughWave { public Transform root; public float x; public int dir; public bool hit, alive; }
 
         private EnemyHealth health;
@@ -60,8 +65,23 @@ namespace HealingKnight.Gameplay.Enemies
         private int Phase => health.Health01 <= 0.3f ? 3 : health.Health01 <= 0.6f ? 2 : 1;
 
         private void Awake() => health = GetComponent<EnemyHealth>();
-        private void OnEnable() => health.Died += OnDied;
-        private void OnDisable() => health.Died -= OnDied;
+        private void OnEnable() { health.Died += OnDied; health.Hit += OnHit; }
+        private void OnDisable() { health.Died -= OnDied; health.Hit -= OnHit; }
+
+        private void OnHit(DamageInfo info, HitResult result) => hurtTimer = 0.25f;
+
+        private void UpdateArt()
+        {
+            if (art == null) return;
+            hurtTimer -= Time.deltaTime;
+            Sprite s = state == State.Dead ? deadSprite
+                : hurtTimer > 0f ? hurtSprite
+                : state == State.Inhale || state == State.Summon ? inflateSprite
+                : state == State.Cough && timer > 0.35f ? coughSprite
+                : idleSprite;
+            if (s == null) s = idleSprite;
+            if (s != null && art.sprite != s) art.sprite = s;
+        }
 
         private void OnDestroy()
         {
@@ -84,6 +104,7 @@ namespace HealingKnight.Gameplay.Enemies
         {
             float dt = Time.deltaTime;
             UpdateWaves(dt);
+            UpdateArt();
             if (state == State.Dead) return;
             if (contactCooldown > 0f) contactCooldown -= dt;
 
@@ -145,7 +166,8 @@ namespace HealingKnight.Gameplay.Enemies
             {
                 float bob = state == State.Walk ? Mathf.Abs(Mathf.Sin(Time.time * 6f)) * 0.08f : 0f;
                 float cough = state == State.Cough ? Mathf.Clamp01(timer / 0.75f) : 0f;
-                visual.localScale = new Vector3((1f + inflate * 0.25f - cough * 0.12f) * -facing, 1f + inflate * 0.3f + bob - cough * 0.1f, 1f);
+                float amount = art != null ? 0.3f : 1f;
+                visual.localScale = new Vector3((1f + (inflate * 0.25f - cough * 0.12f) * amount) * -facing, 1f + (inflate * 0.3f - cough * 0.1f) * amount + bob, 1f);
             }
             if (mouth != null) mouth.localScale = new Vector3(1f, state == State.Cough ? 1f + Mathf.Clamp01(timer / 0.75f) * 1.5f : 0.4f + inflate * 0.4f, 1f);
             TryContact(player);
