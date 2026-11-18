@@ -9,11 +9,8 @@ namespace HealingKnight.UI
 {
     /// <summary>
     /// Mapa del cuerpo: los sistemas (I–IV) y sus órganos (niveles) según el progreso guardado.
-    /// Jerarquía de la pantalla (de lo más importante a lo menos):
-    ///  1) SIGUIENTE MISIÓN: el órgano que toca jugar, con botón grande "¡Entrar!" (ya viene seleccionado).
-    ///  2) Tarjetas de los sistemas, todas del mismo tamaño: pintura, número, nombre, estado con icono y avance (2/3),
-    ///     y la lista de órganos (filas iguales; el siguiente con contorno amarillo que late).
-    ///  3) Título discreto, fórmulas obtenidas y ayuda de controles abajo.
+    /// Jerarquía de la pantalla: título y fórmulas, tarjetas de sistemas con el siguiente órgano resaltado,
+    /// y ayuda de controles abajo. El siguiente órgano queda seleccionado para entrar directamente.
     /// Estados con palabra + icono (no solo color): Desinfectado (palomita), En curso (avance), Bloqueado (candado).
     /// Los efectos de letra (contorno y sombra) solo van en títulos y botones principales; lo demás es texto limpio.
     /// Todo sale del GameCatalog: agregar un sistema o nivel no requiere tocar esta pantalla.
@@ -34,7 +31,6 @@ namespace HealingKnight.UI
 
         private Button focus;
         private LevelData nextLevel;
-        private SystemData nextSystem;
 
         private void Awake()
         {
@@ -96,9 +92,6 @@ namespace HealingKnight.UI
                 new Vector2(240f, 66f), new Color(0.35f, 0.55f, 0.6f), 28f);
             UIFactory.Place((RectTransform)bestiary.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -112f), new Vector2(240f, 66f));
 
-            // 1) Siguiente misión.
-            BuildNextMission(canvas.transform);
-
             // 2) Tarjetas.
             var row = new GameObject("Sistemas", typeof(RectTransform));
             row.transform.SetParent(canvas.transform, false);
@@ -136,45 +129,10 @@ namespace HealingKnight.UI
                     if (progress.IsLevelPlayable(level) && !progress.IsLevelCompleted(level))
                     {
                         nextLevel = level;
-                        nextSystem = system;
                         return;
                     }
                 }
             }
-        }
-
-        private void BuildNextMission(Transform parent)
-        {
-            Color accent = nextSystem != null ? nextSystem.mapColor : CartoonUI.Mint;
-            Image card = CartoonUI.Blob(parent, "SiguienteMision", Color.Lerp(accent, Panel, 0.55f), new Vector2(1000f, 150f), 7f, 1f);
-            RectTransform cr = (RectTransform)card.transform.parent;
-            UIFactory.Place(cr, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(60f, -132f), new Vector2(1000f, 150f));
-            Transform c = card.transform;
-
-            if (nextLevel == null)
-            {
-                TextMeshProUGUI done = CartoonUI.Text(c, "¡Todo lo disponible está desinfectado!", 40f, CartoonUI.Mint, true);
-                UIFactory.Stretch(done.rectTransform, 10f);
-                return;
-            }
-
-            var photo = new GameObject("Foto", typeof(RectTransform));
-            photo.transform.SetParent(c, false);
-            UIFactory.Place(UIFactory.Rect(photo), new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(18f, 0f), new Vector2(112f, 112f));
-            CartoonUI.RoundPicture(photo.transform, ArtFor(nextLevel), 112f, accent);
-
-            TextMeshProUGUI tag = CartoonUI.Text(c, "SIGUIENTE MISIÓN", 22f, CartoonUI.Yellow, false, TextAlignmentOptions.Left, 0f);
-            UIFactory.Place(tag.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(150f, -18f), new Vector2(480f, 30f));
-            TextMeshProUGUI name = CartoonUI.Text(c, nextLevel.displayName, 46f, CartoonUI.Cream, true, TextAlignmentOptions.Left, 0.15f);
-            UIFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(148f, -48f), new Vector2(520f, 58f));
-            TextMeshProUGUI where = CartoonUI.Text(c, $"{nextSystem.mapNumber} · {nextSystem.displayName}", 22f, TextSoft, false, TextAlignmentOptions.Left, 0f);
-            UIFactory.Place(where.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(150f, -106f), new Vector2(520f, 30f));
-
-            LevelData captured = nextLevel;
-            Button go = CartoonUI.Button(c, "¡ENTRAR!", () => GameSession.StartLevel(captured), new Vector2(270f, 100f), CartoonUI.Red, 44f);
-            UIFactory.Place((RectTransform)go.transform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-24f, 0f), new Vector2(270f, 100f));
-            go.GetComponent<CartoonButton>().Highlight = true;
-            focus = go;
         }
 
         /// <summary>Contador de fórmulas: una cápsula por sistema, llena si ya obtuviste su fórmula.</summary>
@@ -299,6 +257,7 @@ namespace HealingKnight.UI
             Color color = done ? Color.Lerp(tone, Panel, 0.45f) : Color.Lerp(tone, CartoonUI.Red, 0.3f);
             Button button = CartoonUI.Button(parent, "", () => GameSession.StartLevel(captured), new Vector2(width, 76f), color, 26f);
             button.interactable = playable;
+            if (next && playable) focus = button;
             CartoonButton juicy = button.GetComponent<CartoonButton>();
             if (next && juicy != null) juicy.Highlight = true;
             Transform body = button.transform.Find("Relleno");

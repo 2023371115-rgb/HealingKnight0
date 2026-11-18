@@ -2,6 +2,7 @@ using HealingKnight.Core.Flow;
 using HealingKnight.Gameplay.Player;
 using UnityEngine;
 using UnityEngine.UI;
+using TMPro;
 
 namespace HealingKnight.UI
 {
@@ -20,24 +21,28 @@ namespace HealingKnight.UI
         private void Awake()
         {
             Canvas canvas = UIFactory.CreateCanvas("Pause Canvas", 50, transform);
-            root = UIFactory.Panel(canvas.transform, "Overlay", new Color(0f, 0f, 0f, 0.7f)).gameObject;
-            UIFactory.Stretch(UIFactory.Rect(root));
+            Image overlay = UIFactory.Panel(canvas.transform, "Overlay", new Color(0.03f, 0.01f, 0.04f, 0.72f));
+            UIFactory.Stretch(overlay.rectTransform);
+            root = overlay.gameObject;
 
-            var title = UIFactory.Text(root.transform, "PAUSA", 90f, UIFactory.TextColor);
-            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 300f), new Vector2(800f, 120f));
+            Image card = CartoonUI.Blob(root.transform, "TarjetaPausa", new Color(0.28f, 0.08f, 0.17f, 0.98f), new Vector2(900f, 840f), 10f, 1.2f);
+            Transform content = card.transform;
+            TextMeshProUGUI title = CartoonUI.Text(content, "PAUSA", 78f, CartoonUI.Cream, true, TextAlignmentOptions.Center, 0.24f);
+            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -65f), new Vector2(760f, 110f));
 
             var column = new GameObject("Buttons", typeof(RectTransform));
-            column.transform.SetParent(root.transform, false);
-            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -70f), new Vector2(520f, 540f));
-            UIFactory.VerticalLayout(column, 24f);
+            column.transform.SetParent(content, false);
+            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -60f), new Vector2(700f, 560f));
+            UIFactory.VerticalLayout(column, 16f);
 
-            Vector2 size = new Vector2(480f, 84f);
-            resumeButton = UIFactory.Button(column.transform, "Reanudar", Resume, size);
+            Vector2 size = new Vector2(650f, 96f);
+            resumeButton = CartoonUI.Button(column.transform, "Reanudar", Resume, size, CartoonUI.Mint, 36f);
             Button bestiary = null;
-            bestiary = UIFactory.Button(column.transform, "Bestiario", () => BestiaryScreen.Open(() => UIFactory.Select(bestiary)), size);
-            UIFactory.Button(column.transform, "Reiniciar nivel", GameSession.ReloadCurrentScene, size);
-            UIFactory.Button(column.transform, "Mapa del cuerpo", GameSession.GoToBodyMap, size);
-            UIFactory.Button(column.transform, "Menú principal", GameSession.GoToMainMenu, size);
+            bestiary = CartoonUI.Button(column.transform, "Bestiario", () => BestiaryScreen.Open(() => UIFactory.Select(bestiary)),
+                size, new Color(0.95f, 0.6f, 0.25f), 34f);
+            CartoonUI.Button(column.transform, "Reiniciar nivel", GameSession.ReloadCurrentScene, size, CartoonUI.Red, 34f);
+            CartoonUI.Button(column.transform, "Mapa del cuerpo", GameSession.GoToBodyMap, size, new Color(0.35f, 0.62f, 0.82f), 34f);
+            CartoonUI.Button(column.transform, "Menú principal", GameSession.GoToMainMenu, size, new Color(0.57f, 0.34f, 0.61f), 34f);
 
             root.SetActive(false);
         }
