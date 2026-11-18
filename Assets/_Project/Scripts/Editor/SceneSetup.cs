@@ -2051,7 +2051,7 @@ namespace HealingKnight.EditorTools
             GameObject go = Node("GanchoDiente", x, FloorY + y);
             go.AddComponent<FlossHook>().Configure(0f, true, 3.8f);
             Sprite tooth = PrefabSetup.ArtByWidth($"{MouthArt}/DienteArriba.png", 1.6f, new Vector2(0.5f, 0.05f));
-            if (tooth != null) { SetupUtils.SpriteChild(go.transform, "Diente", tooth, Color.white, new Vector3(0f, 0.3f, 0f), Vector2.one, -8); return; }
+            if (tooth != null) { SetupUtils.SpriteChild(go.transform, "Diente", tooth, Color.white, new Vector3(0f, -0.2f, 0f), Vector2.one, -8); return; }   // el aro del dibujo queda en el gancho
             Color line = new Color(0.3f, 0.2f, 0.22f), enamel = new Color(0.98f, 0.96f, 0.9f);
             SetupUtils.SpriteChild(go.transform, "Contorno", PlaceholderArt.SquareCentered, line, new Vector3(0f, 1.6f, 0f), new Vector2(1.5f, 2.6f), -9);
             SetupUtils.SpriteChild(go.transform, "Diente", PlaceholderArt.SquareCentered, enamel, new Vector3(0f, 1.6f, 0f), new Vector2(1.36f, 2.5f), -8);

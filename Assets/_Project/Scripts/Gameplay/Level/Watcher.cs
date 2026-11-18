@@ -52,7 +52,7 @@ namespace HealingKnight.Gameplay.Level
             body = new GameObject("Macrofago").transform;
             body.SetParent(transform, false);
             Sprite c = CodeSprites.Circle;
-            if (art != null) CodeSprites.Art(body, art, 1.8f, 10, new Vector2(0f, 0.9f));
+            if (art != null) CodeSprites.Art(body, art, 1.9f, 10, Vector2.zero);   // pivote abajo
             else
             {
                 CodeSprites.Add(body, c, new Color(0.2f, 0.25f, 0.4f), 9, new Vector2(0f, 0.9f), new Vector2(1.9f, 1.75f));

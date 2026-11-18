@@ -37,7 +37,7 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private float ripDamage = 25f;
         [SerializeField] private Projectile projectilePrefab;
         [SerializeField] private LayerMask groundMask = 1 << 6;
-        [SerializeField] private Vector2[] plateSpots = { new Vector2(-1.1f, 3.4f), new Vector2(0.2f, 4.1f), new Vector2(1.3f, 3.2f) };
+        [SerializeField] private Vector2[] plateSpots = { new Vector2(-1.5f, 2.9f), new Vector2(-0.2f, 3.7f), new Vector2(1.5f, 2.6f) };
 
         private class Wave { public Transform root; public float x; public int dir; public bool hit, alive; }
 
@@ -79,9 +79,11 @@ namespace HealingKnight.Gameplay.Enemies
                 go.transform.SetParent(transform, false);
                 go.transform.localPosition = spot;
                 var hook = go.AddComponent<FlossHook>();
-                hook.Configure(0.9f, false, 4f);
+                // Con dibujo, las placas ya vienen pintadas: aquí solo va el gancho brillante para engancharse.
+                hook.Configure(0.9f, art != null, 4f);
                 hook.Ripped += OnPlateRipped;
-                if (plateArt != null) CodeSprites.Art(go.transform, plateArt, 1.3f, 12, Vector2.zero);
+                if (art != null) { }
+                else if (plateArt != null) CodeSprites.Art(go.transform, plateArt, 1.3f, 12, Vector2.zero);
                 else
                 {
                     Sprite c = CodeSprites.Circle;

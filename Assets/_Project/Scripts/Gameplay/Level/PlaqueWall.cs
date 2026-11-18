@@ -26,7 +26,12 @@ namespace HealingKnight.Gameplay.Level
             box.size = new Vector2(width, height);
             box.offset = new Vector2(0f, height * 0.5f);
 
-            if (art != null) CodeSprites.Art(transform, art, width * 1.8f, 4, new Vector2(0f, height * 0.5f));
+            if (art != null)
+            {
+                // Que el dibujo ocupe toda la altura del tapón (un poco más angosto para que no tape de más).
+                float k = art.bounds.size.y > 0.01f ? height / art.bounds.size.y : 1f;
+                CodeSprites.Add(transform, art, Color.white, 4, new Vector2(0f, height * 0.5f), new Vector2(k * 0.7f, k));
+            }
             else
             {
                 Color line = new Color(0.35f, 0.28f, 0.08f), fill = new Color(0.92f, 0.86f, 0.5f);
