@@ -153,10 +153,12 @@ namespace HealingKnight.UI
 
             TextMeshProUGUI note = CartoonUI.Text(canvas.transform,
                 "Información educativa. Solo un médico puede diagnosticar y recetar medicamentos: nunca te automediques.", 20f, Dim, false, TextAlignmentOptions.Center, 0f);
-            UIFactory.Place(note.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 56f), new Vector2(1700f, 30f));
+            note.enableAutoSizing = true; note.fontSizeMin = 14f; note.fontSizeMax = 20f;
+            UIFactory.Place(note.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(60f, 54f), new Vector2(1000f, 30f));
             TextMeshProUGUI help = CartoonUI.Text(canvas.transform,
                 "Flechas / stick: elegir     Q / E  o  LB / RB: sistema     Rueda / stick derecho: leer más     Esc / B: volver", 18f, new Color(1f, 1f, 1f, 0.45f), false, TextAlignmentOptions.Center, 0f);
-            UIFactory.Place(help.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 22f), new Vector2(1700f, 28f));
+            help.enableAutoSizing = true; help.fontSizeMin = 12f; help.fontSizeMax = 18f;
+            UIFactory.Place(help.rectTransform, new Vector2(0f, 0f), new Vector2(0f, 0f), new Vector2(60f, 20f), new Vector2(1000f, 28f));
 
             UpdateCounter();
             ShowTab(TabOfCurrentLevel());
@@ -183,6 +185,7 @@ namespace HealingKnight.UI
             scientific = CartoonUI.Text(p, "", 24f, Dim, false, TextAlignmentOptions.TopLeft, 0f);
             UIFactory.Place(scientific.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(330f, -148f), new Vector2(420f, 64f));
             kind = CartoonUI.Text(p, "", 24f, CartoonUI.Yellow, false, TextAlignmentOptions.TopLeft, 0f);
+            kind.enableAutoSizing = true; kind.fontSizeMin = 16f; kind.fontSizeMax = 24f; kind.textWrappingMode = TextWrappingModes.NoWrap;
             UIFactory.Place(kind.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(330f, -214f), new Vector2(420f, 34f));
             where = CartoonUI.Text(p, "", 22f, Dim, false, TextAlignmentOptions.TopLeft, 0f);
             UIFactory.Place(where.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(330f, -252f), new Vector2(420f, 60f));
@@ -326,7 +329,7 @@ namespace HealingKnight.UI
 
             title.text = e.name;
             scientific.text = $"<i>{e.scientific}</i>";
-            kind.text = e.kind + (save.HasDefeated(e.id) ? "   ·   ¡Derrotado!" : "");
+            kind.text = e.kind + (save.HasDefeated(e.id) ? "  ·  ¡Derrotado!" : "");
             where.text = $"Vive en: {e.foundIn}";
             BuildChips(e);
 
