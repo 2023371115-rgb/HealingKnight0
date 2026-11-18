@@ -573,6 +573,9 @@ namespace HealingKnight.EditorTools
             foreach (GameObject go in old) Object.DestroyImmediate(go);
 
             SpriteRenderer body = SetupUtils.SpriteChild(visual, "Body", idle != null ? idle : move, Color.white, Vector3.zero, Vector2.one, 0);
+            // El juego supone que el dibujo mira a la DERECHA (así están los del digestivo). Los del Respiratorio,
+            // Nervioso y Boca se dibujaron mirando a la izquierda: se voltean para que no caminen de espaldas.
+            if (folder == "Respiratorio" || folder == "Nervioso" || folder == "Boca") body.flipX = true;
             SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { body });
 
             var poses = root.AddComponent<EnemyPoseArt>();

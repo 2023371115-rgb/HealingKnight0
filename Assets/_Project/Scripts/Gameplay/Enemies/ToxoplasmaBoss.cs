@@ -104,6 +104,13 @@ namespace HealingKnight.Gameplay.Enemies
             for (int i = 0; i < cystVisuals.Length; i++)
                 cystVisuals[i].localScale = Vector3.one * (i == cyst && state == State.Hidden ? 1f + Mathf.Sin(Time.time * 3f) * 0.04f : 1f);
 
+            // Mira hacia el jugador (el dibujo mira a la izquierda).
+            if (visual != null && p != null)
+            {
+                float sx = p.Position.x < transform.position.x ? 1f : -1f;
+                visual.localScale = new Vector3(sx, 1f, 1f);
+            }
+
             switch (state)
             {
                 case State.Hidden:
