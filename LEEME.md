@@ -41,6 +41,7 @@ Apuntas **libre con el mouse** (o el stick derecho del control). Si no usas el m
 | **Fijar** (mantener): te quedas quieto para apuntar con calma | U / Shift izq. | Clic del stick der. |
 | Medicamento anterior / siguiente | Rueda del mouse / Q / E | — / Y |
 | Medicamento directo | 1 a 5 | — |
+| **Herramienta** (hilo dental en la Boca): engancharte / soltarte | R / clic central | Clic del stick izq. / Select |
 | Pausa | Esc | Start |
 
 Los controles se definen en `Scripts/Gameplay/Player/PlayerInputReader.cs`.
@@ -272,6 +273,53 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - `Art/Jefes/Colmena/Nave_*` (Normal, Ataca, Dano, Derrotada): la nave de tuberculosis, jefe de los Pulmones.
   - `Art/Nervioso/Neurona_*` (Sana, Danada, Roja, Calmada): al calmar una roja aparece dormida un momento.
   - `Art/Respiratorio/Mucosidad_*` e `Inflamacion_*` (Normal, Dano, Disuelta/Desinflada): al tratarlos dejan su charco en el piso.
+
+## Boca y niveles secretos (Amígdalas, Ojo)
+
+**Boca (175, secreto del Estómago: el diente):** su mecánica propia es el **hilo dental** (`FlossGrapple` + `FlossHook`).
+- Con R (clic central / Select) te enganchas al gancho más cercano, que se marca con un círculo amarillo.
+- Con A/D te columpias; con W/S recoges o sueltas hilo. Saltar o volver a apretar R te suelta con impulso.
+- La **placa entre dientes** (`PlaqueWall`) no se quita con balas: engánchala y jálala.
+- **Muelas que mastican** (`ChewingMolar`): bajan a ritmo y aplastan.
+- **Lengua** (`MovingPlatform`, estilo Tongue): plataformas que suben y bajan en ola.
+- **Lluvia de azúcar** (`SugarRain`): si un S. mutans se come un dulce, se cura y crece; rompe los dulces disparándoles.
+- **Olas de saliva** (`SalivaWave`): te curan y dañan a las bacterias.
+- **Jefe: el Sarro** (`SarroBoss`).
+  - Mientras tenga placas, las balas no le hacen nada.
+  - Engánchale el hilo a una placa para arrancarla (le duele).
+  - Sin placas queda expuesto 7 s; luego le vuelven a crecer.
+- Arte opcional:
+  - En `Art/Boca/`: DienteArriba, Muela, Placa, Dulce.
+  - En `Art/Jefes/Sarro/`: Sarro_Normal, Sarro_Ataca, Sarro_Expuesto, Sarro_Derrotado y Placa.
+
+**Amígdalas (150, secreto de la Tráquea):**
+- **Entrada:** en la zona de la tos, junto al último anillo de cartílago, hay una corriente de aire escondida que te sube a una repisa con la entrada a la garganta.
+- **Mecánica:**
+  - El estreptococo (`Bacteria_SPyogenes`) suelta un **antígeno** al morir.
+  - Lo cargas (`AntigenSystem`): vas más lento, no disparas y, si te pegan, se te cae.
+  - Lo entregas en el **centro germinal** (`GerminalCenter`) y sale un **linfocito B** (`AllyLymphocyte`) que dispara anticuerpos 30 s.
+- **Jefe: el Absceso** (`AbscessBoss`): solo le hacen daño los anticuerpos. Llama estreptococos y escupe gotas.
+- **Premio:** un linfocito B que te sigue en todos los niveles (secreto `premio_linfocito`).
+- Arte opcional:
+  - Enemigo: `Art/Enemigos/Respiratorio/SPyogenes_*`.
+  - Jefe: `Art/Jefes/Absceso/Absceso_Normal, _Ataca, _Dano, _Derrotado`.
+
+**Ojo (165, secreto del Cerebro):**
+- **Entrada:** en el lóbulo occipital (la oscuridad), sobre el tercer hueco, hay dos repisas con el **nervio óptico**. Se ve bien con los destellos.
+- **Mecánica:** sigilo (`StealthMeter`), con una barra de inflamación arriba.
+  - La barra sube si un **vigilante** (`Watcher`, macrófago con cono de visión) te ve.
+  - También sube si pisas la **retina** (`NoisyFloor`), si te alumbra un **haz de luz** (`LightBeam`) o si disparas.
+  - Si se llena: **uveítis**. Todo se oscurece salvo un círculo, durante 6 s, y llegan herpes.
+  - Escóndete agachado tras los pliegues (`HidingSpot`) o dentro de las **moscas volantes**.
+  - El **punto ciego** (`BlindSpot`) es zona segura.
+- **Jefe: Toxoplasma** (`ToxoplasmaBoss`).
+  - Se esconde en quistes.
+  - Si llegas sin que te detecten, lo sorprendes: se marea y le puedes pegar (antiparasitario).
+  - Si te ve, huye a otro quiste.
+- **Premio:** el **escáner** (`SecretRewards`). Sobre cada enemigo aparece un puntito con el color del medicamento que le gana, en todos los niveles (secreto `premio_escaneo`).
+- Arte opcional:
+  - En `Art/Ojo/`: Macrofago, Cristalino.
+  - En `Art/Jefes/Toxoplasma/`: Toxoplasma_Normal, _Mareado, _Ataca, _Derrotado.
 
 ## Menú y mapa del cuerpo (estilo caricatura)
 

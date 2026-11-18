@@ -20,6 +20,7 @@ namespace HealingKnight.Gameplay.Player
     ///   Fijar (quieto)                 U / Shift izq.               Clic del stick der.
     ///   Medicamento anterior/siguiente Q / E, rueda del mouse       — / Y
     ///   Medicamento directo            1 a 5                        —
+    ///   Herramienta (hilo dental)      R / clic central             Clic del stick izq. / Select
     ///   Pausa                          Esc                          Start
     ///
     ///   * Si mueves el mouse apuntas con el mouse; si presionas W vuelves a apuntar con teclas.
@@ -28,7 +29,7 @@ namespace HealingKnight.Gameplay.Player
     public class PlayerInputReader : MonoBehaviour
     {
         private InputActionMap map;
-        private InputAction move, jump, shoot, aimLock, bomb, shield, prevMed, nextMed, pause;
+        private InputAction move, jump, shoot, aimLock, bomb, shield, prevMed, nextMed, pause, gadget;
         private InputAction pointer, pointerDelta, aimStick, gamepadMove, scroll;
         private bool mouseAim;
         private InputAction[] directMed;
@@ -46,6 +47,9 @@ namespace HealingKnight.Gameplay.Player
         public int MedicationStep { get; private set; }   // -1, 0 o 1
         public int DirectMedicationIndex { get; private set; } = -1;
         public bool PausePressed { get; private set; }
+        /// <summary>Botón de herramienta del nivel (hilo dental en la Boca).</summary>
+        public bool GadgetPressed { get; private set; }
+        public bool GadgetHeld { get; private set; }
 
         /// <summary>Cómo se está apuntando ahora mismo.</summary>
         public AimSource AimSource { get; private set; } = AimSource.Directional;
@@ -112,6 +116,12 @@ namespace HealingKnight.Gameplay.Player
             gamepadMove = map.AddAction("GamepadMove", InputActionType.Value, "<Gamepad>/leftStick");
             scroll = map.AddAction("Scroll", InputActionType.Value, "<Mouse>/scroll");
 
+            gadget = map.AddAction("Gadget", InputActionType.Button);
+            gadget.AddBinding("<Keyboard>/r");
+            gadget.AddBinding("<Mouse>/middleButton");
+            gadget.AddBinding("<Gamepad>/leftStickPress");
+            gadget.AddBinding("<Gamepad>/select");
+
             pause = map.AddAction("Pause", InputActionType.Button);
             pause.AddBinding("<Keyboard>/escape");
             pause.AddBinding("<Gamepad>/start");
@@ -160,6 +170,7 @@ namespace HealingKnight.Gameplay.Player
                 Move = Vector2.zero;
                 JumpHeld = LockHeld = false;
                 JumpPressed = ShootPressed = ShootHeld = BombPressed = ShieldHeld = false;
+                GadgetPressed = GadgetHeld = false;
                 MedicationStep = 0;
                 DirectMedicationIndex = -1;
                 return;
@@ -174,6 +185,8 @@ namespace HealingKnight.Gameplay.Player
             ShootHeld = shoot.IsPressed();
             BombPressed = bomb.WasPressedThisFrame();
             ShieldHeld = shield.IsPressed();
+            GadgetPressed = gadget.WasPressedThisFrame();
+            GadgetHeld = gadget.IsPressed();
             UpdateAimSource();
 
             MedicationStep = 0;

@@ -82,6 +82,11 @@ namespace HealingKnight.Gameplay.Player
         public Vector2 Aim => aim;
         public Vector2 Position => motor.Position;
 
+        /// <summary>Colgado del hilo dental: el hilo maneja el movimiento (no corre ni salta normal).</summary>
+        public bool Swinging { get; set; }
+        /// <summary>Cargando algo (antígeno): va lento y no dispara ni lanza bombas.</summary>
+        public bool Carrying { get; set; }
+
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
         {
@@ -170,6 +175,13 @@ namespace HealingKnight.Gameplay.Player
             if (locked) speed = motor.IsGrounded ? 0f : config.lockedAirSpeed;
             if (Time.time < slowUntil) speed *= slowMultiplier;
             else slowMultiplier = 1f;
+            if (Carrying) speed *= 0.6f;
+            if (Swinging)
+            {
+                // Colgado del hilo: solo apunta y dispara (el hilo mueve al jugador).
+                UpdateAimAndAttack(move);
+                return;
+            }
             float target = Mathf.Abs(move.x) > 0.3f ? Mathf.Sign(move.x) * speed : 0f;
             float vx = motor.IsGrounded ? target : Mathf.Lerp(motor.Velocity.x, target, config.airControl);
             motor.SetHorizontalVelocity(vx);
@@ -204,6 +216,11 @@ namespace HealingKnight.Gameplay.Player
                 motor.FallSpeedLimit = config.slowFallMaxSpeed;
             }
 
+            UpdateAimAndAttack(move);
+        }
+        private void UpdateAimAndAttack(Vector2 move)
+        {
+            bool shielding = shield != null && shield.IsActive;
             // Apuntar.
             //  - Mouse / stick derecho: libre en cualquier ángulo y miras hacia donde apuntas
             //    (puedes correr hacia atrás disparando).
@@ -244,7 +261,7 @@ namespace HealingKnight.Gameplay.Player
             // Escudo.
             if (shield != null) shield.SetWantsBlock(input.ShieldHeld);
 
-            if (shielding) return;
+            if (shielding || Carrying) { if (motor.IsGrounded) lastSafePosition = motor.Position; return; }
 
             // Disparo (o cuchillazo automático si hay un enemigo pegado).
             if (shooter != null && (input.ShootPressed || input.ShootHeld))
@@ -261,6 +278,7 @@ namespace HealingKnight.Gameplay.Player
 
             if (motor.IsGrounded) lastSafePosition = motor.Position;
         }
+
 
         private void SetCrouch(bool value)
         {

@@ -49,6 +49,8 @@ namespace HealingKnight.EditorTools
         public static string MedulaPath => $"{Folder}/Levels/Nervioso/Nervioso_Medula.unity";
         public static string CerebroPath => $"{Folder}/Levels/Nervioso/Nervioso_Cerebro.unity";
         public static string HipocampoPath => $"{Folder}/Levels/Nervioso/Nervioso_Hipocampo.unity";
+        public static string OjoPath => $"{Folder}/Levels/Nervioso/Nervioso_Ojo.unity";
+        public static string AmigdalasPath => $"{Folder}/Levels/Respiratorio/Respiratorio_Amigdalas.unity";
 
         public void Run()
         {
@@ -64,6 +66,8 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(MedulaPath, BuildMedula);
             CreateIfMissing(CerebroPath, BuildCerebro);
             CreateIfMissing(HipocampoPath, BuildHipocampo);
+            CreateIfMissing(OjoPath, BuildOjo);
+            CreateIfMissing(AmigdalasPath, BuildAmigdalas);
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
@@ -82,6 +86,8 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(MedulaPath, true),
                 new EditorBuildSettingsScene(CerebroPath, true),
                 new EditorBuildSettingsScene(HipocampoPath, true),
+                new EditorBuildSettingsScene(OjoPath, true),
+                new EditorBuildSettingsScene(AmigdalasPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
             EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
@@ -421,6 +427,7 @@ namespace HealingKnight.EditorTools
 
             environment = new GameObject("Environment").transform;
             currentLakes.Clear();
+            new GameObject("PremiosSecretos").AddComponent<SecretRewards>();   // linfocito aliado y escáner (si ya los ganaste)
             LoadLevelTissue(style.tissue);
             Sprite backdrop = LoadBackdrop(style.backdrop);
             if (backdrop != null)
@@ -1700,43 +1707,6 @@ namespace HealingKnight.EditorTools
             go.AddComponent<MassWave>().Configure(fromX, toX);
         }
 
-        private void BuildBoca()
-        {
-            BuildLevelBase(70f, new LevelStyle
-            {
-                // Boca: encías rosas, dientes blancos de fondo y saliva.
-                background = new Color(0.14f, 0.03f, 0.06f),
-                wall = new Color(0.45f, 0.12f, 0.2f),
-                floor = new Color(0.85f, 0.4f, 0.5f),
-                floorEdge = new Color(1f, 0.97f, 0.9f),
-                blob = new Color(0.97f, 0.95f, 0.88f, 0.85f),
-                decor = Decor.Blobs,
-                drip = new Color(0.85f, 0.95f, 1f, 0.6f),
-                glow = new Color(0.9f, 0.95f, 1f, 1f),
-                backdrop = "Fondo_Boca",     // pintura estilo caricatura (dientes, lengua y saliva)
-                tissue = "Boca",             // tejido de encía rosa
-                pitLiquid = new Color(1f, 1f, 1f, 1f), // si hay huecos: saliva
-                liquidDeep = new Color(0.45f, 0.62f, 0.8f, 0.9f),
-                liquidSurface = new Color(0.82f, 0.94f, 1f, 0.75f),
-                liquidOutline = new Color(0.2f, 0.28f, 0.42f, 1f),
-                liquidCrest = new Color(1f, 1f, 1f, 0.95f)
-            }, "NIVEL SECRETO · BOCA. NODO: Placa bacteriana detectada.");
-
-            // Dientes: plataformas blancas.
-            Arena("Arena_1_Caries", 8f, 18f, "S. mutans (caries): te lanza ácido en arco desde lejos. Antibiótico.",
-                W(0.6f, E(prefabs.SMutans, data.SMutans, 3)),
-                W(1.0f, E(prefabs.SMutans, data.SMutans, 2), E(prefabs.SMutans, data.SMutans, 2, SpawnSide.Left)));
-            Platform(12f, 2.2f, 2f);
-            Platform(18f, 2.2f, 2f);
-
-            Arena("Arena_2_Placa", 34f, 20f, "La placa: muchas a la vez. (Mini jefe 'caries': próximamente)",
-                W(0.6f, E(prefabs.SMutans, data.SMutans, 3, SpawnSide.Both)),
-                W(1.0f, E(prefabs.SMutans, data.SMutans, 4, SpawnSide.Both)));
-            Platform(38f, 2.2f, 2f);
-            Platform(44f, 3.4f, 2f);
-            Platform(50f, 2.2f, 2f);
-        }
-
         /// <summary>
         /// Mundo secreto: adelanto de una idea para después (un planeta vivo invadido por patógenos alienígenas).
         /// NO está en el juego: no aparece en el mapa ni en la compilación. Solo se abre desde el editor:
@@ -1920,6 +1890,12 @@ namespace HealingKnight.EditorTools
             CartilageRing(78.5f);
             Platform(82.75f, 2.4f, 1.4f);
             CartilageRing(88f);
+            // Secreto: una corriente escondida junto al anillo te sube a la GARGANTA (entrada a las Amígdalas).
+            Vent(89.8f, 8.2f, 3.2f, 0.8f);
+            Platform(90.6f, 7.4f, 2.2f);
+            SecretEntrance(90.6f, 8.5f, data.RespiratorioAmigdalas, "respiratorio_amigdalas",
+                "¡Un pasaje hacia arriba, a la GARGANTA! Ahí están las amígdalas.",
+                "De vuelta a las amígdalas: trae antígenos.", false);
             Checkpoint(92f);
 
             // Corrientes de aire hacia arriba: te lanzan a la ruta alta sobre el hueco grande.
@@ -2061,6 +2037,356 @@ namespace HealingKnight.EditorTools
         }
 
         /// <summary>Alvéolo: plataforma de un solo sentido que se ve como racimo de burbujas.</summary>
+        // ---------- Boca (rediseño) y niveles secretos: Amígdalas y Ojo ----------
+
+        private const string MouthArt = "Assets/_Project/Art/Boca";
+        private const string ThroatArt = "Assets/_Project/Art/Amigdalas";
+        private const string EyeArt = "Assets/_Project/Art/Ojo";
+
+        private void Floss() => Node("HiloDental", 0f, FloorY).AddComponent<FlossGrapple>();
+
+        /// <summary>Gancho para el hilo dental colgado de un diente de arriba (y el diente de adorno).</summary>
+        private void Hook(float x, float y)
+        {
+            GameObject go = Node("GanchoDiente", x, FloorY + y);
+            go.AddComponent<FlossHook>().Configure(0f, true, 3.8f);
+            Sprite tooth = PrefabSetup.ArtByWidth($"{MouthArt}/DienteArriba.png", 1.6f, new Vector2(0.5f, 0.05f));
+            if (tooth != null) { SetupUtils.SpriteChild(go.transform, "Diente", tooth, Color.white, new Vector3(0f, 0.3f, 0f), Vector2.one, -8); return; }
+            Color line = new Color(0.3f, 0.2f, 0.22f), enamel = new Color(0.98f, 0.96f, 0.9f);
+            SetupUtils.SpriteChild(go.transform, "Contorno", PlaceholderArt.SquareCentered, line, new Vector3(0f, 1.6f, 0f), new Vector2(1.5f, 2.6f), -9);
+            SetupUtils.SpriteChild(go.transform, "Diente", PlaceholderArt.SquareCentered, enamel, new Vector3(0f, 1.6f, 0f), new Vector2(1.36f, 2.5f), -8);
+            SetupUtils.SpriteChild(go.transform, "Punta", PlaceholderArt.Circle, enamel, new Vector3(0f, 0.35f, 0f), new Vector2(1.36f, 0.8f), -8);
+            SetupUtils.SpriteChild(go.transform, "Brillo", PlaceholderArt.Circle, Color.white, new Vector3(-0.35f, 1.8f, 0f), new Vector2(0.25f, 0.9f), -7);
+        }
+
+        private void Molar(float x, float phase) =>
+            Node("MuelaQueMastica", x, FloorY).AddComponent<ChewingMolar>().Configure(3f, 8f, 2.6f, phase,
+                PrefabSetup.ArtByWidth($"{MouthArt}/Muela.png", 3.3f, new Vector2(0.5f, 0.02f)));
+
+        private void Tongue(float fromX, float toX, int segments)
+        {
+            float step = (toX - fromX) / segments;
+            for (int i = 0; i < segments; i++)
+            {
+                float x = fromX + step * (i + 0.5f);
+                GameObject go = Node("Lengua", x, FloorY + 0.6f);
+                var p = go.AddComponent<MovingPlatform>();
+                p.Configure(new Vector2(x, FloorY + 0.4f), new Vector2(x, FloorY + 2.6f), 1.6f, (i * 0.25f) % 1f, step - 0.4f, null);
+                p.SetStyle(MovingPlatform.Style.Tongue);
+            }
+        }
+
+        private void Plaque(float x) =>
+            Node("PlacaEntreDientes", x, FloorY).AddComponent<PlaqueWall>().Configure(9f, PrefabSetup.ArtByWidth($"{MouthArt}/Placa.png", 2.5f));
+
+        private void Sugar(float fromX, float toX) =>
+            Node("LluviaDeAzucar", fromX, FloorY).AddComponent<SugarRain>().Configure(fromX, toX, FloorY + 9f, 1.4f, data.SMutans,
+                PrefabSetup.ArtByWidth($"{MouthArt}/Dulce.png", 0.7f));
+
+        private void Saliva(float fromX, float toX, float period) =>
+            Node("OlaDeSaliva", fromX, FloorY).AddComponent<SalivaWave>().Configure(fromX, toX, period);
+
+        /// <summary>Entrada a un nivel secreto (como el diente del Estómago): al tocarla te lleva y lo agrega al mapa.</summary>
+        private void SecretEntrance(float x, float y, LevelData target, string secretId, string first, string again, bool eye)
+        {
+            GameObject go = Node(eye ? "NervioOptico" : "HaciaLasAmigdalas", x, FloorY + y);
+            var entrance = go.AddComponent<SecretTooth>();
+            GameObject visual = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            Color line = new Color(0.12f, 0.05f, 0.15f);
+            if (eye)
+            {
+                SetupUtils.SpriteChild(visual.transform, "Aura", PlaceholderArt.Circle, new Color(1f, 0.95f, 0.6f, 0.35f), Vector3.zero, new Vector2(1.8f, 1.8f), 19);
+                SetupUtils.SpriteChild(visual.transform, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, new Vector2(1.2f, 0.85f), 20);
+                SetupUtils.SpriteChild(visual.transform, "Blanco", PlaceholderArt.Circle, Color.white, Vector3.zero, new Vector2(1.08f, 0.74f), 21);
+                SetupUtils.SpriteChild(visual.transform, "Iris", PlaceholderArt.Circle, new Color(0.3f, 0.65f, 1f), Vector3.zero, new Vector2(0.5f, 0.5f), 22);
+                SetupUtils.SpriteChild(visual.transform, "Pupila", PlaceholderArt.Circle, line, Vector3.zero, new Vector2(0.24f, 0.24f), 23);
+                SetupUtils.SpriteChild(visual.transform, "Brillo", PlaceholderArt.Circle, Color.white, new Vector3(-0.1f, 0.1f, 0f), new Vector2(0.1f, 0.1f), 24);
+            }
+            else
+            {
+                SetupUtils.SpriteChild(visual.transform, "Aura", PlaceholderArt.Circle, new Color(1f, 0.6f, 0.7f, 0.35f), Vector3.zero, new Vector2(1.8f, 1.8f), 19);
+                SetupUtils.SpriteChild(visual.transform, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, new Vector2(1.1f, 1.2f), 20);
+                SetupUtils.SpriteChild(visual.transform, "Amigdala", PlaceholderArt.Circle, new Color(1f, 0.55f, 0.6f), Vector3.zero, new Vector2(0.96f, 1.06f), 21);
+                for (int i = 0; i < 3; i++)
+                    SetupUtils.SpriteChild(visual.transform, "Cripta", PlaceholderArt.Circle, new Color(0.75f, 0.3f, 0.4f), new Vector3(-0.2f + i * 0.2f, 0.2f - (i % 2) * 0.35f, 0f), new Vector2(0.16f, 0.12f), 22);
+                SetupUtils.SpriteChild(visual.transform, "Brillo", PlaceholderArt.Circle, Color.white, new Vector3(-0.2f, 0.3f, 0f), new Vector2(0.2f, 0.12f), 23);
+            }
+            SetupUtils.SetString(entrance, "secretId", secretId);
+            SetupUtils.SetRef(entrance, "targetLevel", target);
+            SetupUtils.SetString(entrance, "firstMessage", first);
+            SetupUtils.SetString(entrance, "againMessage", again);
+            SetupUtils.SetRef(entrance, "visual", visual.transform);
+        }
+
+        private void Antigens(params EnemyData[] sources) => Node("Antigenos", 0f, FloorY).AddComponent<AntigenSystem>().Configure(sources);
+        private void Germinal(float x) => Node("CentroGerminal", x, FloorY).AddComponent<GerminalCenter>();
+        private void Stealth() => Node("Sigilo", 0f, FloorY).AddComponent<StealthMeter>().Configure(prefabs.Herpes, data.Herpes);
+
+        private void WatcherAt(float fromX, float toX, float y = 0f) =>
+            Node("Vigilante", fromX, FloorY + y).AddComponent<Watcher>().Configure(fromX, toX, 1.4f,
+                PrefabSetup.ArtByWidth($"{EyeArt}/Macrofago.png", 1.9f, new Vector2(0.5f, 0.02f)));
+
+        private void Cover(float x, float y = 0f) => Node("Escondite", x, FloorY + y).AddComponent<HidingSpot>().Configure(2.2f, 1.6f, false, Vector2.zero, 6f);
+
+        private void Floater(float x, float y, float driftX, float period) =>
+            Node("MoscaVolante", x, FloorY + y).AddComponent<HidingSpot>().Configure(2.2f, 2.4f, true, new Vector2(driftX, 0.3f), period);
+
+        private void Retina(float fromX, float toX) => Node("Retina", fromX, FloorY).AddComponent<NoisyFloor>().Configure(fromX, toX);
+        private void Beam(float fromX, float toX, float period) => Node("HazDeLuz", fromX, FloorY).AddComponent<LightBeam>().Configure(fromX, toX, period);
+        private void BlindSpotAt(float x, float width) => Node("PuntoCiego", x, FloorY).AddComponent<BlindSpot>().Configure(width);
+
+        /// <summary>Cristalino: lente gigante transparente de adorno.</summary>
+        private void Lens(float x)
+        {
+            Sprite pic = PrefabSetup.ArtByWidth($"{EyeArt}/Cristalino.png", 9f);
+            if (pic != null) { SetupUtils.SpriteChild(environment, "Cristalino", pic, new Color(1f, 1f, 1f, 0.8f), new Vector3(x, FloorY + 4.5f, 0f), Vector2.one, -60); return; }
+            SetupUtils.SpriteChild(environment, "CristalinoBorde", PlaceholderArt.Circle, new Color(0.7f, 0.85f, 1f, 0.35f), new Vector3(x, FloorY + 4.5f, 0f), new Vector2(9f, 8f), -61);
+            SetupUtils.SpriteChild(environment, "Cristalino", PlaceholderArt.Circle, new Color(0.85f, 0.95f, 1f, 0.22f), new Vector3(x, FloorY + 4.5f, 0f), new Vector2(8.4f, 7.4f), -60);
+            SetupUtils.SpriteChild(environment, "CristalinoBrillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.35f), new Vector3(x - 2f, FloorY + 6.5f, 0f), new Vector2(2.2f, 1f), -59);
+        }
+
+        private void BuildBoca()
+        {
+            // Rediseño (175 u): mecánica propia, el HILO DENTAL (columpiarse de ganchos y arrancar placa),
+            // muelas que mastican, lengua que se ondula, lluvia de azúcar, olas de saliva y el jefe Sarro. Ver LEEME "Boca".
+            LevelManager manager = BuildLevelBase(175f, new LevelStyle
+            {
+                background = new Color(0.14f, 0.03f, 0.06f),
+                wall = new Color(0.45f, 0.12f, 0.2f),
+                floor = new Color(0.85f, 0.4f, 0.5f),
+                floorEdge = new Color(1f, 0.97f, 0.9f),
+                blob = new Color(0.97f, 0.95f, 0.88f, 0.85f),
+                decor = Decor.Blobs,
+                drip = new Color(0.85f, 0.95f, 1f, 0.6f),
+                glow = new Color(0.9f, 0.95f, 1f, 1f),
+                backdrop = "Fondo_Boca",
+                tissue = "Boca",
+                pitLiquid = new Color(1f, 1f, 1f, 1f),
+                liquidDeep = new Color(0.45f, 0.62f, 0.8f, 0.9f),
+                liquidSurface = new Color(0.82f, 0.94f, 1f, 0.75f),
+                liquidOutline = new Color(0.2f, 0.28f, 0.42f, 1f),
+                liquidCrest = new Color(1f, 1f, 1f, 0.95f)
+            }, "NIVEL SECRETO · BOCA. NODO: Placa bacteriana detectada. Te traje HILO DENTAL: botón R (clic central / Select).",
+                new Vector2(24f, 6f), new Vector2(40f, 8f), new Vector2(54f, 9f), new Vector2(97f, 22f));
+
+            Floss();
+
+            Arena("Arena_1_Caries", 8f, 16f, "S. mutans (caries): te lanza ácido en arco desde lejos. Antibiótico.",
+                W(0.6f, E(prefabs.SMutans, data.SMutans, 2)),
+                W(1.0f, E(prefabs.SMutans, data.SMutans, 2, SpawnSide.Left)));
+            Platform(12f, 2.2f, 2f);
+            Platform(17f, 2.2f, 2f);
+
+            // Tutorial del hilo: un hueco de saliva que solo se cruza columpiándose.
+            SetMessage("Hueco de saliva: lanza el HILO DENTAL (R) al gancho del diente, columpiate con A/D y salta para soltarte.", 21f);
+            Hook(27f, 7.2f);
+
+            // Placa entre dientes: solo se quita jalándola con el hilo.
+            Plaque(35f);
+
+            // Columpios encadenados.
+            Hook(42.5f, 7.4f);
+            Hook(46.5f, 7.8f);
+            EnemyAt(prefabs.SMutans, 51f, FloorY);
+            Hook(56.5f, 7.6f);
+            Hook(60.5f, 8.2f);
+            Checkpoint(64f);
+
+            // Muelas que mastican: crúzalas entre mordida y mordida.
+            SetMessage("¡Muelas! Bajan a ritmo y aplastan: pasa cuando suban. Biología: las muelas muelen la comida.", 65f);
+            Molar(70f, 0f);
+            Molar(75.5f, 0.6f);
+            Molar(81f, 1.2f);
+            Molar(86.5f, 1.8f);
+            EnemyAt(prefabs.SMutans, 92f, FloorY);
+            Checkpoint(94f);
+
+            // La lengua: un piso que se ondula sobre un charco de saliva (y ganchos por si te caes).
+            SetMessage("La LENGUA se mueve: sus pedazos suben y bajan. Si te resbalas, engánchate a un diente.", 95f);
+            Tongue(97f, 119f, 6);
+            Hook(103f, 8.4f);
+            Hook(113f, 8.4f);
+            Checkpoint(120f);
+
+            // Arena de placa bajo la lluvia de azúcar, con olas de saliva que ayudan.
+            Sugar(121f, 143f);
+            Saliva(119f, 146f, 12f);
+            Arena("Arena_2_Placa", 124f, 22f, "¡La placa! Rompe los DULCES antes de que el S. mutans se los coma y crezca. La SALIVA te ayuda.",
+                W(0.6f, E(prefabs.SMutans, data.SMutans, 3, SpawnSide.Both)),
+                W(1.0f, E(prefabs.SMutans, data.SMutans, 3, SpawnSide.Both)),
+                W(1.0f, E(prefabs.SMutans, data.SMutans, 4, SpawnSide.Both)));
+            Platform(128f, 2.4f, 2.4f);
+            Platform(134f, 3.8f, 2.4f);
+            Platform(140f, 2.4f, 2.4f);
+            Checkpoint(146f);
+
+            // Jefe: el Sarro. Ganchos en el techo para esquivar las ondas columpiándote.
+            Arena("Arena_Sarro", 150f, 22f, null,
+                W(1.2f, E(prefabs.SarroJefe, data.SarroJefe, 1)));
+            Hook(152f, 8f);
+            Hook(160f, 8.4f);
+            Hook(167f, 8f);
+
+            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Boca limpia! Recuerda: cepillo, hilo dental y poca azúcar.");
+            SetupUtils.SetFloat(manager, "completeDelay", 4f);
+        }
+
+        private void BuildAmigdalas()
+        {
+            // Nivel secreto (150 u): CARGAR ANTÍGENOS al centro germinal para fabricar linfocitos B aliados que disparan
+            // anticuerpos. Jefe: el Absceso (solo le dañan los anticuerpos). Premio: linfocito aliado en todos los niveles.
+            LevelManager manager = BuildLevelBase(150f, new LevelStyle
+            {
+                background = new Color(0.16f, 0.03f, 0.07f),
+                wall = new Color(0.5f, 0.12f, 0.22f),
+                floor = new Color(0.9f, 0.45f, 0.55f),
+                floorEdge = new Color(1f, 0.75f, 0.8f),
+                blob = new Color(1f, 0.6f, 0.68f, 0.7f),
+                decor = Decor.Blobs,
+                drip = new Color(1f, 0.9f, 0.95f, 0.6f),
+                glow = new Color(1f, 0.8f, 0.85f, 1f),
+                backdrop = "Fondo_Amigdalas",
+                tissue = "Boca",
+                pitLiquid = new Color(1f, 1f, 1f, 1f),
+                liquidDeep = new Color(0.55f, 0.4f, 0.6f, 0.9f),
+                liquidSurface = new Color(0.9f, 0.8f, 0.95f, 0.75f),
+                liquidOutline = new Color(0.25f, 0.15f, 0.3f, 1f),
+                liquidCrest = new Color(1f, 1f, 1f, 0.95f)
+            }, "NIVEL SECRETO · AMÍGDALAS. NODO: Estreptococos en la garganta. Aquí no basta con disparar: hay que fabricar anticuerpos.",
+                new Vector2(30f, 3f), new Vector2(52f, 3.5f));
+
+            Antigens(data.SPyogenes);
+
+            Arena("Arena_1_Garganta", 6f, 14f, "S. pyogenes (faringitis): al morir suelta un ANTÍGENO. Recógelo.",
+                W(0.6f, E(prefabs.SPyogenes, data.SPyogenes, 2)));
+            Platform(10f, 2.4f, 2.4f);
+            Germinal(22f);
+
+            // Amígdala izquierda: criptas (túneles) llenas de estreptococos.
+            SetMessage("Amígdala izquierda: sus CRIPTAS (pliegues) atrapan gérmenes. Elimínalos y lleva sus antígenos al centro germinal.", 26f);
+            Platform(31.5f, 2.4f, 1.6f);
+            EnemyAt(prefabs.SPyogenes, 35f, FloorY);
+            Platform(38f, 3.6f, 3f);
+            EnemyAt(prefabs.SPyogenes, 41f, FloorY);
+            SolidBlock(43f, 45f, FloorY + 1.4f);
+            Germinal(48f);
+            Platform(53.75f, 2.4f, 1.6f);
+            EnemyAt(prefabs.SPyogenes, 57f, FloorY);
+            EnemyAt(prefabs.Rinovirus, 60f, FloorY + 2.5f);
+            Checkpoint(63f);
+
+            // Amígdala derecha: oleadas que atacan; el centro germinal en medio de la pelea.
+            Arena("Arena_2_AmigdalaDerecha", 70f, 22f, "¡Oleada! Usa los antígenos para fabricar linfocitos B mientras peleas.",
+                W(0.6f, E(prefabs.SPyogenes, data.SPyogenes, 3, SpawnSide.Both)),
+                W(1.0f, E(prefabs.SPyogenes, data.SPyogenes, 2), E(prefabs.Rinovirus, data.Rinovirus, 2)),
+                W(1.0f, E(prefabs.SPyogenes, data.SPyogenes, 4, SpawnSide.Both)));
+            Germinal(78f);
+            Platform(73f, 2.6f, 2.4f);
+            Platform(84f, 2.6f, 2.4f);
+            Checkpoint(93f);
+
+            EnemyAt(prefabs.SPyogenes, 100f, FloorY);
+            Platform(104f, 2.4f, 2.4f);
+            EnemyAt(prefabs.SPyogenes, 108f, FloorY);
+            Checkpoint(111f);
+
+            // Jefe: el Absceso. Solo le hacen daño los anticuerpos.
+            Arena("Arena_Absceso", 116f, 26f, null,
+                W(1.2f, E(prefabs.AbscesoJefe, data.AbscesoJefe, 1)));
+            Germinal(118f);
+            Platform(123f, 2.6f, 2.4f);
+            Platform(129f, 3.8f, 2.4f);
+
+            SetupUtils.SetString(manager, "completeMessage", "NODO: Garganta sana. Tu linfocito B te acompañará en todos los niveles.");
+            SetupUtils.SetFloat(manager, "completeDelay", 4f);
+        }
+
+        private void BuildOjo()
+        {
+            // Nivel secreto (165 u): SIGILO. Que el cuerpo no te vea: vigilantes con cono de visión, barra de inflamación
+            // (uveítis), escondites, moscas volantes, retina que se enciende y haces de luz. Jefe: Toxoplasma en quistes.
+            // Premio: el escáner de NODO (ves la debilidad de cada enemigo en todos los niveles).
+            LevelManager manager = BuildLevelBase(165f, new LevelStyle
+            {
+                background = new Color(0.03f, 0.05f, 0.12f),
+                wall = new Color(0.1f, 0.14f, 0.3f),
+                floor = new Color(0.75f, 0.35f, 0.3f),
+                floorEdge = new Color(1f, 0.6f, 0.45f),
+                blob = new Color(0.4f, 0.55f, 0.9f, 0.35f),
+                decor = Decor.Blobs,
+                drip = new Color(0.7f, 0.85f, 1f, 0.5f),
+                glow = new Color(0.7f, 0.85f, 1f, 1f),
+                backdrop = "Fondo_Ojo",
+                tissue = "Cerebro",
+                pitLiquid = new Color(0.7f, 0.85f, 1f, 1f),
+                liquidDeep = new Color(0.25f, 0.35f, 0.6f, 0.9f),
+                liquidSurface = new Color(0.6f, 0.75f, 1f, 0.75f),
+                liquidOutline = new Color(0.1f, 0.15f, 0.35f, 1f),
+                liquidCrest = new Color(1f, 1f, 1f, 0.95f)
+            }, "NIVEL SECRETO · OJO. NODO: Entramos por el nervio óptico. Aquí las defensas casi no entran... y si nos ven, el ojo se inflama.");
+
+            Stealth();
+
+            // Córnea y humor acuoso: tutorial de esconderse.
+            SetMessage("Ese VIGILANTE es un macrófago del ojo. Si te ve en su cono de luz, sube la inflamación. Agáchate (S) detrás de los pliegues.", 4f);
+            Cover(11f);
+            WatcherAt(14f, 24f);
+            Cover(19f);
+            Cover(26f);
+            Platform(30f, 2.4f, 2.4f);
+
+            // Cristalino: la lente gigante; luz que entra y barre.
+            SetMessage("El CRISTALINO enfoca la luz. Cuidado con el haz que barre: si te alumbra, te ven.", 32f);
+            Lens(41f);
+            Beam(33f, 49f, 5f);
+            Cover(35f);
+            WatcherAt(37f, 46f);
+            Cover(44f);
+            Checkpoint(51f);
+
+            // Humor vítreo: moscas volantes que se mueven y te tapan.
+            SetMessage("Humor vítreo: esas manchas que flotan son MOSCAS VOLANTES (sí, las que a veces ves). Te tapan aunque estés de pie.", 52f);
+            Floater(56f, 0f, 2f, 7f);
+            WatcherAt(54f, 66f);
+            Floater(62f, 0f, 2.5f, 8f);
+            Floater(69f, 0f, 2f, 6f);
+            WatcherAt(66f, 80f);
+            Floater(75f, 0f, 2.5f, 7.5f);
+            EnemyAt(prefabs.Herpes, 72f, FloorY + 3f);
+            Checkpoint(82f);
+
+            // Retina: conos y bastones que se encienden al pisarlos + haces de luz. Ve por arriba.
+            SetMessage("RETINA: conos y bastones captan la luz y se encienden si los pisas (te delatan). Ve por las plataformas.", 83f);
+            Retina(84f, 111f);
+            Platform(87f, 2.2f, 2.2f);
+            Platform(91.5f, 3.2f, 2.2f);
+            Platform(96f, 2.2f, 2.2f);
+            Platform(100.5f, 3.2f, 2.2f);
+            Platform(105f, 2.2f, 2.2f);
+            Platform(109.5f, 3f, 2.2f);
+            Beam(84f, 97f, 4.5f);
+            Beam(98f, 111f, 5.5f);
+            WatcherAt(90f, 106f);
+
+            // Punto ciego: zona segura.
+            BlindSpotAt(118f, 9f);
+            Checkpoint(115f);
+
+            // Jefe: Toxoplasma en los quistes de la retina.
+            var layout = Node("Quistes", 0f, FloorY).AddComponent<CystLayout>();
+            layout.Configure(new[] { new Vector2(133f, FloorY + 1.4f), new Vector2(140f, FloorY + 4.4f), new Vector2(147f, FloorY + 1.4f), new Vector2(152f, FloorY + 4.6f) });
+            Arena("Arena_Toxoplasma", 130f, 28f, null,
+                W(1.2f, E(prefabs.ToxoplasmaJefe, data.ToxoplasmaJefe, 1)));
+            Platform(140f, 3.2f, 2.6f);
+            Platform(152f, 3.4f, 2.6f);
+            Cover(136f);
+            Cover(144f);
+            Cover(149f);
+
+            SetupUtils.SetString(manager, "completeMessage", "NODO: Ojo a salvo sin inflamarlo. El escáner queda activo en todos los niveles.");
+            SetupUtils.SetFloat(manager, "completeDelay", 4f);
+        }
+
         // ---------- Elementos del rediseño del Respiratorio y del Nervioso ----------
 
         private const string RespArt = "Assets/_Project/Art/Respiratorio";
@@ -2485,6 +2811,12 @@ namespace HealingKnight.EditorTools
             Neuron(40f, 4f);
             Platform(49f, 3f, 2.4f);
             EnemyAt(prefabs.Meningococo, 50f, FloorY + 1f);
+            // Secreto: el NERVIO ÓPTICO (entrada al Ojo), arriba, sobre el hueco. Se ve con los destellos.
+            Platform(52.4f, 2.8f, 1.4f);
+            Platform(55.5f, 4.6f, 1.8f);
+            SecretEntrance(55.5f, 5.7f, data.NerviosoOjo, "nervioso_ojo",
+                "¡El NERVIO ÓPTICO! Por aquí la vista llega al cerebro... y se puede entrar al OJO.",
+                "¿Otra vez al ojo? Silencio: que no te vean.", true);
             Neuron(58f, 2.2f);
             Checkpoint(63f);
 

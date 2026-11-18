@@ -26,6 +26,8 @@ namespace HealingKnight.EditorTools
         public LevelData DigestivoEstomago, DigestivoDelgado, DigestivoGrueso, DigestivoBoca;
         public LevelData RespiratorioNariz, RespiratorioTraquea, RespiratorioPulmones;
         public LevelData NerviosoMedula, NerviosoCerebro, NerviosoHipocampo;
+        public LevelData NerviosoOjo, RespiratorioAmigdalas;
+        public EnemyData SarroJefe, SPyogenes, AbscesoJefe, ToxoplasmaJefe;
 
         public void Run()
         {
@@ -385,6 +387,52 @@ namespace HealingKnight.EditorTools
                 e.tint = new Color(0.85f, 0.85f, 0.55f);
             });
 
+            SarroJefe = Enemy("Jefe_Sarro", e =>
+            {
+                e.displayName = "El Sarro";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Sarro (cálculo dental): placa bacteriana que se endureció como piedra. Solo se quita raspando: " +
+                    "arráncale las placas con el hilo dental y luego pégale con antibiótico.";
+                e.maxHealth = 300f;
+                e.meleeDamageTakenMultiplier = 0.5f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 5;
+                e.tint = new Color(0.88f, 0.8f, 0.5f);
+            });
+
+            SPyogenes = Enemy("Bacteria_SPyogenes", e =>
+            {
+                e.displayName = "S. pyogenes (faringitis)";
+                e.threat = ThreatType.Bacteria;
+                e.behavior = EnemyBehavior.Walker;
+                e.biologia = "El estreptococo de la garganta (faringitis, 'anginas'). Forma cadenitas de cocos. " +
+                    "Al morir suelta un ANTÍGENO: llévalo al centro germinal para fabricar anticuerpos.";
+                e.maxHealth = 20f; e.moveSpeed = 3.2f; e.jumpHeight = 2.4f;
+                e.attackDistance = 0.9f; e.attackWindup = 0.35f; e.attackDamage = 8f;
+                e.tint = new Color(1f, 0.55f, 0.55f);
+            });
+
+            AbscesoJefe = Enemy("Jefe_Absceso", e =>
+            {
+                e.displayName = "El Absceso";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Absceso periamigdalino: una bolsa cerrada de pus junto a la amígdala. El medicamento casi no entra: " +
+                    "solo le hacen daño los anticuerpos de los linfocitos B.";
+                e.maxHealth = 260f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.tint = new Color(1f, 0.75f, 0.7f);
+            });
+
+            ToxoplasmaJefe = Enemy("Jefe_Toxoplasma", e =>
+            {
+                e.displayName = "Toxoplasma";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "Toxoplasma gondii: parásito con forma de media luna que se esconde en quistes de la retina y se reactiva. " +
+                    "Sorpréndelo sin que te vean y usa antiparasitario.";
+                e.maxHealth = 180f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 5;
+                e.tint = new Color(0.65f, 0.9f, 0.55f);
+            });
+
             Lombriz = Enemy("Jefe_Lombriz", e =>
             {
                 e.displayName = "Lombriz";
@@ -733,7 +781,7 @@ namespace HealingKnight.EditorTools
             DigestivoGrueso = Level("Digestivo", "03_IntestinoGrueso", "digestivo_grueso", "Intestino grueso", "Digestivo_IntestinoGrueso", true,
                 "Sube por el colon, cuida la flora buena, cruza el lodo y acaba con la lombriz.");
             DigestivoBoca = Level("Digestivo", "99_Boca_Secreto", "digestivo_boca", "Boca", "Digestivo_Boca", false,
-                "Nivel secreto: caries y placa bacteriana.");
+                "Nivel secreto: columpiate con el hilo dental, esquiva las muelas y derrota al Sarro.");
             if (!DigestivoBoca.hidden)
             {
                 DigestivoBoca.hidden = true;
@@ -753,10 +801,24 @@ namespace HealingKnight.EditorTools
             RespiratorioPulmones = PlayableLevel("Respiratorio", "03_Pulmones", "respiratorio_pulmones", "Pulmones", "Respiratorio_Pulmones", true,
                 "Recorre los bronquiolos: neumonía, influenza y el foco de tuberculosis. Fórmula 2.");
 
+            RespiratorioAmigdalas = Level("Respiratorio", "99_Amigdalas_Secreto", "respiratorio_amigdalas", "Amígdalas", "Respiratorio_Amigdalas", false,
+                "Nivel secreto: carga antígenos al centro germinal, fabrica linfocitos B y drena el absceso.");
+            if (!RespiratorioAmigdalas.hidden)
+            {
+                RespiratorioAmigdalas.hidden = true;
+                RespiratorioAmigdalas.secretId = "respiratorio_amigdalas";
+                UnityEditor.EditorUtility.SetDirty(RespiratorioAmigdalas);
+            }
+
             SystemData respiratorio = MakeSystem("Respiratorio", "respiratorio", "Sistema Respiratorio", "II", Mucolitico,
                 new Color(0.45f, 0.75f, 1f), new Vector2(0.5f, 0.6f),
                 "La mucosidad atrapa a los patógenos y los protege del medicamento.",
-                RespiratorioNariz, RespiratorioTraquea, RespiratorioPulmones);
+                RespiratorioNariz, RespiratorioTraquea, RespiratorioPulmones, RespiratorioAmigdalas);
+            if (!respiratorio.levels.Contains(RespiratorioAmigdalas))
+            {
+                respiratorio.levels.Add(RespiratorioAmigdalas);
+                UnityEditor.EditorUtility.SetDirty(respiratorio);
+            }
 
             NerviosoMedula = PlayableLevel("Nervioso", "01_Medula", "nervioso_medula", "Médula espinal", "Nervioso_Medula", false,
                 "Poliovirus y meningococo suben por la médula. Esquiva las tormentas eléctricas.");
@@ -771,10 +833,24 @@ namespace HealingKnight.EditorTools
             NerviosoHipocampo = PlayableLevel("Nervioso", "03_Hipocampo", "nervioso_hipocampo", "Hipocampo", "Nervioso_Hipocampo", true,
                 "El virus de la rabia llegó al hipocampo. Derrótalo sin perder el cerebro. Fórmula 3.");
 
+            NerviosoOjo = Level("Nervioso", "99_Ojo_Secreto", "nervioso_ojo", "Ojo", "Nervioso_Ojo", false,
+                "Nivel secreto: que el cuerpo no te vea. Escóndete, no inflames el ojo y sorprende al Toxoplasma.");
+            if (!NerviosoOjo.hidden)
+            {
+                NerviosoOjo.hidden = true;
+                NerviosoOjo.secretId = "nervioso_ojo";
+                UnityEditor.EditorUtility.SetDirty(NerviosoOjo);
+            }
+
             SystemData nervioso = MakeSystem("Nervioso", "nervioso", "Sistema Nervioso", "III", Anticonvulsivo,
                 new Color(0.7f, 0.5f, 1f), new Vector2(0.5f, 0.9f),
                 "Tormentas eléctricas y tejido sano que hay que proteger.",
-                NerviosoMedula, NerviosoCerebro, NerviosoHipocampo);
+                NerviosoMedula, NerviosoCerebro, NerviosoHipocampo, NerviosoOjo);
+            if (!nervioso.levels.Contains(NerviosoOjo))
+            {
+                nervioso.levels.Add(NerviosoOjo);
+                UnityEditor.EditorUtility.SetDirty(nervioso);
+            }
             if (!nervioso.levels.Contains(NerviosoHipocampo))
             {
                 nervioso.levels.Add(NerviosoHipocampo);

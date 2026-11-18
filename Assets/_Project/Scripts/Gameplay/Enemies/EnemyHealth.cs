@@ -25,6 +25,7 @@ namespace HealingKnight.Gameplay.Enemies
         private Color[] baseColors;
 
         public EnemyData Data => data;
+        public EffectivenessTable Table => effectivenessTable;
 
         /// <summary>Si es true, ignora todo el daño (jefe bajo tierra, por ejemplo). Las cápsulas lo atraviesan.</summary>
         public bool Invulnerable { get; set; }

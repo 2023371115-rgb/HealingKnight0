@@ -33,7 +33,7 @@ namespace HealingKnight.Gameplay.Level
             veil.color = new Color(0f, 0f, 0f, 0f);
         }
 
-        private static Sprite Hole()
+        public static Sprite Hole()
         {
             if (holeSprite != null) return holeSprite;
             const int n = 256;

@@ -22,7 +22,7 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private Color shade = new Color(0.42f, 0.27f, 0.13f, 1f);
         [SerializeField] private Color outline = new Color(0.2f, 0.12f, 0.05f, 1f);
 
-        public enum Style { Bolus, BloodCell, Impulse }
+        public enum Style { Bolus, BloodCell, Impulse, Tongue }
 
         [Header("Viaje (glóbulo rojo / impulso nervioso)")]
         [Tooltip("Espera en A hasta que te subas; te lleva a B y, si te bajas, regresa por ti.")]
@@ -47,6 +47,9 @@ namespace HealingKnight.Gameplay.Level
             width = platformWidth;
             art = drawing;
         }
+
+        /// <summary>Cambia el dibujo por código (lengua, glóbulo rojo...).</summary>
+        public void SetStyle(Style look) => style = look;
 
         /// <summary>Viaje de ida que espera a que te subas (glóbulo rojo por un capilar, impulso por el axón).</summary>
         public void ConfigureRide(Style look, float wave, string message)
@@ -142,6 +145,16 @@ namespace HealingKnight.Gameplay.Level
                 CodeSprites.Add(transform, c, new Color(0.88f, 0.16f, 0.2f, 1f), -5, new Vector2(0f, -0.35f), new Vector2(width, 0.76f));
                 CodeSprites.Add(transform, c, new Color(0.62f, 0.06f, 0.12f, 1f), -4, new Vector2(0f, -0.3f), new Vector2(width * 0.5f, 0.28f));
                 CodeSprites.Add(transform, c, new Color(1f, 0.6f, 0.6f, 0.7f), -3, new Vector2(-width * 0.25f, -0.15f), new Vector2(width * 0.3f, 0.1f));
+                return;
+            }
+            if (style == Style.Tongue)
+            {
+                // Lengua: carne rosa con papilas (bolitas) arriba.
+                CodeSprites.Add(transform, c, new Color(0.45f, 0.08f, 0.18f, 1f), -6, new Vector2(0f, -0.55f), new Vector2(width + 0.2f, 1.25f));
+                CodeSprites.Add(transform, c, new Color(0.95f, 0.45f, 0.55f, 1f), -5, new Vector2(0f, -0.55f), new Vector2(width, 1.1f));
+                for (int i = 0; i < 5; i++)
+                    CodeSprites.Add(transform, c, new Color(1f, 0.65f, 0.72f, 1f), -4, new Vector2(-width * 0.4f + i * width * 0.2f, -0.12f), new Vector2(0.28f, 0.2f));
+                CodeSprites.Add(transform, c, new Color(1f, 0.85f, 0.9f, 0.6f), -4, new Vector2(-width * 0.25f, -0.3f), new Vector2(width * 0.3f, 0.12f));
                 return;
             }
             if (style == Style.Impulse)
