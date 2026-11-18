@@ -269,6 +269,7 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 - Jefes y bloqueos con dibujo:
   - `Art/Jefes/TosFerina/` (Normal, Infla, Tose, Dano, Derrotada).
   - `Art/Jefes/Rabia/` (Cabeza_Normal/Ataca/Miedo/Derrotada, Segmento, Segmento_Dano, Cola). Al asustarse con el agua, la cabeza pone cara de pánico.
+  - `Art/Nervioso/Neurona_*` (Sana, Danada, Roja, Calmada): al calmar una roja aparece dormida un momento.
   - `Art/Respiratorio/Mucosidad_*` e `Inflamacion_*` (Normal, Dano, Disuelta/Desinflada): al tratarlos dejan su charco en el piso.
 
 ## Menú y mapa del cuerpo (estilo caricatura)

@@ -688,8 +688,27 @@ namespace HealingKnight.EditorTools
             parts.Add(SetupUtils.SpriteChild(root.transform, "Soma", PlaceholderArt.Circle, new Color(0.45f, 0.8f, 1f), Vector3.zero, new Vector2(0.75f, 0.75f), 0));
             parts.Add(SetupUtils.SpriteChild(root.transform, "Nucleo", PlaceholderArt.Circle, new Color(0.85f, 0.97f, 1f), Vector3.zero, new Vector2(0.3f, 0.3f), 1));
 
+            // Dibujo (Art/Nervioso/Neurona_Sana, _Danada, _Calmada): quita dendritas y soma, deja el halo.
+            const string nv = "Assets/_Project/Art/Nervioso";
+            Sprite sana = ArtByWidth($"{nv}/Neurona_Sana.png", 1.9f);
+            SpriteRenderer drawn = null;
+            if (sana != null)
+            {
+                for (int i = parts.Count - 1; i >= 1; i--) { Object.DestroyImmediate(((SpriteRenderer)parts[i]).gameObject); parts.RemoveAt(i); }
+                drawn = SetupUtils.SpriteChild(root.transform, "Dibujo", sana, Color.white, Vector3.zero, Vector2.one, 0);
+                parts.Add(drawn);
+            }
+
             var neuron = root.AddComponent<HealthyNeuron>();
             SetupUtils.SetRefArray(neuron, "renderers", parts.ToArray());
+            if (drawn != null)
+            {
+                float ppu = AssetDatabase.LoadAssetAtPath<Texture2D>($"{nv}/Neurona_Sana.png").width / 1.9f;
+                SetupUtils.SetRef(neuron, "art", drawn);
+                SetupUtils.SetRef(neuron, "healthySprite", sana);
+                SetupUtils.SetRef(neuron, "damagedSprite", LoadArtSprite($"{nv}/Neurona_Danada.png", ppu, new Vector2(0.5f, 0.5f)));
+                SetupUtils.SetRef(neuron, "calmedSprite", LoadArtSprite($"{nv}/Neurona_Calmada.png", ppu, new Vector2(0.5f, 0.5f)));
+            }
             var hurtbox = root.AddComponent<Hurtbox>();
             SetHurtbox(hurtbox, Vector2.zero, new Vector2(0.9f, 0.9f));
             return root;
@@ -718,6 +737,18 @@ namespace HealingKnight.EditorTools
             }
             parts.Add(SetupUtils.SpriteChild(root.transform, "Soma", PlaceholderArt.Circle, new Color(1f, 0.25f, 0.3f), Vector3.zero, new Vector2(0.8f, 0.8f), 0));
             var core = SetupUtils.SpriteChild(root.transform, "Nucleo", PlaceholderArt.Circle, new Color(1f, 0.85f, 0.6f), Vector3.zero, new Vector2(0.32f, 0.32f), 1);
+
+            // Dibujo (Art/Nervioso/Neurona_Roja): quita dendritas y soma; el núcleo queda como un brillo chico que parpadea al cargar.
+            Sprite roja = ArtByWidth("Assets/_Project/Art/Nervioso/Neurona_Roja.png", 2f);
+            if (roja != null)
+            {
+                for (int i = parts.Count - 1; i >= 1; i--) { Object.DestroyImmediate(((SpriteRenderer)parts[i]).gameObject); parts.RemoveAt(i); }
+                parts.Add(SetupUtils.SpriteChild(root.transform, "Dibujo", roja, Color.white, Vector3.zero, Vector2.one, 0));
+                core.transform.localPosition = new Vector3(0f, -0.25f, 0f);
+                core.transform.localScale = new Vector3(0.22f, 0.22f, 1f);
+                core.color = new Color(1f, 0.95f, 0.4f, 0.8f);
+                core.sortingOrder = 1;
+            }
 
             var health = root.AddComponent<EnemyHealth>();
             SetupUtils.SetRef(health, "data", data.NeuronaHiperexcitada);

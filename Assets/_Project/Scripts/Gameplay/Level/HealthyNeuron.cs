@@ -21,6 +21,13 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private SpriteRenderer[] renderers;
         [SerializeField] private Color hurtColor = new Color(1f, 0.25f, 0.3f);
         [SerializeField] private float dimPerHit = 0.15f;
+        [Header("Dibujo (opcional)")]
+        [SerializeField] private SpriteRenderer art;
+        [SerializeField] private Sprite healthySprite, damagedSprite, calmedSprite;
+        private float calmedTimer;
+
+        /// <summary>Recién calmada (venía de neurona roja): muestra la cara dormida un rato.</summary>
+        public void ShowCalmed(float seconds) => calmedTimer = seconds;
 
         private Color[] baseColors;
         private float flashTimer;
@@ -67,10 +74,16 @@ namespace HealingKnight.Gameplay.Level
             // Late suave (neurona viva) y destello rojo al recibir daño.
             float pulse = 1f + Mathf.Sin(Time.time * 3f + transform.position.x) * 0.06f;
             if (flashTimer > 0f) flashTimer -= Time.deltaTime;
+            if (art != null)
+            {
+                if (calmedTimer > 0f) calmedTimer -= Time.deltaTime;
+                Sprite want = calmedTimer > 0f && calmedSprite != null ? calmedSprite : hits > 0 && damagedSprite != null ? damagedSprite : healthySprite;
+                if (want != null && art.sprite != want) art.sprite = want;
+            }
             for (int i = 0; i < renderers.Length; i++)
             {
                 if (renderers[i] == null) continue;
-                Color baseC = Color.Lerp(baseColors[i], new Color(0.25f, 0.25f, 0.35f, baseColors[i].a), dim);
+                Color baseC = Color.Lerp(baseColors[i], new Color(0.25f, 0.25f, 0.35f, baseColors[i].a), art != null ? dim * 0.3f : dim);
                 Color c = flashTimer > 0f ? hurtColor : baseC * pulse;
                 c.a = baseColors[i].a;
                 renderers[i].color = c;

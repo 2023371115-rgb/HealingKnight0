@@ -109,7 +109,7 @@ namespace HealingKnight.Gameplay.Level
         private void OnCured(EnemyHealth _)
         {
             if (ring != null) ring.enabled = false;
-            if (healedPrefab != null) Instantiate(healedPrefab, transform.position, Quaternion.identity);
+            if (healedPrefab != null) Instantiate(healedPrefab, transform.position, Quaternion.identity).ShowCalmed(1.6f);
             if (BrainHealth.Current != null) BrainHealth.Current.Heal(brainHealOnCure);
             GameplayEvents.RaiseMessage("Neurona calmada: vuelve a estar sana (+5 salud del cerebro).");
         }
