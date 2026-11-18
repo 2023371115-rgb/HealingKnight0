@@ -2136,7 +2136,7 @@ namespace HealingKnight.EditorTools
 
         private void Epiglottis(float x, float open, float closed, float phase) =>
             Node("Epiglotis", x, FloorY).AddComponent<TimedGate>().Configure(open, closed, phase, 9f,
-                PrefabSetup.ArtByWidth($"{RespArt}/Epiglotis.png", 2f, new Vector2(0.5f, 0.98f)));
+                PrefabSetup.ArtByWidth($"{RespArt}/Epiglotis.png", 2f, new Vector2(0.5f, 0.99f)));
 
         private void Breathing(float fromX, float toX) =>
             Node("Respiracion", fromX, FloorY).AddComponent<BreathingCycle>().Configure(fromX, toX);

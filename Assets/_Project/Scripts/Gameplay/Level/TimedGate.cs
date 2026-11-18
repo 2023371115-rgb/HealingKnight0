@@ -41,6 +41,7 @@ namespace HealingKnight.Gameplay.Level
         private void Start()
         {
             time = offset;
+            if (art != null) thickness = 2.4f;   // el dibujo de la epiglotis es ancho
             gameObject.layer = PhysicsLayers.Ground;
             wall = gameObject.AddComponent<BoxCollider2D>();
             wall.size = new Vector2(thickness, height);
@@ -50,7 +51,12 @@ namespace HealingKnight.Gameplay.Level
             flap = new GameObject("Epiglotis").transform;
             flap.SetParent(transform, false);
             flap.localPosition = new Vector3(0f, height, 0f);
-            if (art != null) CodeSprites.Art(flap, art, thickness * 2.2f, 4, new Vector2(0f, -height * 0.5f));
+            if (art != null)
+            {
+                // Cuelga del techo (pivote arriba) y mide toda la altura de la compuerta.
+                float k = sprite01(art) > 0f ? (height + 0.3f) / sprite01(art) : 1f;
+                CodeSprites.Add(flap, art, Color.white, 4, Vector2.zero, new Vector2(k, k), "Dibujo");
+            }
             else
             {
                 Sprite c = CodeSprites.Circle, sq = CodeSprites.Square;
@@ -62,6 +68,8 @@ namespace HealingKnight.Gameplay.Level
                     CodeSprites.Add(flap, c, new Color(1f, 0.8f, 0.86f, 0.6f), 5, new Vector2(-thickness * 0.2f, -height * (0.2f + i * 0.2f)), new Vector2(0.18f, 0.5f));
             }
         }
+
+        private static float sprite01(Sprite s) => s != null ? s.bounds.size.y : 0f;
 
         private void Update()
         {
