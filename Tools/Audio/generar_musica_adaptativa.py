@@ -89,6 +89,9 @@ NIVELES = {
     "Nervioso_Hipocampo":         Nivel(172, 46, MENOR,            [0, 2, 5, 3], [4, 7, 6, 2, 3, 1], [0, 4, 6, 10, 12, 15], "liquid"),
     "Nervioso_Cerebro":           Nivel(174, 40, FRIGIO,           [0, 5, 2, 4], [0, 4, 1, 5, 3, 6], [0, 2, 7, 9, 11, 15], "neuro"),
     "Nervioso_Jefe":              Nivel(180, 40, LOCRIO_TENSO,     [0, 1, 4, 6], [0, 4, 6, 1, 5, 0], [0, 1, 5, 8, 12, 14], "neuro"),
+    # Niveles secretos (van al final para no cambiar las canciones de los demás).
+    "Respiratorio_Amigdalas":     Nivel(136, 45, DORICO,           [0, 3, 5, 4], [2, 4, 5, 4, 2, 0], [0, 3, 6, 10, 12, 14], "air"),
+    "Nervioso_Ojo":               Nivel(160, 42, MENOR_ARMONICA,   [0, 5, 3, 4], [4, 2, 1, 0, 1, 2], [0, 6, 8, 12, 14, 15], "liquid"),
 }
 
 

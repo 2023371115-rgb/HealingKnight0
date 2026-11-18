@@ -464,6 +464,8 @@ Cada sistema tiene un género electrónico que suena a lo que pasa en ese órgan
 | Respiratorio | Trance (pads que suben y bajan = respirar) | 138 / 145 | `Musica_Respiratorio`, `Musica_Respiratorio_Jefe` |
 | Nervioso | Neurofunk (drum & bass eléctrico = neuronas) | 174 / 176 | `Musica_Nervioso`, `Musica_Nervioso_Jefe` |
 
+Los niveles secretos tienen su propia música adaptativa: **Amígdalas** (`Respiratorio_Amigdalas`, trance aireado, 136 BPM, dórico) y **Ojo** (`Nervioso_Ojo`, liquid drum & bass, 160 BPM, menor armónica, más misterioso para el sigilo). Sus jefes usan la canción de jefe de su sistema.
+
 Van en `Assets/_Project/Audio/Resources/Music` y el juego las elige por el nombre de la escena: `Musica_<Escena>` (p. ej. `Musica_Nervioso_Hipocampo`) le gana a `Musica_<Sistema>`. Cuando empieza un jefe cambia con fundido a `..._Jefe` y al terminar regresa. Al morir no se reinicia. El volumen está en `Data/Resources/CombatAudio` (Music Volume).
 
 Las actuales son de ejemplo, hechas con `Tools/Audio/generar_musica.py` (secuenciador en Python). Para poner la de Víctor: guárdala en `.ogg` con el mismo nombre; que sea un loop que empate al final y que no tenga demasiados graves, para que se oigan los efectos.
