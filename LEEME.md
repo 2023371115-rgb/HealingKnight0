@@ -334,6 +334,27 @@ inflan y rebotan (`UI/CartoonButton.cs`) y microbios de los niveles flotando de 
 - Mapa: una tarjeta por sistema con la pintura de su primer órgano, número en insignia, estado en pastilla y cada nivel
   con una "foto" redonda de su fondo y palomita si ya está completado; cápsulas para las fórmulas obtenidas.
 
+## Bestiario (tipo Pokédex)
+
+Una ficha por cada patógeno del juego (27: 13 del Digestivo, 9 del Respiratorio y 5 del Nervioso, jefes incluidos).
+Se abre con el botón **Bestiario** en el menú principal, en el mapa del cuerpo (arriba a la derecha) y en la **pausa**.
+- **Silueta:** mientras no lo encuentras sale su dibujo en negro con "???" y una pista de dónde buscarlo. La primera vez
+  que el patógeno aparece **en pantalla** se desbloquea su ficha y sale un aviso arriba a la derecha
+  ("¡NUEVO EN EL BESTIARIO!"). La primera vez que lo derrotas se marca con palomita. Todo se guarda en la partida
+  (`seenPathogens` y `defeatedPathogens` en `SaveData`; "Borrar progreso" también lo borra).
+- **Ficha:** dibujo grande, nombre común y científico, tipo (bacteria, virus, parásito...), dónde vive en el juego,
+  **qué medicamento del juego le gana** (sale de la tabla de efectividad, así que si cambias el balance la ficha se
+  actualiza sola) y los textos reales: qué enfermedad causa, datos de la vida real, cómo se trata de verdad, cómo se
+  previene y una pista para el juego. Abajo lleva el aviso de que es información educativa y que solo un médico
+  diagnostica y receta.
+- **Controles:** flechas / stick para elegir, **Q / E** o **LB / RB** para cambiar de sistema, rueda del mouse,
+  AvPág / RePág o stick derecho para leer más, **Esc / B** para volver.
+- **Dónde está:** los textos viven en `Editor/DataSetup.cs` → `CreateBestiary()` (se crea `Data/Resources/Bestiario.asset`).
+  El dibujo de cada ficha es el `_Normal` del enemigo (o del jefe) y lo asigna "Regenerar proyecto base". La pantalla es
+  `UI/BestiaryScreen.cs` y quien desbloquea las fichas en los niveles es `UI/BestiaryTracker.cs` (va en cada escena).
+- **Un patógeno nuevo:** agrega un `Ficha(...)` en `CreateBestiary()` con su `EnemyData` (el principal primero; después
+  sus variantes, como crías, segmentos o su versión de jefe, para que también lo desbloqueen).
+
 ## Fondos de nivel (imagen)
 
 El Estómago ya usa una imagen de fondo: `Assets/_Project/Art/Fondos/Fondo_Estomago.png` (pintura estilo caricatura, 1672×941).
@@ -538,6 +559,7 @@ Cada carpeta de `Scripts` es un *assembly* (`.asmdef`): compila por separado y n
 | **Un nivel nuevo** | Duplica una escena de `Scenes/Levels`, crea un `LevelData` con el nombre exacto de la escena, agrégalo a la lista del `SystemData` y a Build Settings |
 | **Una arena** | GameObject con `ArenaZone`: `triggerX`, límites, `floorY` y oleadas (prefab + dato + cantidad). La pantalla se cierra hasta acabar las oleadas |
 | **Plataformas y huecos** | Plataforma: objeto en capa **Ground** con `BoxCollider2D` (*Used By Effector*) + `PlatformEffector2D`. Hueco: deja un espacio entre dos tramos de piso |
+| **Una ficha del bestiario** | Agrega un `Ficha(...)` en `DataSetup.CreateBestiary()` con sus textos, el dibujo y los `EnemyData` que la desbloquean |
 | **Un nivel secreto** | En su `LevelData` marca `hidden` y escribe un `secretId`; coloca un prefab `SecretPassage` con ese mismo id en algún nivel |
 | **Un sistema nuevo** | Crea `SystemData` y sus `LevelData`, y agrégalo al `GameCatalog` |
 | **Tu arte del personaje** | Importa el PSD, arma las piezas dentro de `Visual` del prefab `HealingKnight` y borra las figuras de prueba. Los scripts de la raíz no cambian |

@@ -5,7 +5,7 @@ using UnityEngine.UI;
 
 namespace HealingKnight.UI
 {
-    /// <summary>Menú de pausa (Esc / Start): Reanudar, Reiniciar nivel, Mapa del cuerpo, Menú principal.</summary>
+    /// <summary>Menú de pausa (Esc / Start): Reanudar, Bestiario, Reiniciar nivel, Mapa del cuerpo, Menú principal.</summary>
     public class PauseMenu : MonoBehaviour
     {
         private GameObject root;
@@ -28,11 +28,13 @@ namespace HealingKnight.UI
 
             var column = new GameObject("Buttons", typeof(RectTransform));
             column.transform.SetParent(root.transform, false);
-            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -40f), new Vector2(520f, 460f));
+            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -70f), new Vector2(520f, 540f));
             UIFactory.VerticalLayout(column, 24f);
 
             Vector2 size = new Vector2(480f, 84f);
             resumeButton = UIFactory.Button(column.transform, "Reanudar", Resume, size);
+            Button bestiary = null;
+            bestiary = UIFactory.Button(column.transform, "Bestiario", () => BestiaryScreen.Open(() => UIFactory.Select(bestiary)), size);
             UIFactory.Button(column.transform, "Reiniciar nivel", GameSession.ReloadCurrentScene, size);
             UIFactory.Button(column.transform, "Mapa del cuerpo", GameSession.GoToBodyMap, size);
             UIFactory.Button(column.transform, "Menú principal", GameSession.GoToMainMenu, size);
@@ -43,6 +45,7 @@ namespace HealingKnight.UI
         private void Update()
         {
             PlayerController player = PlayerController.Current;
+            if (BestiaryScreen.IsOpen) return;        // Esc / B / Start cierran el bestiario, no la pausa
             if (player != null && player.Input.PausePressed) Toggle();
         }
 

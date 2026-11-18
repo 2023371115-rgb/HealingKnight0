@@ -98,6 +98,22 @@ namespace HealingKnight.Core.Flow
             return isNew;
         }
 
+        /// <summary>Bestiario: primera vez que ves a un patógeno (desbloquea su ficha). Devuelve true si es nuevo.</summary>
+        public static bool SeePathogen(string id)
+        {
+            bool isNew = Save.AddSeen(id);
+            if (isNew) SaveSystem.Write(Save);
+            return isNew;
+        }
+
+        /// <summary>Bestiario: primera vez que derrotas a un patógeno. Devuelve true si es nuevo.</summary>
+        public static bool DefeatPathogen(string id)
+        {
+            bool isNew = Save.AddDefeated(id);
+            if (isNew) { Save.AddSeen(id); SaveSystem.Write(Save); }
+            return isNew;
+        }
+
         public static void MarkPrologueSeen()
         {
             Save.prologueSeen = true;

@@ -3,6 +3,7 @@ using HealingKnight.Core.Combat;
 using HealingKnight.Core.Progression;
 using HealingKnight.Gameplay.Enemies;
 using HealingKnight.Gameplay.Player;
+using UnityEditor;
 using UnityEngine;
 
 namespace HealingKnight.EditorTools
@@ -40,6 +41,7 @@ namespace HealingKnight.EditorTools
             CreateNervousEnemies();
             CreateOffspring();
             CreateCatalog();
+            CreateBestiary();
         }
 
         private MedicationData Med(string file, string name, Color color, bool regional, string description)
@@ -872,6 +874,234 @@ namespace HealingKnight.EditorTools
             {
                 c.systems = new List<SystemData> { digestivo, respiratorio, nervioso, circulatorio };
             });
+        }
+            // ---------- Bestiario (fichas tipo Pokédex) ----------
+
+        public Bestiary Bestiary;
+
+        private const string EnemyArt = "Assets/_Project/Art/Enemigos";
+        private const string BossArt = "Assets/_Project/Art/Jefes";
+
+        private static BestiaryEntry Ficha(string system, string foundIn, string name, string scientific, string kind, string portrait,
+            string disease, string facts, string treatment, string prevention, params EnemyData[] enemies)
+        {
+            return new BestiaryEntry
+            {
+                id = enemies.Length > 0 && enemies[0] != null ? enemies[0].name : name,
+                system = system, foundIn = foundIn, name = name, scientific = scientific, kind = kind,
+                portraitPath = portrait, disease = disease, facts = facts, treatment = treatment, prevention = prevention,
+                enemies = enemies
+            };
+        }
+
+        /// <summary>
+        /// Textos de las fichas. Son datos reales y generales (sin dosis): el juego enseña qué es cada germen, no receta.
+        /// La pantalla lo aclara: solo un médico puede diagnosticar y recetar.
+        /// </summary>
+        private void CreateBestiary()
+        {
+            Bestiary = SetupUtils.LoadOrCreate<Bestiary>($"{DataFolder}/Resources/{Bestiary.ResourcePath}.asset", null);
+            Bestiary.table = Table;
+            Bestiary.medications = new List<MedicationData> { Antibiotico, Antiviral, Antiparasitario, Antiinflamatorio, Antihistaminico, Mucolitico, Anticonvulsivo };
+            const string D = "Digestivo", R = "Respiratorio", N = "Nervioso";
+            var list = new List<BestiaryEntry>
+            {
+                // ===== DIGESTIVO =====
+                Ficha(D, "Estómago", "H. pylori", "Helicobacter pylori", "Bacteria", $"{EnemyArt}/Estomago/HPylori_Normal.png",
+                    "Gastritis (estómago inflamado) y úlceras. Con los años aumenta el riesgo de cáncer de estómago.",
+                    "Cerca de la mitad de las personas del mundo la tienen, casi siempre sin síntomas. Sobrevive al ácido del estómago fabricando ureasa, que convierte la urea en amoniaco y neutraliza el ácido a su alrededor. Sus descubridores, Barry Marshall y Robin Warren, ganaron el Premio Nobel en 2005; Marshall llegó a tomársela para demostrar que causaba gastritis.",
+                    "Una combinación de dos antibióticos más un medicamento que baja el ácido del estómago (como el omeprazol), durante 10 a 14 días. Siempre la receta un médico.",
+                    "Tomar agua limpia, lavarse las manos antes de comer y lavar bien la comida.",
+                    HPylori, HPyloriMadre, HPyloriUreasa),
+                Ficha(D, "Estómago", "Anisakis", "Anisakis simplex", "Parásito (gusano)", $"{EnemyArt}/Estomago/Anisakis_Arrastra.png",
+                    "Anisakiasis: dolor fuerte de estómago, náuseas y a veces alergia, horas después de comer pescado crudo.",
+                    "Es una larva de unos 2 cm que vive en peces y calamares. En las personas no puede terminar su ciclo de vida, pero intenta clavarse en la pared del estómago. Se encuentra en el sushi, el ceviche o el pescado mal cocido.",
+                    "Casi siempre el médico la saca con un endoscopio (una camarita que entra por la boca). En algunos casos se usan antiparasitarios.",
+                    "Cocinar bien el pescado o congelarlo bien frío (unos -20 °C por varios días) antes de comerlo crudo.",
+                    Anisakis),
+                Ficha(D, "Estómago (jefe)", "Bezoar", "Bezoar (fitobezoar / tricobezoar)", "Jefe · no es un germen", $"{BossArt}/Bezoar/Bezoar_Normal.png",
+                    "Una bola de comida, fibras o pelo que no se digiere y se queda atorada en el estómago. Da llenura, dolor y vómito.",
+                    "No es un ser vivo: se forma con cosas que el estómago no puede deshacer, como cáscaras y fibras duras (fitobezoar), pelo (tricobezoar) o chicle tragado muchas veces. En algunos casos los médicos han logrado disolver bezoares de fibras con bebidas especiales, ¡incluso con refresco de cola!",
+                    "Según el tamaño: disolverlo con bebidas, sacarlo con endoscopio o, si es muy grande, con cirugía.",
+                    "Masticar bien, no tragar chicle ni pelo y tomar suficiente agua.",
+                    Bezoar),
+                Ficha(D, "Intestino delgado (jefe)", "Tenia (solitaria)", "Taenia solium / Taenia saginata", "Parásito (gusano plano)", $"{BossArt}/Tenia/Cabeza_Normal.png",
+                    "Teniasis: casi no da síntomas, a veces dolor de panza y pérdida de peso. Los huevos de la tenia del cerdo pueden causar cisticercosis (quistes en músculos y cerebro).",
+                    "Puede medir varios metros: la de la res llega a más de 10 m. Su cabeza (escólex) tiene ventosas y ganchos para pegarse al intestino, y su cuerpo está hecho de segmentos (proglótidos) llenos de miles de huevos que se van soltando.",
+                    "Antiparasitarios que la matan de una vez (como el praziquantel). Siempre los receta un médico.",
+                    "Comer carne de cerdo y de res bien cocida y lavarse las manos después de ir al baño.",
+                    Tenia, TeniaSegmento, Proglotido),
+                Ficha(D, "Intestino delgado", "Giardia", "Giardia lamblia", "Parásito (protozoo)", $"{EnemyArt}/Delgado/Giardia_Normal.png",
+                    "Giardiasis: diarrea, gases, cólicos y panza inflada.",
+                    "Es una sola célula con forma de pera y parece tener cara: sus dos núcleos se ven como ojos. Se pega a la pared del intestino con un disco que funciona como ventosa. Sus quistes aguantan semanas en agua fría, por eso se contagia por agua sucia.",
+                    "Antiparasitarios como el metronidazol, recetados por un médico, y mucha agua para no deshidratarse.",
+                    "Tomar agua hervida o purificada y lavarse las manos.",
+                    Giardia),
+                Ficha(D, "Intestino delgado", "Rotavirus", "Rotavirus", "Virus", $"{EnemyArt}/Delgado/Rotavirus_Normal.png",
+                    "Gastroenteritis: diarrea y vómito muy fuertes, sobre todo en bebés y niños pequeños.",
+                    "Su nombre viene del latín 'rota', rueda, porque visto al microscopio parece una rueda. Es muy contagioso: unas pocas partículas bastan para enfermar a alguien.",
+                    "No hay un medicamento que lo mate. Lo importante es no deshidratarse: suero oral y líquidos, y si es grave, ir al médico.",
+                    "La vacuna contra el rotavirus (se pone a los bebés) y lavarse las manos.",
+                    Rotavirus),
+                Ficha(D, "Intestino delgado y grueso (jefe)", "Lombriz intestinal", "Ascaris lumbricoides", "Parásito (gusano)", $"{BossArt}/Lombriz/Cabeza_Sale.png",
+                    "Ascariasis: dolor de panza y, en niños con muchas lombrices, desnutrición y bloqueo del intestino.",
+                    "La hembra puede medir hasta 35 cm y poner unos 200 000 huevos al día. Sus larvas hacen un viaje increíble: salen del intestino, pasan por la sangre a los pulmones, suben a la garganta y se tragan de nuevo.",
+                    "Antiparasitarios como el albendazol o el mebendazol, recetados por un médico.",
+                    "Lavarse las manos, lavar frutas y verduras y usar baño (no hacer en la tierra).",
+                    LombrizHuye, Lombriz),
+                Ficha(D, "Intestino grueso", "Amiba", "Entamoeba histolytica", "Parásito (protozoo)", $"{EnemyArt}/Grueso/Entamoeba_Normal.png",
+                    "Amebiasis: diarrea con sangre (disentería) y, si llega al hígado, un absceso hepático.",
+                    "Cambia de forma estirando 'pies falsos' (pseudópodos). 'Histolytica' significa 'que disuelve tejido': rompe la pared del intestino y hasta se come glóbulos rojos.",
+                    "Antiparasitarios como el metronidazol y luego otro que limpia los quistes del intestino. Siempre con receta médica.",
+                    "Agua purificada, lavar bien frutas y verduras y lavarse las manos.",
+                    Entamoeba),
+                Ficha(D, "Intestino grueso", "C. difficile", "Clostridioides difficile", "Bacteria", $"{EnemyArt}/Grueso/CDifficile_Normal.png",
+                    "Colitis: diarrea muy fuerte, sobre todo después de tomar antibióticos.",
+                    "Aprovecha cuando los antibióticos matan a la flora buena del intestino y se queda con el lugar. Forma esporas tan duras que el gel con alcohol no las mata: hay que lavarse con agua y jabón.",
+                    "Antibióticos especiales tomados por boca (como la vancomicina). Si regresa muchas veces, se puede hacer un trasplante de flora intestinal sana.",
+                    "Usar antibióticos solo cuando el médico los receta y lavarse las manos con agua y jabón.",
+                    CDifficile),
+                Ficha(D, "Intestino grueso", "Oxiuro", "Enterobius vermicularis", "Parásito (gusano)", $"{EnemyArt}/Grueso/Oxiuro_Normal.png",
+                    "Oxiuriasis: comezón en las pompis, sobre todo en la noche. Es la lombriz más común en niños.",
+                    "Mide como 1 cm y parece un hilito blanco. La hembra sale de noche a poner sus huevos alrededor del ano; al rascarse, los huevos se quedan en las uñas y pasan a la boca o a otras personas.",
+                    "Antiparasitarios (como el mebendazol) para TODA la familia a la vez, y repetir a las dos semanas, según indique el médico.",
+                    "Uñas cortas, lavarse las manos, bañarse en la mañana y lavar sábanas y pijamas.",
+                    Oxiuro, OxiuroHuevo),
+                Ficha(D, "Intestino grueso (aliada)", "Flora intestinal", "Microbiota: Lactobacillus, Bifidobacterium y muchas más", "Aliada", $"{EnemyArt}/Grueso/Flora_Normal.png",
+                    "¡No causa enfermedad! Al contrario: si se daña (por ejemplo con antibióticos), otros gérmenes como el C. difficile aprovechan.",
+                    "En tu intestino viven billones de bacterias, casi tantas como células tiene tu cuerpo. Te ayudan a digerir la fibra, fabrican vitaminas como la K y ocupan el espacio para que los gérmenes malos no se instalen.",
+                    "No se trata: se cuida.",
+                    "Comer fibra (frutas, verduras, frijoles), alimentos fermentados como el yogur y no usar antibióticos sin receta.",
+                    Flora),
+                Ficha(D, "Boca (secreto)", "S. mutans", "Streptococcus mutans", "Bacteria", $"{EnemyArt}/Boca/SMutans_Normal.png",
+                    "Caries: hoyitos en los dientes que duelen y pueden infectar el diente por dentro.",
+                    "Se alimenta del azúcar que comes y lo convierte en ácido, que disuelve el esmalte de los dientes. Junto con otras bacterias forma la placa, una capa pegajosa sobre los dientes.",
+                    "El dentista limpia la caries y la tapa con resina. El flúor ayuda a reparar el esmalte cuando la caries apenas empieza.",
+                    "Cepillarse dos veces al día con pasta con flúor, usar hilo dental y comer menos dulces.",
+                    SMutans),
+                Ficha(D, "Boca (jefe)", "Sarro", "Cálculo dental", "Jefe · placa endurecida", $"{BossArt}/Sarro/Sarro_Normal.png",
+                    "Inflama las encías (gingivitis): se ponen rojas y sangran. Si sigue, puede aflojar los dientes.",
+                    "Es placa bacteriana que se endureció con los minerales de la saliva, como si fuera piedra. Una vez duro, el cepillo ya no lo quita.",
+                    "Una limpieza con el dentista, que lo raspa con instrumentos especiales.",
+                    "Cepillarse bien y usar hilo dental todos los días para que la placa no llegue a endurecerse.",
+                    SarroJefe),
+
+                // ===== RESPIRATORIO =====
+                Ficha(R, "Nariz", "Rinovirus", "Rhinovirus", "Virus", $"{EnemyArt}/Respiratorio/Rinovirus_Normal.png",
+                    "El resfriado común: nariz tapada, estornudos y dolor de garganta.",
+                    "Hay más de 150 tipos distintos, por eso no existe una vacuna y te puedes resfriar varias veces al año. Le gusta la nariz porque ahí la temperatura es un poco más fría que en el resto del cuerpo.",
+                    "No hay medicamento que lo mate y los antibióticos NO sirven contra virus. Se cura solo en unos días con descanso y líquidos.",
+                    "Lavarse las manos, no tocarse la cara y taparse al estornudar.",
+                    Rinovirus),
+                Ficha(R, "Nariz", "Polen", "Granos de polen", "Alérgeno · no es un germen", $"{EnemyArt}/Respiratorio/Polen_Normal.png",
+                    "Rinitis alérgica (fiebre del heno): estornudos, comezón en la nariz y en los ojos.",
+                    "El polen es inofensivo, pero en algunas personas el sistema de defensa lo confunde con una amenaza y suelta histamina, la sustancia que causa los estornudos y la comezón.",
+                    "Antihistamínicos, que bloquean a la histamina, o sprays para la nariz, según indique el médico.",
+                    "En temporada de polen: cerrar ventanas, lavarse la cara al llegar a casa y evitar salir con mucho viento.",
+                    Polen),
+                Ficha(R, "Nariz", "S. aureus", "Staphylococcus aureus", "Bacteria", $"{EnemyArt}/Respiratorio/SAureus_Normal.png",
+                    "Infecciones de la piel (granos, forúnculos), y a veces neumonía o intoxicación por comida.",
+                    "Alrededor de 3 de cada 10 personas lo llevan en la nariz sin enfermarse. Su nombre viene del griego 'staphylé', racimo de uvas, por cómo se agrupan sus cocos. Algunas cepas se volvieron resistentes a muchos antibióticos (MRSA).",
+                    "Antibióticos elegidos por el médico según la cepa y, si hay pus, drenarlo.",
+                    "Lavarse las manos, limpiar y tapar las heridas y no compartir toallas.",
+                    SAureus, SAureusCoco),
+                Ficha(R, "Tráquea (y su reina, jefa)", "Tos ferina", "Bordetella pertussis", "Bacteria", $"{EnemyArt}/Respiratorio/Pertussis_Normal.png",
+                    "Tos ferina: ataques de tos sin parar que terminan en un 'gallo' al tomar aire. Es muy peligrosa en bebés.",
+                    "Su toxina paraliza los cilios de la tráquea, los pelitos que barren el moco. La tos puede durar semanas: en China la llaman 'la tos de los 100 días'.",
+                    "Antibióticos (como la azitromicina), mejor si se empiezan pronto. Siempre con receta.",
+                    "Vacunas: los bebés en su esquema y las embarazadas, para proteger al bebé desde que nace.",
+                    Pertussis, TosFerinaReina),
+                Ficha(R, "Pulmones", "Neumococo", "Streptococcus pneumoniae", "Bacteria", $"{EnemyArt}/Respiratorio/Neumococo_Normal.png",
+                    "Neumonía, infecciones de oído (otitis), sinusitis y, a veces, meningitis.",
+                    "Viaja en pareja (diplococo) dentro de una cápsula que lo esconde de las defensas. Hay alrededor de 100 tipos distintos de cápsula.",
+                    "Antibióticos recetados por el médico, según qué tan grave sea.",
+                    "La vacuna contra el neumococo, lavarse las manos y no fumar cerca de nadie.",
+                    Neumococo),
+                Ficha(R, "Pulmones", "Influenza", "Virus de la influenza", "Virus", $"{EnemyArt}/Respiratorio/Influenza_Normal.png",
+                    "La gripe: fiebre alta, dolor de cuerpo, cansancio y tos. Es más fuerte que un resfriado.",
+                    "Su superficie está cubierta de dos proteínas: la hemaglutinina (H) y la neuraminidasa (N). De ahí nombres como H1N1. Cambia un poco cada año, por eso la vacuna se renueva cada año.",
+                    "Antivirales como el oseltamivir sirven si se empiezan en los primeros días, y siempre con receta. Descanso y líquidos.",
+                    "La vacuna cada año, lavarse las manos y taparse al toser.",
+                    Influenza),
+                Ficha(R, "Pulmones (y su nave, jefa)", "Tuberculosis", "Mycobacterium tuberculosis", "Bacteria", $"{EnemyArt}/Respiratorio/Tuberculosis_Normal.png",
+                    "Tuberculosis: sobre todo en los pulmones. Tos por semanas, fiebre, sudor en la noche y pérdida de peso.",
+                    "Tiene una capa de cera (ácidos micólicos) que la vuelve muy resistente y crece muy lento: tarda casi un día en dividirse. El cuerpo intenta encerrarla en bolitas de defensas llamadas granulomas. Es una de las infecciones que más muertes causa en el mundo.",
+                    "Varios antibióticos juntos durante por lo menos 6 meses, sin saltarse ninguna toma, porque si no se vuelve resistente.",
+                    "La vacuna BCG (protege a los niños de las formas graves) y detectar y tratar a tiempo a quien está enfermo.",
+                    Tuberculosis, Colmena),
+                Ficha(R, "Amígdalas (secreto)", "Estreptococo de la garganta", "Streptococcus pyogenes", "Bacteria", $"{EnemyArt}/Respiratorio/SPyogenes_Normal.png",
+                    "Faringitis o 'anginas': dolor fuerte de garganta, fiebre y amígdalas con puntitos blancos. También escarlatina.",
+                    "Forma cadenitas de cocos. Si la faringitis no se trata, en raras ocasiones el cuerpo se confunde y ataca al corazón y las articulaciones (fiebre reumática).",
+                    "Antibióticos como la penicilina o la amoxicilina, tomados todos los días que diga el médico.",
+                    "Lavarse las manos y no compartir vasos ni cubiertos.",
+                    SPyogenes),
+                Ficha(R, "Amígdalas (jefe)", "Absceso periamigdalino", "Absceso periamigdalino", "Jefe · complicación", $"{BossArt}/Absceso/Absceso_Normal.png",
+                    "Una bolsa de pus junto a la amígdala después de una infección de garganta. Duele mucho al tragar y cuesta abrir la boca.",
+                    "Es una complicación: aparece cuando una faringitis se pasa del tejido de la amígdala a los alrededores. Como es una bolsa cerrada, los medicamentos entran con dificultad.",
+                    "El médico lo drena (le saca el pus) y da antibióticos.",
+                    "Tratar a tiempo y completa cualquier faringitis.",
+                    AbscesoJefe),
+
+                // ===== NERVIOSO =====
+                Ficha(N, "Médula espinal", "Poliovirus", "Poliovirus", "Virus", $"{EnemyArt}/Nervioso/Poliovirus_Normal.png",
+                    "Poliomielitis: en algunos casos ataca las neuronas de la médula que mueven los músculos y causa parálisis.",
+                    "Gracias a las vacunas ya casi desapareció del mundo: el virus salvaje solo sigue circulando en muy pocos países. Es uno de los grandes logros de la medicina.",
+                    "No hay medicamento que lo cure. Solo se atienden los síntomas y se hace rehabilitación.",
+                    "La vacuna contra la polio (en gotas o inyectada).",
+                    Poliovirus),
+                Ficha(N, "Médula y cerebro", "Meningococo", "Neisseria meningitidis", "Bacteria", $"{EnemyArt}/Nervioso/Meningococo_Normal.png",
+                    "Meningitis: inflamación de las membranas que cubren el cerebro. Fiebre, dolor de cabeza y cuello duro. Avanza en horas: es una emergencia.",
+                    "Viaja en pareja (diplococo) con forma de dos frijolitos. Muchas personas lo llevan en la garganta sin enfermarse.",
+                    "Antibióticos por la vena en el hospital, lo más rápido posible.",
+                    "Las vacunas contra el meningococo.",
+                    Meningococo),
+                Ficha(N, "Cerebro y ojo", "Herpes", "Virus del herpes simple tipo 1", "Virus", $"{EnemyArt}/Nervioso/Herpes_Normal.png",
+                    "Fuegos o herpes en los labios. En raros casos inflama el cerebro (encefalitis) o el ojo (queratitis).",
+                    "Una vez que entra, se queda 'dormido' (latente) en los nervios para siempre y despierta con el estrés, la fiebre o el sol. Dos de cada tres personas menores de 50 años lo tienen.",
+                    "Antivirales como el aciclovir lo calman, pero no lo sacan del cuerpo.",
+                    "No compartir vasos ni dar besos cuando hay ampollas, y lavarse las manos.",
+                    Herpes),
+                Ficha(N, "Hipocampo (y su jefe)", "Rabia", "Virus de la rabia (Lyssavirus)", "Virus", $"{EnemyArt}/Nervioso/Rabia_Normal.png",
+                    "Rabia: ataca el cerebro. Una vez que empiezan los síntomas casi siempre es mortal. Uno de sus síntomas es el miedo al agua (hidrofobia).",
+                    "Tiene forma de bala. Entra por la mordida de un animal infectado (perros, murciélagos) y viaja despacio por los nervios hasta el cerebro: por eso hay tiempo para vacunarse después de la mordida.",
+                    "Si te muerde un animal: lavar la herida con agua y jabón por 15 minutos e ir de inmediato al médico para la vacuna (y a veces anticuerpos).",
+                    "Vacunar a perros y gatos y no tocar animales salvajes, sobre todo murciélagos.",
+                    Rabia, RabiaJefe, RabiaVirion),
+                Ficha(N, "Ojo (secreto, jefe)", "Toxoplasma", "Toxoplasma gondii", "Parásito (protozoo)", $"{BossArt}/Toxoplasma/Toxoplasma_Normal.png",
+                    "Toxoplasmosis: casi siempre sin síntomas, pero en el ojo puede inflamar la retina, y es peligrosa en el embarazo.",
+                    "Su hogar favorito es el gato, donde se reproduce. Se contagia por carne mal cocida o al limpiar la arena del gato. Cerca de un tercio de las personas del mundo lo tienen dormido en pequeños quistes.",
+                    "Cuando hace falta, una combinación de antiparasitarios recetada por el médico.",
+                    "Cocinar bien la carne, lavar frutas y verduras y lavarse las manos después de limpiar la arena del gato.",
+                    ToxoplasmaJefe),
+            };
+            foreach (BestiaryEntry e in list)
+            {
+                e.boss = e.kind.StartsWith("Jefe") || (e.enemies.Length > 0 && e.enemies[0] != null && e.enemies[0].name.StartsWith("Jefe_"));
+                e.ally = e.kind == "Aliada";
+            }
+            Bestiary.entries = list;
+            EditorUtility.SetDirty(Bestiary);
+        }
+
+        /// <summary>Pone el dibujo de cada ficha (después de PrefabSetup, que ya importó los PNG como sprites).</summary>
+        public void AssignBestiaryPortraits()
+        {
+            if (Bestiary == null) return;
+            foreach (BestiaryEntry e in Bestiary.entries)
+            {
+                if (string.IsNullOrEmpty(e.portraitPath)) continue;
+                Sprite s = AssetDatabase.LoadAssetAtPath<Sprite>(e.portraitPath);
+                if (s == null && AssetImporter.GetAtPath(e.portraitPath) is TextureImporter importer)
+                {
+                    importer.textureType = TextureImporterType.Sprite;
+                    importer.spriteImportMode = SpriteImportMode.Single;
+                    importer.alphaIsTransparency = true;
+                    importer.SaveAndReimport();
+                    s = AssetDatabase.LoadAssetAtPath<Sprite>(e.portraitPath);
+                }
+                e.portrait = s;
+            }
+            EditorUtility.SetDirty(Bestiary);
         }
     }
 }

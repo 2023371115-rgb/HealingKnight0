@@ -749,6 +749,7 @@ namespace HealingKnight.EditorTools
 
             new GameObject("HUD", typeof(HUD));
             new GameObject("PauseMenu", typeof(PauseMenu));
+            new GameObject("Bestiario", typeof(BestiaryTracker));   // desbloquea fichas al ver / derrotar patógenos
 
             return manager;
         }

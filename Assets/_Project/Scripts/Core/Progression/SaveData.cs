@@ -14,6 +14,9 @@ namespace HealingKnight.Core.Progression
         public List<string> completedLevels = new List<string>();
         public List<string> formulas = new List<string>();
         public List<string> secrets = new List<string>();
+        /// <summary>Bestiario: patógenos que ya viste (se desbloquea su ficha) y los que ya derrotaste.</summary>
+        public List<string> seenPathogens = new List<string>();
+        public List<string> defeatedPathogens = new List<string>();
 
         // Reservado por si después se agregan estrellas o puntaje por nivel.
         public List<LevelRecord> records = new List<LevelRecord>();
@@ -41,6 +44,28 @@ namespace HealingKnight.Core.Progression
             if (secrets == null) secrets = new List<string>();
             if (secrets.Contains(secretId)) return false;
             secrets.Add(secretId);
+            return true;
+        }
+
+        public bool HasSeen(string id) => !string.IsNullOrEmpty(id) && seenPathogens != null && seenPathogens.Contains(id);
+        public bool HasDefeated(string id) => !string.IsNullOrEmpty(id) && defeatedPathogens != null && defeatedPathogens.Contains(id);
+
+        /// <summary>Devuelve true si es la primera vez que se ve.</summary>
+        public bool AddSeen(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (seenPathogens == null) seenPathogens = new List<string>();
+            if (seenPathogens.Contains(id)) return false;
+            seenPathogens.Add(id);
+            return true;
+        }
+
+        public bool AddDefeated(string id)
+        {
+            if (string.IsNullOrEmpty(id)) return false;
+            if (defeatedPathogens == null) defeatedPathogens = new List<string>();
+            if (defeatedPathogens.Contains(id)) return false;
+            defeatedPathogens.Add(id);
             return true;
         }
 

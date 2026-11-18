@@ -29,6 +29,7 @@ namespace HealingKnight.EditorTools
                 EditorUtility.DisplayProgressBar("Healing Knight", "Creando prefabs...", 0.5f);
                 var prefabs = new PrefabSetup(data);
                 prefabs.Run();
+                data.AssignBestiaryPortraits();
                 AssetDatabase.SaveAssets();
 
                 EditorUtility.DisplayProgressBar("Healing Knight", "Creando escenas...", 0.8f);

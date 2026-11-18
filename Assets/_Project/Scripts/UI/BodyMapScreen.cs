@@ -47,6 +47,7 @@ namespace HealingKnight.UI
 
         private void Update()
         {
+            if (BestiaryScreen.IsOpen) return;
             bool back = (Keyboard.current != null && Keyboard.current.escapeKey.wasPressedThisFrame)
                         || (Gamepad.current != null && Gamepad.current.buttonEast.wasPressedThisFrame);
             if (back) GameSession.GoToMainMenu();
@@ -90,6 +91,10 @@ namespace HealingKnight.UI
 
             Button back = CartoonUI.Button(canvas.transform, "Menú", GameSession.GoToMainMenu, new Vector2(180f, 70f), new Color(0.42f, 0.25f, 0.4f), 28f);
             UIFactory.Place((RectTransform)back.transform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(40f, -30f), new Vector2(180f, 70f));
+            Button bestiary = null;
+            bestiary = CartoonUI.Button(canvas.transform, "Bestiario", () => BestiaryScreen.Open(() => UIFactory.Select(bestiary)),
+                new Vector2(240f, 66f), new Color(0.35f, 0.55f, 0.6f), 28f);
+            UIFactory.Place((RectTransform)bestiary.transform, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(-40f, -112f), new Vector2(240f, 66f));
 
             // 1) Siguiente misión.
             BuildNextMission(canvas.transform);
