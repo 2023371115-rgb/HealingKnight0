@@ -34,6 +34,7 @@ namespace HealingKnight.Gameplay.Enemies
             public bool changingRail;
             public float shootCooldown = 2f;
             public float infectCooldown;
+            public float stun;
             public RabiesSegment Head => segments.Count > 0 ? segments[0] : null;
         }
 
@@ -108,12 +109,42 @@ namespace HealingKnight.Gameplay.Enemies
             return floorY + furyRailHeight;
         }
 
-        private void Awake() => health = GetComponent<EnemyHealth>();
+        /// <summary>El jefe rabia que está vivo ahora (para el agua del hipocampo).</summary>
+        public static RabiesBoss Current { get; private set; }
+
+        private void Awake()
+        {
+            health = GetComponent<EnemyHealth>();
+            Current = this;
+        }
+
+        /// <summary>
+        /// HIDROFOBIA: la rabia le tiene pánico al agua (es un síntoma real: espasmos al ver o tragar agua).
+        /// Las cadenas cuya cabeza o cualquier virión esté cerca del chapuzón se quedan temblando 'seconds' segundos
+        /// (no avanzan ni disparan). Devuelve cuántas cadenas asustó.
+        /// </summary>
+        public int Scare(Vector2 position, float radius, float seconds)
+        {
+            int scared = 0;
+            foreach (Chain c in chains)
+            {
+                foreach (RabiesSegment s in c.segments)
+                {
+                    if (s == null || Vector2.Distance(s.transform.position, position) > radius) continue;
+                    c.stun = Mathf.Max(c.stun, seconds);
+                    scared++;
+                    break;
+                }
+            }
+            if (scared > 0) Sfx.Effect("Rabia_Chillido", 1f);
+            return scared;
+        }
         private void OnEnable() => health.Died += OnDied;
         private void OnDisable() => health.Died -= OnDied;
 
         private void OnDestroy()
         {
+            if (Current == this) Current = null;
             if (!finished) GameplayEvents.RaiseBossEnded();
             pool?.Clear();
             if (storm != null) Destroy(storm.gameObject);
@@ -183,6 +214,15 @@ namespace HealingKnight.Gameplay.Enemies
         private void UpdateChain(Chain c, PlayerController player, float dt)
         {
             RabiesSegment head = c.Head;
+            if (c.stun > 0f)
+            {
+                // Paralizada de miedo: se queda quieta y voltea a todos lados.
+                c.stun -= dt;
+                int look = Mathf.Sin(Time.time * 18f) > 0f ? 1 : -1;
+                foreach (RabiesSegment s in c.segments)
+                    if (s != null) s.SetFacing(look, false);
+                return;
+            }
             Vector2 p = head.transform.position;
             float v = speed * SpeedMultiplier;
 

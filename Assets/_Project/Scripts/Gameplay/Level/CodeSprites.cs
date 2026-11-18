@@ -66,5 +66,27 @@ namespace HealingKnight.Gameplay
             float k = sprite != null && sprite.bounds.size.x > 0.001f ? width / sprite.bounds.size.x : 1f;
             return Add(parent, sprite, Color.white, order, pos, new Vector2(k, k), name);
         }
+    
+        /// <summary>Vuelve 'go' una plataforma de un solo sentido de 'width' de ancho con la superficie en su origen.</summary>
+        public static BoxCollider2D OneWay(GameObject go, float width, float thickness = 0.35f)
+        {
+            go.layer = Movement.PhysicsLayers.Ground;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(width, thickness);
+            box.offset = new Vector2(0f, -thickness * 0.5f);
+            box.usedByEffector = true;
+            var effector = go.AddComponent<PlatformEffector2D>();
+            effector.useOneWay = true;
+            effector.surfaceArc = 160f;
+            return box;
+        }
+
+        /// <summary>¿Están los pies del jugador parados sobre una plataforma de ancho 'width' con superficie en 'top'?</summary>
+        public static bool Standing(Player.PlayerController p, Vector2 top, float width)
+        {
+            if (p == null || p.Motor == null || !p.Health.IsAlive) return false;
+            Vector2 f = p.Position;
+            return Mathf.Abs(f.x - top.x) <= width * 0.5f + 0.15f && f.y >= top.y - 0.2f && f.y <= top.y + 0.15f && p.Motor.Velocity.y <= 0.5f;
+        }
     }
 }

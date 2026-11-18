@@ -204,6 +204,58 @@ Dibujos opcionales (si no están, se dibuja con figuras): `Art/Grueso/` → `Hau
 `Apendice`; `Art/Enemigos/Grueso/` → `Flora_Normal`, `Entamoeba_*`, `CDifficile_*` (+ `CDifficile_Espora`),
 `Oxiuro_*` y `OxiuroHuevo_Normal` / `_Abre`.
 
+## Respiratorio y Nervioso (rediseño)
+
+Los seis niveles son más largos (150–202 u) y cada uno tiene mecánicas propias. Todo se dibuja por código;
+si pones un PNG con el nombre indicado en `Art/Respiratorio/` o `Art/Nervioso/`, se usa ese dibujo.
+
+**Nariz (170):**
+- **Glándulas de moco** (`MucusCannon`): lanzan bolas en arco. Si te pegan te frenan. Las que caen se pegan un rato y sirven de plataforma. El Mucolítico (o el Antihistamínico) las disuelve.
+  - Arte: `GlandulaMoco.png`, `BolaMoco.png`.
+- **Estornudo** (`WindBlast`): una barra de comezón arriba de la pantalla se llena sola, y más rápido con cada polen vivo. Al llenarse avisa "¡A... a...!" y luego ¡ACHÚ!, y el aire te avienta hacia atrás.
+  - Para que no te avienten, ponte entre los **pelos nasales** (`NasalHair`, arte `PeloNasal.png`) o detrás de un cornete.
+- Hay tres arenas; la segunda está dentro del estornudo y lleva mucho polen.
+
+**Tráquea (170):**
+- **Epiglotis** (`TimedGate`, arte `Epiglotis.png`): una compuerta que se abre y se cierra.
+- **Escalera de cilios** (`CiliaConveyor`): el piso te empuja hacia atrás y te rueda bolas de moco.
+- **Tos** (`WindBlast` en modo tos): cada 6 s te avienta. Ponte bajo los **anillos de cartílago** (arte `AnilloCartilago.png`).
+- **Corrientes de aire** (`AirVent`): te lanzan a una ruta alta.
+- **Jefe: Reina de la tos ferina** (`PertussisQueenBoss`, arte opcional `Art/Jefes/TosFerina/TosFerina_Normal.png`):
+  - Se infla antes de toser y tose 3 veces. Cada tos manda ondas por el piso que hay que saltar.
+  - Al 60 % de vida llama a bacterias de tos ferina.
+  - Al 30 % también escupe moco.
+
+**Pulmones (202):**
+- **Todo el pulmón respira** (`BreathingCycle`, sincronizado con los alvéolos):
+  - Al inhalar te jala hacia adelante.
+  - Al exhalar te empuja hacia atrás.
+- **O₂** (`OxygenBubble`, arte `O2.png`): cura.
+- **CO₂** (`CO2Cloud`, arte `CO2.png`): asfixia y flota con el aire.
+- **Bronquiolos con dos rutas:**
+  - La de arriba es difícil y tiene oxígeno y una bomba.
+  - La de abajo es fácil, pero está llena de CO₂.
+- Al final hay un **viaje en glóbulo rojo** por un capilar (arte `GloboRojo.png`). El glóbulo espera a que te subas.
+
+**Médula (170):**
+- Tormentas.
+- **Arco reflejo** (`ReflexPad`): al pisarlo te lanza sobre una pared.
+- **Surfear el impulso nervioso** por un axón (arte `Impulso.png`).
+- **Conducción saltatoria** (`SaltatoryNodes`): los nodos de Ranvier se encienden en orden y solo el encendido es sólido.
+
+**Cerebro (190):** cada lóbulo tiene su regla.
+- **Occipital** (`DarknessZone`): todo está oscuro y solo destellos de neuronas muestran el camino.
+- **Temporal** (`BeatPlatforms`): las plataformas aparecen al ritmo.
+- **Cerebelo** (`TiltPlatform`): las plataformas son subibajas y te resbalas si te vas a la orilla.
+- **Frontal** (`SequencePuzzle`): las neuronas se encienden en un orden y hay que tocarlas en ese mismo orden para abrir la compuerta.
+
+**Hipocampo (150):**
+- **Burbujas de memoria** (`FadingPlatform`): se revientan si te quedas quieto encima.
+- **Fragmentos de memoria** (`MemoryFragment`, arte `FragmentoMemoria.png`): se apagan si tardas. Si salvas los 6, ganas una bomba.
+- **Jefe rabia con hidrofobia:** reventar una **burbuja de agua** (`WaterBubble`, arte `BurbujaAgua.png`) cerca de sus cadenas las paraliza 3 s.
+
+Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`).
+
 ## Menú y mapa del cuerpo (estilo caricatura)
 
 El menú principal y el mapa del cuerpo se dibujan por código con el estilo del juego (`UI/CartoonUI.cs`): formas

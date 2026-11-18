@@ -50,6 +50,14 @@ namespace HealingKnight.Gameplay.Combat
 
         public static event Action<Projectile, HitResult> AnyHit;
 
+        /// <summary>Disparos que van volando ahora (para obstáculos que se tratan sin ser enemigos, como las bolas de moco).</summary>
+        public static readonly System.Collections.Generic.List<Projectile> Flying = new System.Collections.Generic.List<Projectile>();
+        public MedicationData Medication => shot.medication;
+        public Vector2 Position => transform.position;
+
+        /// <summary>Para que algo que no es enemigo "absorba" el disparo (y lo quite).</summary>
+        public void Consume() => Finish();
+
         /// <summary>De quién es el disparo (para cargar las bombas solo con disparos del jugador).</summary>
         public Team SourceTeam => shot.sourceTeam;
 
@@ -78,6 +86,7 @@ namespace HealingKnight.Gameplay.Combat
             velocity = data.direction * data.speed;
             bouncing = false;
             finished = false;
+            if (!Flying.Contains(this)) Flying.Add(this);
 
             transform.position = new Vector3(data.origin.x, data.origin.y, 0f);
             float angle = Mathf.Atan2(data.direction.y, data.direction.x) * Mathf.Rad2Deg;
@@ -159,6 +168,8 @@ namespace HealingKnight.Gameplay.Combat
             if (travelled >= shot.range || outOfLevel) Finish();
         }
 
+        private void OnDisable() => Flying.Remove(this);
+
         private void StartBounce()
         {
             bouncing = true;
@@ -170,6 +181,7 @@ namespace HealingKnight.Gameplay.Combat
         {
             if (finished) return;
             finished = true;
+            Flying.Remove(this);
             if (onFinished != null) onFinished(this);
             else gameObject.SetActive(false);
         }

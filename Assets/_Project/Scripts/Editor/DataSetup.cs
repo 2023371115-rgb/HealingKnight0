@@ -19,7 +19,7 @@ namespace HealingKnight.EditorTools
         public EnemyData Tenia, TeniaSegmento, Proglotido, LombrizHuye, Flora;
         public EnemyData HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans, Lombriz;
         public EnemyData Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
-        public EnemyData Mucosidad, Inflamacion, Colmena;
+        public EnemyData Mucosidad, Inflamacion, Colmena, TosFerinaReina;
         public EnemyData SAureusCoco, OxiuroHuevo;
         public EnemyData Poliovirus, Meningococo, Herpes, Rabia, NeuronaHiperexcitada, RabiaJefe, RabiaVirion;
         public GameCatalog Catalog;
@@ -555,6 +555,19 @@ namespace HealingKnight.EditorTools
                 e.meleeDamageTakenMultiplier = 0.25f;
                 e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
                 e.tint = new Color(0.88f, 0.22f, 0.42f);
+            });
+
+            // Jefe de la Tráquea: la reina de la tos ferina (camina y tose ondas por el piso).
+            TosFerinaReina = Enemy("Jefe_TosFerina", e =>
+            {
+                e.displayName = "Reina de la tos ferina";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Bordetella pertussis paraliza los cilios con su toxina y provoca ataques de tos en ráfaga. " +
+                    "Al toser manda ondas por el piso: sáltalas.";
+                e.maxHealth = 320f;
+                e.meleeDamageTakenMultiplier = 0.6f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 5;
+                e.tint = new Color(0.55f, 0.75f, 0.95f);
             });
 
             // Jefe de los Pulmones: colmena voladora de tuberculosis (estilo nave de Metal Slug).

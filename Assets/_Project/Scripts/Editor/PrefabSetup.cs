@@ -26,7 +26,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans;
         public EnemyHealth LombrizDelgado, LombrizGrueso;
         public EnemyHealth Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
-        public EnemyHealth Mucosidad, Inflamacion, Colmena, RabiaJefe;
+        public EnemyHealth Mucosidad, Inflamacion, Colmena, RabiaJefe, TosFerinaReina;
         public EnemyHealth Poliovirus, Meningococo, Herpes, Rabia;
         public EnemyHealth SAureusCoco, OxiuroHuevo;
         public HealthyNeuron Neuron;
@@ -127,6 +127,7 @@ namespace HealingKnight.EditorTools
 
             Colmena = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Colmena_Pulmones.prefab", BuildHive);
             RabiaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Rabia_Hipocampo.prefab", BuildRabiesBoss);
+            TosFerinaReina = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/TosFerina_Traquea.prefab", BuildPertussisQueen);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -1222,6 +1223,84 @@ namespace HealingKnight.EditorTools
             SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
             SetupUtils.SetRef(boss, "minionPrefab", Neumococo);
             SetupUtils.SetRef(boss, "minionData", data.Neumococo);
+            return root;
+        }
+
+        /// <summary>
+        /// Reina de la tos ferina (jefe de la tráquea): cocobacilo azul gigante con corona, ojos y boca que se abre al toser.
+        /// Con 'Art/Jefes/TosFerina/TosFerina_Normal.png' usa ese dibujo en vez de las figuras.
+        /// </summary>
+        private GameObject BuildPertussisQueen()
+        {
+            EnemyData d = data.TosFerinaReina;
+            var root = new GameObject("TosFerina_Traquea");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", new Vector3(0f, 0f, 0f));
+            Transform v = visual.transform;
+            var body = new System.Collections.Generic.List<Object>();
+            Transform mouth;
+            Sprite art = ArtByWidth("Assets/_Project/Art/Jefes/TosFerina/TosFerina_Normal.png", 4.2f, new Vector2(0.5f, 0.02f));
+            if (art != null)
+            {
+                body.Add(SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 0));
+                mouth = SetupUtils.Child(v, "Boca", new Vector3(0f, 1.2f, 0f)).transform;
+            }
+            else
+            {
+                Color outline = new Color(0.08f, 0.12f, 0.3f);
+                Color tint = d.tint;
+                // Cuerpo: cocobacilo (cápsula ancha) parado.
+                body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, outline, new Vector3(0f, 1.55f, 0f), new Vector2(3.9f, 3.2f), 0));
+                body.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Circle, tint, new Vector3(0f, 1.55f, 0f), new Vector2(3.7f, 3f), 1));
+                body.Add(SetupUtils.SpriteChild(v, "Panza", PlaceholderArt.Circle, Color.Lerp(tint, Color.white, 0.35f), new Vector3(0.3f, 1.2f, 0f), new Vector2(2f, 1.6f), 2));
+                body.Add(SetupUtils.SpriteChild(v, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.6f), new Vector3(-0.9f, 2.4f, 0f), new Vector2(0.8f, 0.4f), 3));
+                // Pelitos (fimbrias) alrededor.
+                for (int i = 0; i < 10; i++)
+                {
+                    float a = i * 36f * Mathf.Deg2Rad;
+                    var f = SetupUtils.SpriteChild(v, "Fimbria" + i, PlaceholderArt.Square, outline,
+                        new Vector3(Mathf.Cos(a) * 1.95f, 1.55f + Mathf.Sin(a) * 1.6f, 0f), new Vector2(0.08f, 0.45f), -1);
+                    f.transform.localRotation = Quaternion.Euler(0f, 0f, i * 36f - 90f);
+                }
+                // Corona.
+                body.Add(SetupUtils.SpriteChild(v, "CoronaBase", PlaceholderArt.Square, new Color(0.35f, 0.22f, 0.02f), new Vector3(0f, 3.05f, 0f), new Vector2(1.7f, 0.5f), 4));
+                body.Add(SetupUtils.SpriteChild(v, "Corona", PlaceholderArt.Square, new Color(1f, 0.82f, 0.2f), new Vector3(0f, 3.07f, 0f), new Vector2(1.56f, 0.38f), 5));
+                for (int i = -1; i <= 1; i++)
+                {
+                    var pico = SetupUtils.SpriteChild(v, "Pico" + i, PlaceholderArt.Square, new Color(1f, 0.82f, 0.2f), new Vector3(i * 0.55f, 3.35f, 0f), new Vector2(0.34f, 0.34f), 5);
+                    pico.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                    SetupUtils.SpriteChild(v, "Joya" + i, PlaceholderArt.Circle, new Color(0.9f, 0.2f, 0.4f), new Vector3(i * 0.55f, 3.08f, 0f), new Vector2(0.2f, 0.2f), 6);
+                }
+                // Ojos enojados.
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(-0.5f + s * 0.45f, 2.05f, 0f), new Vector2(0.62f, 0.7f), 6);
+                    SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, outline, new Vector3(-0.6f + s * 0.45f, 2f, 0f), new Vector2(0.28f, 0.34f), 7);
+                    var ceja = SetupUtils.SpriteChild(v, "Ceja", PlaceholderArt.Square, outline, new Vector3(-0.5f + s * 0.45f, 2.45f, 0f), new Vector2(0.6f, 0.12f), 7);
+                    ceja.transform.localRotation = Quaternion.Euler(0f, 0f, s * -15f);
+                }
+                // Boca (se estira al toser).
+                mouth = SetupUtils.Child(v, "Boca", new Vector3(-0.6f, 1.3f, 0f)).transform;
+                SetupUtils.SpriteChild(mouth, "Boca", PlaceholderArt.Circle, new Color(0.25f, 0.04f, 0.12f), Vector3.zero, new Vector2(0.8f, 0.5f), 7);
+                SetupUtils.SpriteChild(mouth, "Lengua", PlaceholderArt.Circle, new Color(0.9f, 0.4f, 0.5f), new Vector3(0f, -0.12f, 0f), new Vector2(0.45f, 0.2f), 8);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, new Vector2(0f, 1.55f), new Vector2(3.4f, 3f));
+
+            var boss = root.AddComponent<PertussisQueenBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "mouth", mouth);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "minionPrefab", Pertussis);
+            SetupUtils.SetRef(boss, "minionData", data.Pertussis);
             return root;
         }
 

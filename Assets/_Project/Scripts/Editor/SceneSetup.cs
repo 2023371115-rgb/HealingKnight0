@@ -1773,7 +1773,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildNariz()
         {
-            BuildLevelBase(90f, new LevelStyle
+            // Rediseño (170 u): cañones de moco de la mucosa, el ESTORNUDO (barra de comezón + pelos nasales)
+            // y dos arenas. Ver LEEME "Nariz".
+            BuildLevelBase(170f, new LevelStyle
             {
                 background = new Color(0.09f, 0.03f, 0.11f),
                 wall = new Color(0.36f, 0.14f, 0.34f),
@@ -1791,11 +1793,11 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.22f, 0.26f, 0.06f, 1f),
                 liquidCrest = new Color(0.95f, 1f, 0.7f, 0.95f)
             }, "NODO: Sistema respiratorio. Entraste por la nariz. Tu cápsula regional ahora es el MUCOLÍTICO.",
-                new Vector2(26f, 3f), new Vector2(44f, 3f));
+                new Vector2(33f, 3f), new Vector2(63f, 3f), new Vector2(100f, 3.5f), new Vector2(112f, 4f), new Vector2(152f, 3f));
 
             Platform(1f, 2.2f, 3f);
 
-            // Arena 1: virus del resfriado y polen. Plataformas para pelear con los voladores.
+            // Arena 1: virus del resfriado y polen.
             Arena("Arena_1_Resfriado", 8f, 18f,
                 "Rinovirus (resfriado): no hay antiviral para él, los medicamentos le hacen poco y se cura solo con el tiempo. El polen te persigue con el aire: Antihistamínico.",
                 W(0.8f, E(prefabs.Rinovirus, data.Rinovirus, 1), E(prefabs.Polen, data.Polen, 2)),
@@ -1804,29 +1806,71 @@ namespace HealingKnight.EditorTools
             Platform(15.5f, 3.8f, 2.6f);
             Platform(21f, 2.4f, 2.6f);
 
-            // Tramo de saltos: hueco con escalón flotante y escalera hacia arriba.
-            Platform(27.5f, 2.2f, 1.6f);
-            Platform(31f, 2.2f, 2.2f);
-            Platform(33.8f, 3.8f, 2.2f);
-            Platform(36.6f, 5.4f, 2.2f);
-            SetMessage("Mucosidad: tapa el paso y te frena si la tocas. Dispárale MUCOLÍTICO (el antihistamínico también sirve, pero menos).", 37f);
-            Block(41f, true);
+            // Cañones de moco: la mucosa te lanza bolas. Te frenan, pero las que caen se pegan y sirven de escalón.
+            SetMessage("La mucosa lanza bolas de MOCO: si te pegan te frenan, pero las que caen se quedan pegadas un rato y sirven de plataforma. El mucolítico las disuelve.", 24f);
+            MucusGland(30f, 2.6f, 0f);
+            Platform(28f, 2.4f, 2.2f);
+            MucusGland(38f, 2.8f, 1.2f);
+            Platform(38.5f, 3.4f, 2.6f);
+            SetMessage("Mucosidad: tapa el paso y te frena si la tocas. Dispárale MUCOLÍTICO (el antihistamínico también sirve, pero menos).", 41f);
+            Block(44f, true);
+            Checkpoint(46f);
 
-            // Hueco con burbuja en medio.
-            Platform(45.5f, 2.6f, 1.6f);
+            // EL ESTORNUDO: el polen irrita la nariz y llena la barra; al llenarse, ¡ACHÚ! y el aire te avienta atrás.
+            SetMessage("¡El polen irrita la nariz! Mira la barra de COMEZÓN: cuando se llene vas a estornudar y el aire te avienta hacia atrás. Agárrate de los PELOS NASALES o escóndete tras un cornete. Matar polen la llena más lento.", 47f);
+            Sneeze(47f, 94f);
+            NasalHairAt(52f);
+            EnemyAt(prefabs.Polen, 56f, FloorY + 2.5f);
+            NasalHairAt(60f);
+            Platform(64.5f, 2.6f, 1.6f);          // escalón sobre el hueco: si estornuda aquí... ¡cuidado!
+            NasalHairAt(68.5f);
+            Turbinate(73.5f, 2.6f, 1.4f);         // cornete: escóndete a su izquierda
+            EnemyAt(prefabs.Polen, 70f, FloorY + 3f);
 
-            BlockedArena("Arena_2_Estafilococo", 52f, 22f,
-                "S. aureus: racimo de cocos; al romperlo se separa en cocos sueltos. Antibiótico. Luego disuelve la mucosidad con Mucolítico.", true,
+            // Arena 2 dentro del estornudo: mucho polen = mucha comezón.
+            Arena("Arena_2_Polen", 79f, 15f, "¡Nube de polen! Cada uno vivo llena más rápido la comezón. Antihistamínico y agárrate de los pelos.",
+                W(0.6f, E(prefabs.Polen, data.Polen, 3), E(prefabs.Rinovirus, data.Rinovirus, 1)),
+                W(1.0f, E(prefabs.Polen, data.Polen, 3, SpawnSide.Both)));
+            NasalHairAt(80f);
+            NasalHairAt(87.5f);
+            Platform(83.5f, 3f, 2.6f);
+            Checkpoint(95f);
+
+            // Moco en el camino: bolas que caen y huecos (úsalas de escalón si te sirven).
+            MucusGland(104f, 2.4f, 0.4f);
+            Platform(106.5f, 2.6f, 2.2f);
+            MucusGland(110f, 2.6f, 1.6f, 1);
+            Platform(114f, 2.6f, 1.6f);
+            O2(108f, 5f);
+
+            // Arena 3: estafilococos con cañones de moco disparando a todos lados.
+            BlockedArena("Arena_3_Estafilococo", 120f, 24f,
+                "S. aureus: racimo de cocos; al romperlo se separa en cocos sueltos. Antibiótico. Cuidado con el moco de las glándulas.", true,
                 W(0.6f, E(prefabs.SAureus, data.SAureus, 3)),
-                W(1.0f, E(prefabs.SAureus, data.SAureus, 2, SpawnSide.Left), E(prefabs.Polen, data.Polen, 2), E(prefabs.Rinovirus, data.Rinovirus, 1)));
-            Platform(55f, 2.4f, 2.6f);
-            Platform(60f, 3.8f, 2.6f);
-            Platform(65f, 2.4f, 2.6f);
+                W(1.0f, E(prefabs.SAureus, data.SAureus, 2, SpawnSide.Left), E(prefabs.Polen, data.Polen, 2), E(prefabs.Rinovirus, data.Rinovirus, 1)),
+                W(1.0f, E(prefabs.SAureus, data.SAureus, 2, SpawnSide.Both), E(prefabs.Polen, data.Polen, 2)));
+            MucusGland(125f, 3f, 0f, 1);
+            MucusGland(134f, 3f, 1.5f);
+            Platform(123f, 2.4f, 2.6f);
+            Platform(129.5f, 3.8f, 2.6f);
+            Platform(136f, 2.4f, 2.6f);
+            Checkpoint(143f);
+
+            // Recta final: el último estornudo, más polen.
+            Sneeze(145f, 166f);
+            NasalHairAt(148f);
+            EnemyAt(prefabs.Polen, 151f, FloorY + 2.5f);
+            Platform(153.5f, 2.6f, 1.6f);
+            NasalHairAt(157f);
+            EnemyAt(prefabs.Polen, 160f, FloorY + 3f);
+            NasalHairAt(162.5f);
         }
 
         private void BuildTraquea()
         {
-            BuildLevelBase(100f, new LevelStyle
+            // Rediseño (170 u): epiglotis, escalera de cilios, la TOS (anillos de cartílago), corrientes de aire
+            // y el jefe: la reina de la tos ferina. Ver LEEME "Tráquea".
+            BuildLevelBase(170f, new LevelStyle
             {
                 background = new Color(0.06f, 0.04f, 0.13f),
                 wall = new Color(0.28f, 0.2f, 0.46f),
@@ -1844,7 +1888,7 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.1f, 0.14f, 0.32f, 1f),
                 liquidCrest = new Color(0.85f, 0.97f, 1f, 0.95f)
             }, "NODO: Tráquea. Detectamos tos ferina: Bordetella pertussis. Antibiótico.",
-                new Vector2(31f, 4f), new Vector2(44.5f, 5f), new Vector2(76f, 3f));
+                new Vector2(66f, 3f), new Vector2(81f, 3.5f), new Vector2(100f, 4.5f));
 
             Arena("Arena_1_TosFerina", 8f, 18f, "B. pertussis (tos ferina): se infla y tose tres veces; cada tos te empuja. Antibiótico.",
                 W(0.6f, E(prefabs.Pertussis, data.Pertussis, 2)),
@@ -1852,35 +1896,64 @@ namespace HealingKnight.EditorTools
             Platform(11f, 2.4f, 2.6f);
             Platform(18f, 2.4f, 2.6f);
 
-            // Inflamación: tutorial sin enemigos.
-            SetMessage("Inflamación: el tejido hinchado cierra el paso. Dispárale ANTIINFLAMATORIO hasta que se contraiga.", 24f);
-            Block(28f, false);
+            // Epiglotis: se cierra cada vez que tragas.
+            SetMessage("La EPIGLOTIS es una tapita que cierra la tráquea cada vez que tragas, para que la comida no se vaya a los pulmones. Pasa cuando esté abierta.", 22f);
+            Epiglottis(25.5f, 2.4f, 2f, 0f);
 
-            // Tramo de saltos sobre dos huecos: escalera de ida y vuelta por arriba.
-            Platform(33f, 2.6f, 1.8f);
-            Platform(37f, 2.4f, 2.4f);
-            Platform(40f, 4f, 2.4f);
-            Platform(43.5f, 5.6f, 2.4f);
-            Platform(47f, 4f, 2.4f);
-            Platform(50.5f, 2.4f, 2.2f);
+            // Escalera de cilios: el piso te empuja hacia atrás y rueda moco hacia ti.
+            SetMessage("Los CILIOS barren el moco hacia la garganta: en el piso te empujan HACIA ATRÁS y te mandan bolas de moco. Sáltalas, ve por arriba o disuélvelas con Mucolítico.", 27f);
+            Cilia(28f, 52f, 3.2f, 2.2f);
+            Platform(31f, 2.2f, 2.2f);
+            Platform(36.5f, 3.6f, 2.2f);
+            Platform(42f, 2.2f, 2.2f);
+            Platform(47.5f, 3.4f, 2.2f);
+            Checkpoint(53f);
 
-            BlockedArena("Arena_2_Bronquio", 56f, 22f,
+            SetMessage("Inflamación: el tejido hinchado cierra el paso. Dispárale ANTIINFLAMATORIO hasta que se contraiga.", 53f);
+            Block(56f, false);
+
+            // LA TOS: cada cierto tiempo te avienta hacia atrás; cúbrete bajo los anillos de cartílago.
+            Cough(58f, 92f, 6f);
+            CartilageRing(61f);
+            CartilageRing(70f);
+            EnemyAt(prefabs.Pertussis, 75f, FloorY + 2f);
+            CartilageRing(78.5f);
+            Platform(82.75f, 2.4f, 1.4f);
+            CartilageRing(88f);
+            Checkpoint(92f);
+
+            // Corrientes de aire hacia arriba: te lanzan a la ruta alta sobre el hueco grande.
+            SetMessage("Corrientes de AIRE: cuando soplen, párate encima y te lanzan muy alto.", 93f);
+            Vent(95.5f, 6.5f, 3f, 0f);
+            Platform(98.5f, 6.2f, 3f);
+            Platform(103.5f, 4.6f, 2.4f);
+            Vent(108f, 6.5f, 3f, 1.5f);
+            O2(108f, 8f);
+
+            // Arena 2: influenza y tos ferina.
+            BlockedArena("Arena_2_Bronquio", 115f, 22f,
                 "Influenza: flota alto y se lanza en picada con sus espículas. Antiviral. Al final, mucosidad: Mucolítico.", true,
                 W(0.6f, E(prefabs.Pertussis, data.Pertussis, 3)),
                 W(1.0f, E(prefabs.Influenza, data.Influenza, 1), E(prefabs.Pertussis, data.Pertussis, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.Influenza, data.Influenza, 2), E(prefabs.Polen, data.Polen, 2, SpawnSide.Both)));
-            Platform(59f, 2.4f, 2.6f);
-            Platform(64f, 3.8f, 2.6f);
-            Platform(69f, 2.4f, 2.6f);
+            Platform(118f, 2.4f, 2.6f);
+            Platform(123f, 3.8f, 2.6f);
+            Platform(128f, 2.4f, 2.6f);
+            Checkpoint(135f);
 
-            Platform(77.5f, 2.4f, 1.8f);
-            Block(84f, false);
+            // Jefe: la reina de la tos ferina. Sus toses mandan ondas por el piso: salta.
+            Arena("Arena_Reina", 140f, 26f, null,
+                W(1.2f, E(prefabs.TosFerinaReina, data.TosFerinaReina, 1)));
+            Platform(143f, 2.4f, 2.6f);
+            Platform(150f, 3.8f, 2.6f);
+            Platform(157f, 2.4f, 2.6f);
         }
 
         private void BuildPulmones()
         {
-            // 3 tramos por bronquiolos, cada uno con un bloqueo; el último es la arena de la colmena.
-            LevelManager manager = BuildLevelBase(135f, new LevelStyle
+            // Rediseño (202 u): todo el pulmón RESPIRA (inhala te jala, exhala te empuja), O₂ que cura y CO₂ que asfixia,
+            // bronquiolos con dos rutas, la colmena y al final el viaje en glóbulo rojo por un capilar. Ver LEEME "Pulmones".
+            LevelManager manager = BuildLevelBase(202f, new LevelStyle
             {
                 background = new Color(0.05f, 0.05f, 0.15f),
                 wall = new Color(0.26f, 0.19f, 0.44f),
@@ -1898,7 +1971,7 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.04f, 0.14f, 0.2f, 1f),
                 liquidCrest = new Color(0.8f, 1f, 0.98f, 0.95f)
             }, "NODO: Pulmones. La infección se asentó en los bronquiolos. Cada tramo está bloqueado: elimina al grupo y despeja el paso.",
-                new Vector2(30f, 4f), new Vector2(45f, 4.5f), new Vector2(76f, 4.5f));
+                new Vector2(30f, 4f), new Vector2(45f, 4.5f), new Vector2(138f, 4.5f), new Vector2(147f, 4f), new Vector2(187.5f, 8.5f));
 
             // Tramo 1
             BlockedArena("Tramo_1_Neumonia", 8f, 20f,
@@ -1909,48 +1982,244 @@ namespace HealingKnight.EditorTools
             Platform(15.5f, 3.8f, 2.6f);
             Platform(20.5f, 2.4f, 2.6f);
 
-            // Bronquiolos: los alvéolos RESPIRAN (rosados): se inflan, tiemblan y se desinflan. Salta cuando estén llenos.
-            // Reglas: huecos de máx. 4.5 u, repisa destino a máx. 3.5 u arriba del alvéolo, 5.5 u libres arriba.
-            SetMessage("NODO: Los alvéolos respiran. Inflados son trampolines que te lanzan muy alto; desinflados son una plataforma normal.", 27f);
-            Alveolus(32f, 1.2f, 2f, 0f);          // sobre el hueco 1 (4 u)
-            Platform(35.8f, 4.4f, 2.4f);           // repisa: 3.2 u arriba del alvéolo
-            Alveolus(39.5f, 1.2f, 2f, 1.4f);       // desfasado 1.4 s
-            Platform(43f, 4.6f, 2.4f);             // repisa: 3.4 u arriba
-            Alveolus(47.2f, 1.2f, 1.8f, 2.75f);    // sobre el hueco 2 (4.5 u), alternado con el primero
+            // Desde aquí el pulmón respira (sincronizado con los alvéolos).
+            SetMessage("NODO: Todo el pulmón RESPIRA. Al INHALAR el aire te jala hacia adelante y los alvéolos se inflan (trampolines); al EXHALAR te empuja hacia atrás y se desinflan.", 27f);
+            Breathing(26f, 186f);
+            Alveolus(32f, 1.2f, 2f, 0f);
+            Platform(35.8f, 4.4f, 2.4f);
+            Alveolus(39.5f, 1.2f, 2f, 1.4f);
+            Platform(43f, 4.6f, 2.4f);
+            Alveolus(47.2f, 1.2f, 1.8f, 2.75f);
             Platform(51.2f, 4.2f, 2f);
 
+            // Oxígeno y dióxido de carbono.
+            SetMessage("Burbujas de O₂ (oxígeno): te curan. Nubes de CO₂ (el gas de desecho que exhalas): te asfixian si te quedas dentro.", 55f);
+            O2(58f, 1.4f);
+            CO2(62f, 1.5f);
+            Platform(65f, 3.4f, 2.4f);
+            O2(65f, 4.8f);
+            CO2(69.5f, 3f);
+            O2(73f, 1.4f);
+            Checkpoint(75f);
+
+            // Bronquiolos: el camino se divide. Arriba (difícil): oxígeno y una bomba. Abajo (fácil): CO₂ y bacterias.
+            SetMessage("Los bronquiolos se dividen: ARRIBA hay oxígeno y una bomba, pero hay que saltar bien; ABAJO es más fácil pero está lleno de CO₂.", 76f);
+            Alveolus(78f, 1.2f, 2f, 0f);
+            Platform(82f, 4.6f, 2.6f);
+            Platform(86.5f, 6.2f, 3f);
+            Platform(91.5f, 6.6f, 3f);
+            O2(91.5f, 8f);
+            Platform(96.5f, 6.2f, 3f);
+            Platform(101.5f, 6.6f, 3f);
+            BombGift(101.5f, 7.6f, "+1 bomba: tomaste el bronquiolo de arriba.");
+            Platform(106.5f, 5.4f, 3f);
+            Platform(111f, 4f, 2.4f);
+            CO2(89f, 1.3f);
+            EnemyAt(prefabs.Neumococo, 93f, FloorY + 1f);
+            CO2(98f, 1.3f);
+            EnemyAt(prefabs.Neumococo, 102f, FloorY + 1f);
+            CO2(105.5f, 1.3f);
+
             // Tramo 2
-            BlockedArena("Tramo_2_Influenza", 54f, 20f,
+            BlockedArena("Tramo_2_Influenza", 118f, 20f,
                 "Influenza en el aire y neumococos en el piso. Al final, inflamación: Antiinflamatorio.", false,
                 W(0.6f, E(prefabs.Influenza, data.Influenza, 2)),
                 W(1.0f, E(prefabs.Neumococo, data.Neumococo, 3, SpawnSide.Both), E(prefabs.Influenza, data.Influenza, 1)));
-            Alveolus(56f, 2.4f, 2.4f);
-            Alveolus(61f, 3.8f, 2.4f);
-            Alveolus(66f, 2.4f, 2.4f);
+            Alveolus(120f, 2.4f, 2.4f);
+            Alveolus(125f, 3.8f, 2.4f);
+            Alveolus(130f, 2.4f, 2.4f);
+            Checkpoint(136f);
 
-            // Secuencia de timing sobre el hueco 3 (4.5 u): dos alvéolos alternados (medio ciclo de diferencia).
-            Alveolus(77.2f, 1.2f, 1.6f, 0f);
-            Alveolus(79.6f, 1.2f, 1.6f, 2.75f);
-            Platform(84f, 2.4f, 2.4f);
-            Platform(87f, 4.2f, 2.2f);
+            // Secuencia de timing sobre dos huecos.
+            Alveolus(139.2f, 1.2f, 1.6f, 0f);
+            Alveolus(141.6f, 1.2f, 1.6f, 2.75f);
+            Platform(144.5f, 2.4f, 1.6f);
+            Alveolus(149f, 1.2f, 2f, 1.4f);
+            Platform(152.5f, 4.4f, 2.4f);
+            O2(152.5f, 5.8f);
 
-            // Tramo 3: arena del jefe. Primero un grupo, luego la colmena voladora.
-            BlockedArena("Tramo_3_Colmena", 92f, 28f, "NODO: Algo enorme se mueve arriba...", true,
+            // Tramo 3: arena de la colmena.
+            BlockedArena("Tramo_3_Colmena", 160f, 28f, "NODO: Algo enorme se mueve arriba...", true,
                 W(0.6f, E(prefabs.Neumococo, data.Neumococo, 4, SpawnSide.Both)),
                 W(1.5f, E(prefabs.Colmena, data.Colmena, 1)));
-            // Plataformas para subir a pegarle y para esquivar el bombardeo.
-            Alveolus(96f, 2.6f, 3f);
-            Platform(101.5f, 4.2f, 3.4f);
-            Alveolus(106f, 1.2f, 3f, 1f); // inflado te lanza a la altura de la colmena (cuidado con chocarla)
-            Platform(111f, 4.2f, 3f);
+            Alveolus(164f, 2.6f, 3f);
+            Platform(169.5f, 4.2f, 3.4f);
+            Alveolus(174f, 1.2f, 3f, 1f);
+            Platform(179f, 4.2f, 3f);
+            Checkpoint(185f);
 
-            // Cierre de la entrega de diciembre (GDD 8.6).
+            // Capilar: el glóbulo rojo se lleva el oxígeno a la sangre... y a ti.
+            BloodPit(187.5f, 8.5f);
+            Ride("GloboRojo", new Vector2(186.2f, FloorY + 0.5f), new Vector2(197.2f, FloorY + 0.5f), 2.6f, 2.4f,
+                MovingPlatform.Style.BloodCell, 0.6f,
+                "¡Súbete al GLÓBULO ROJO! En los alvéolos recoge el oxígeno y lo lleva por los capilares a todo el cuerpo.",
+                PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 2.6f));
+
             SetupUtils.SetString(manager, "completeMessage",
                 "NODO: Fórmula 2 enviada a Aurelis. Alerta: la infección avanza hacia el cerebro...");
             SetupUtils.SetFloat(manager, "completeDelay", 4.5f);
         }
 
         /// <summary>Alvéolo: plataforma de un solo sentido que se ve como racimo de burbujas.</summary>
+        // ---------- Elementos del rediseño del Respiratorio y del Nervioso ----------
+
+        private const string RespArt = "Assets/_Project/Art/Respiratorio";
+        private const string NerveArt = "Assets/_Project/Art/Nervioso";
+
+        private GameObject Node(string name, float x, float y)
+        {
+            var go = new GameObject(name);
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            return go;
+        }
+
+        /// <summary>Punto de regreso invisible (si mueres o caes después de aquí, regresas aquí).</summary>
+        private void Checkpoint(float x) => Node("PuntoDeRegreso", x, FloorY).AddComponent<CheckpointTrigger>();
+
+        /// <summary>Glándula de la mucosa que lanza bolas de moco (te frenan; las que caen sirven de plataforma).</summary>
+        private void MucusGland(float x, float period, float offset, int facing = -1)
+        {
+            Node("GlandulaMoco", x, FloorY).AddComponent<MucusCannon>().Configure(period, offset, facing,
+                PrefabSetup.ArtByWidth($"{RespArt}/GlandulaMoco.png", 1.8f, new Vector2(0.5f, 0.05f)),
+                PrefabSetup.ArtByWidth($"{RespArt}/BolaMoco.png", 0.8f));
+        }
+
+        /// <summary>Zona de estornudo: barra de comezón que se llena (más rápido con polen vivo) y ¡ACHÚ!</summary>
+        private void Sneeze(float fromX, float toX)
+        {
+            Node("Estornudo", (fromX + toX) * 0.5f, FloorY).AddComponent<WindBlast>().Configure(fromX, toX, true, data.Polen, 0f, -1,
+                "¡A... a... aaa...!", "¡¡ACHÚ!! El estornudo saca el polen a la fuerza. Agárrate de los pelos de la nariz.");
+        }
+
+        /// <summary>Zona de tos (tráquea): cada 'period' segundos tose y te avienta hacia atrás.</summary>
+        private void Cough(float fromX, float toX, float period)
+        {
+            Node("Tos", (fromX + toX) * 0.5f, FloorY).AddComponent<WindBlast>().Configure(fromX, toX, false, null, period, -1,
+                "La tráquea se contrae... ¡va a toser!", "¡COF! La tos saca lo que estorba en la tráquea. Cúbrete tras un anillo de cartílago.");
+        }
+
+        private void NasalHairAt(float x) =>
+            Node("PelosNasales", x, FloorY).AddComponent<NasalHair>().Configure(3.4f, PrefabSetup.ArtByWidth($"{RespArt}/PeloNasal.png", 1.6f, new Vector2(0.5f, 0.02f)));
+
+        /// <summary>Cornete (pliegue de hueso de la nariz): montículo sólido; detrás de él el estornudo no te avienta.</summary>
+        private void Turbinate(float x, float width, float height)
+        {
+            SolidBlock(x - width * 0.5f, x + width * 0.5f, FloorY + height);
+            Node("RefugioCornete", x - width * 0.5f - 0.7f, FloorY).AddComponent<WindAnchor>().Configure(1.4f, height + 0.6f);
+        }
+
+        /// <summary>Anillo de cartílago de la tráquea: arco de adorno; párate debajo y la tos no te avienta.</summary>
+        private void CartilageRing(float x)
+        {
+            GameObject go = Node("AnilloCartilago", x, FloorY);
+            go.AddComponent<WindAnchor>().Configure(1.8f, 4f);
+            Sprite ring = PrefabSetup.ArtByWidth($"{RespArt}/AnilloCartilago.png", 2.6f, new Vector2(0.5f, 0.02f));
+            if (ring != null) { SetupUtils.SpriteChild(go.transform, "Anillo", ring, Color.white, Vector3.zero, Vector2.one, -40); return; }
+            Color line = new Color(0.12f, 0.08f, 0.28f), fill = new Color(0.78f, 0.72f, 0.95f);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(go.transform, "Pilar", PlaceholderArt.Square, line, new Vector3(s * 1.1f, 0f, 0f), new Vector2(0.56f, 4.2f), -41);
+                SetupUtils.SpriteChild(go.transform, "PilarLuz", PlaceholderArt.Square, fill, new Vector3(s * 1.1f, 0.05f, 0f), new Vector2(0.4f, 4.1f), -40);
+            }
+            SetupUtils.SpriteChild(go.transform, "Arco", PlaceholderArt.Circle, line, new Vector3(0f, 4.2f, 0f), new Vector2(2.8f, 1.1f), -41);
+            SetupUtils.SpriteChild(go.transform, "ArcoLuz", PlaceholderArt.Circle, fill, new Vector3(0f, 4.2f, 0f), new Vector2(2.6f, 0.9f), -40);
+            SetupUtils.SpriteChild(go.transform, "Hueco", PlaceholderArt.Circle, currentStyle.background, new Vector3(0f, 4.05f, 0f), new Vector2(1.7f, 0.6f), -39);
+        }
+
+        private void Cilia(float fromX, float toX, float push, float period) =>
+            Node("EscaleraDeCilios", fromX, FloorY).AddComponent<CiliaConveyor>().Configure(fromX, toX, FloorY, push, period,
+                PrefabSetup.ArtByWidth($"{RespArt}/BolaMoco.png", 1f));
+
+        private void Vent(float x, float launch, float period, float phase) =>
+            Node("CorrienteDeAire", x, FloorY).AddComponent<AirVent>().Configure(1.6f, launch, period, phase);
+
+        private void Epiglottis(float x, float open, float closed, float phase) =>
+            Node("Epiglotis", x, FloorY).AddComponent<TimedGate>().Configure(open, closed, phase, 9f,
+                PrefabSetup.ArtByWidth($"{RespArt}/Epiglotis.png", 2f, new Vector2(0.5f, 0.98f)));
+
+        private void Breathing(float fromX, float toX) =>
+            Node("Respiracion", fromX, FloorY).AddComponent<BreathingCycle>().Configure(fromX, toX);
+
+        private void CO2(float x, float y) =>
+            Node("NubeCO2", x, FloorY + y).AddComponent<CO2Cloud>().Configure(1.3f, 2.2f, PrefabSetup.ArtByWidth($"{RespArt}/CO2.png", 3f));
+
+        private void O2(float x, float y) =>
+            Node("BurbujaO2", x, FloorY + y).AddComponent<OxygenBubble>().Configure(8f, PrefabSetup.ArtByWidth($"{RespArt}/O2.png", 0.9f));
+
+        /// <summary>Bomba de regalo (bolsa de medicamento) en una ruta difícil.</summary>
+        private void BombGift(float x, float y, string text)
+        {
+            GameObject go = Node("Regalo", x, FloorY + y);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Circle, new Color(0.1f, 0.15f, 0.3f), Vector3.zero, new Vector2(0.9f, 0.9f), 20);
+            SetupUtils.SpriteChild(art.transform, "Bomba", PlaceholderArt.Circle, new Color(0.55f, 0.9f, 1f), Vector3.zero, new Vector2(0.76f, 0.76f), 21);
+            SetupUtils.SpriteChild(art.transform, "Cruz", PlaceholderArt.SquareCentered, Color.white, Vector3.zero, new Vector2(0.4f, 0.12f), 22);
+            SetupUtils.SpriteChild(art.transform, "Cruz", PlaceholderArt.SquareCentered, Color.white, Vector3.zero, new Vector2(0.12f, 0.4f), 22);
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.6f, 0.9f, 1f, 0.3f), Vector3.zero, new Vector2(1.6f, 1.6f), 19);
+            go.AddComponent<HealPickup>().Configure(art.transform, 15f, 1, text);
+        }
+
+        /// <summary>Viaje que espera a que te subas (glóbulo rojo o impulso nervioso).</summary>
+        private void Ride(string name, Vector2 from, Vector2 to, float speed, float width, MovingPlatform.Style style, float wave, string message, Sprite art)
+        {
+            GameObject go = Node(name, from.x, from.y);
+            var p = go.AddComponent<MovingPlatform>();
+            p.Configure(from, to, speed, 0f, width, art);
+            p.ConfigureRide(style, wave, message);
+        }
+
+        /// <summary>Capilar: hueco lleno de sangre (rojo) que se cruza en un glóbulo rojo.</summary>
+        private void BloodPit(float fromX, float width)
+        {
+            SetupUtils.SpriteChild(environment, "Sangre", PlaceholderArt.Square, new Color(0.45f, 0.02f, 0.08f, 0.95f),
+                new Vector3(fromX + width * 0.5f, FloorY - 4f, 0f), new Vector2(width, 3.3f), -94);
+            SetupUtils.SpriteChild(environment, "SangreSuperficie", PlaceholderArt.Square, new Color(0.9f, 0.2f, 0.25f, 1f),
+                new Vector3(fromX + width * 0.5f, FloorY - 0.95f, 0f), new Vector2(width, 0.2f), -93);
+            for (int i = 0; i < 5; i++)
+                SetupUtils.SpriteChild(environment, "GlobuloLejano", PlaceholderArt.Circle, new Color(0.75f, 0.12f, 0.16f, 0.8f),
+                    new Vector3(fromX + width * (0.12f + i * 0.19f), FloorY - 1.6f - (i % 2) * 0.5f, 0f), new Vector2(0.9f, 0.45f), -92);
+        }
+
+        private void SaltatoryAt(float stepTime, params Vector2[] points)
+        {
+            var world = new Vector2[points.Length];
+            for (int i = 0; i < points.Length; i++) world[i] = new Vector2(points[i].x, FloorY + points[i].y);
+            Node("ConduccionSaltatoria", points.Length > 0 ? points[0].x : 0f, FloorY).AddComponent<SaltatoryNodes>().Configure(world, stepTime, 1.5f);
+        }
+
+        private void Reflex(float x, float y, float launch) =>
+            Node("ArcoReflejo", x, FloorY + y).AddComponent<ReflexPad>().Configure(1.8f, launch);
+
+        private void Darkness(float fromX, float toX) =>
+            Node("LobuloOccipital", fromX, FloorY).AddComponent<DarknessZone>().Configure(fromX, toX);
+
+        private void Beat(Vector3[] a, Vector3[] b, float beatTime)
+        {
+            for (int i = 0; i < a.Length; i++) a[i].y += FloorY;
+            for (int i = 0; i < b.Length; i++) b[i].y += FloorY;
+            Node("LobuloTemporal", a.Length > 0 ? a[0].x : 0f, FloorY).AddComponent<BeatPlatforms>().Configure(a, b, beatTime);
+        }
+
+        private void Tilt(float x, float y, float width) =>
+            Node("Subibaja", x, FloorY + y).AddComponent<TiltPlatform>().Configure(width, 14f);
+
+        private void FrontalPuzzle(float gateX, int[] order, params Vector2[] neurons)
+        {
+            var world = new Vector2[neurons.Length];
+            for (int i = 0; i < neurons.Length; i++) world[i] = new Vector2(neurons[i].x, FloorY + neurons[i].y);
+            Node("LobuloFrontal", gateX, FloorY).AddComponent<SequencePuzzle>().Configure(world, order, gateX);
+        }
+
+        private void MemoryBubble(float x, float y, float width) =>
+            Node("BurbujaMemoria", x, FloorY + y).AddComponent<FadingPlatform>().Configure(width, 1.4f);
+
+        private void Fragment(float x, float y, string text) =>
+            Node("FragmentoMemoria", x, FloorY + y).AddComponent<MemoryFragment>().Configure(text, PrefabSetup.ArtByWidth($"{NerveArt}/FragmentoMemoria.png", 0.8f));
+
+        private void Water(float x, float y) =>
+            Node("BurbujaAgua", x, FloorY + y).AddComponent<WaterBubble>().Configure(4f, 3f, PrefabSetup.ArtByWidth($"{NerveArt}/BurbujaAgua.png", 1.1f));
+
         // ---------- Sistema Nervioso (GDD 5.12, 5.14, 5.15: tormentas eléctricas, neuronas sanas y salud del cerebro) ----------
         // Paleta de las imágenes de referencia: violeta profundo, bordes azul eléctrico, neuronas azules,
         // neuronas infectadas rojas, chispas doradas de sinapsis y rayos violetas.
@@ -1988,7 +2257,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildHipocampo()
         {
-            LevelManager manager = BuildLevelBase(80f, new LevelStyle
+            // Rediseño (150 u): burbujas de memoria que se desvanecen si te quedas quieto, fragmentos de memoria que la
+            // rabia borra si tardas, y el jefe rabia con HIDROFOBIA (burbujas de agua que lo paralizan). Ver LEEME "Hipocampo".
+            LevelManager manager = BuildLevelBase(150f, new LevelStyle
             {
                 background = new Color(0.05f, 0.02f, 0.1f),
                 wall = new Color(0.22f, 0.07f, 0.3f),
@@ -2007,38 +2278,73 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.22f, 0.06f, 0.12f, 1f),
                 liquidCrest = new Color(1f, 0.92f, 0.65f, 0.95f)
             }, "NODO: Hipocampo, el centro de la memoria. Algo viene corriendo por los nervios...",
-                new Vector2(20f, 3.5f));
+                new Vector2(20f, 3.5f), new Vector2(34f, 12f), new Vector2(52f, 14f));
 
             new GameObject("SaludDelCerebro").AddComponent<BrainHealth>();
 
-            // Entrada: un grupo y una neurona roja para calentar.
             Arena("Arena_Entrada", 4f, 14f, "Prepárate: el jefe rabia cae con Antiviral; Anticonvulsivo para las neuronas rojas y la rabia suelta.",
                 W(0.6f, E(prefabs.Rabia, data.Rabia, 2), E(prefabs.Poliovirus, data.Poliovirus, 1)));
             Neuron(10f, 3.2f);
             RedNeuron(15f, 1.5f);
             Platform(8f, 2.4f, 2.4f);
             Platform(21.75f, 2.4f, 1.6f);
-            Storm(24f, 30f);
+            Storm(18f, 30f);
 
-            // Arena del jefe: rieles de axones a dos alturas, neuronas sanas que puede infectar y plataformas.
-            const float arenaX = 34f, arenaW = 30f;
+            SetMessage("Recoge los FRAGMENTOS DE MEMORIA antes de que la rabia los borre: al acercarte se empiezan a apagar. Si salvas todos, ganas una bomba.", 17f);
+            Fragment(25.5f, 2.5f, "el hipocampo convierte lo que vives en recuerdos que duran años.");
+            Checkpoint(31f);
+
+            // Burbujas de memoria sobre dos huecos.
+            SetMessage("Burbujas de MEMORIA: aguantan mientras te muevas; si te quedas quieto encima se olvidan y revientan (luego se vuelven a formar).", 31f);
+            MemoryBubble(36.5f, 1.8f, 2.2f);
+            MemoryBubble(40f, 2.8f, 2f);
+            Fragment(40f, 4.6f, "si se daña, recuerdas tu infancia pero no lo que pasó ayer.");
+            MemoryBubble(43.5f, 1.8f, 2.2f);
+            Fragment(49f, 1.5f, "también es tu GPS: recuerda caminos y lugares.");
+            MemoryBubble(54.5f, 2f, 2.2f);
+            MemoryBubble(58f, 3.2f, 2f);
+            Fragment(58f, 5f, "tiene forma de caballito de mar: 'hippocampus' en griego.");
+            MemoryBubble(61.5f, 2f, 2.2f);
+            MemoryBubble(64.5f, 3f, 1.8f);
+            Checkpoint(67f);
+
+            // Arena chica entre recuerdos.
+            Arena("Arena_Recuerdos", 72f, 16f, "¡Te quieren quitar los recuerdos! Anticonvulsivo a la rabia suelta, Antiviral al poliovirus.",
+                W(0.6f, E(prefabs.Rabia, data.Rabia, 2), E(prefabs.Poliovirus, data.Poliovirus, 1)),
+                W(1.0f, E(prefabs.Rabia, data.Rabia, 2, SpawnSide.Left), E(prefabs.Herpes, data.Herpes, 1)));
+            Platform(75f, 2.4f, 2.4f);
+            Platform(80f, 3.8f, 2.4f);
+            Fragment(80f, 5.4f, "hay uno en cada lado del cerebro.");
+            Neuron(77f, 1.6f);
+
+            Storm(88f, 99f);
+            Platform(91f, 2.4f, 2.2f);
+            Platform(95f, 3.8f, 2.2f);
+            Fragment(95f, 5.3f, "dormir bien y hacer ejercicio le ayudan a formar neuronas nuevas.");
+            Checkpoint(100f);
+
+            // Arena del jefe: rieles de axones, neuronas sanas y BURBUJAS DE AGUA (hidrofobia).
+            const float arenaX = 104f, arenaW = 34f;
             float left = arenaX - 3f, right = arenaX - 3f + arenaW;
-            // Rieles de la cadena (Centipede): baja de riel en cada orilla. En furia aparece uno a ras de piso.
             AxonRail(left, right, 6.2f);
             AxonRail(left, right, 4.4f);
             AxonRail(left, right, 2.6f);
-            Arena("Arena_Rabia", arenaX, arenaW, null,
+            Arena("Arena_Rabia", arenaX, arenaW, "La rabia le tiene pánico al AGUA (hidrofobia): revienta las burbujas de agua cerca de ella para paralizarla.",
                 W(1.2f, E(prefabs.RabiaJefe, data.RabiaJefe, 1)));
-            // Neuronas cerca de los rieles: la cadena las infecta al pasar (fase 2).
             Neuron(left + 4f, 3.4f);
-            Neuron(left + 10f, 5.3f);
-            Neuron(left + 16f, 3.4f);
-            Neuron(left + 22f, 5.3f);
-            Neuron(left + 27f, 3.4f);
+            Neuron(left + 11f, 5.3f);
+            Neuron(left + 18f, 3.4f);
+            Neuron(left + 25f, 5.3f);
+            Neuron(left + 31f, 3.4f);
             Platform(left + 7f, 2.4f, 2.6f);
-            Platform(left + 13f, 4.2f, 2.6f);
-            Platform(left + 19f, 2.4f, 2.6f);
-            Platform(left + 25f, 4.2f, 2.6f);
+            Platform(left + 14f, 4.2f, 2.6f);
+            Platform(left + 21f, 2.4f, 2.6f);
+            Platform(left + 28f, 4.2f, 2.6f);
+            Water(left + 4f, 5.3f);
+            Water(left + 11f, 3.5f);
+            Water(left + 18f, 5.3f);
+            Water(left + 25f, 3.5f);
+            Water(left + 31f, 5.3f);
 
             SetupUtils.SetString(manager, "completeMessage",
                 "NODO: Hipocampo a salvo. Fórmula 3 enviada a Aurelis. La infección huyó hacia el corazón...");
@@ -2053,7 +2359,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildMedula()
         {
-            BuildLevelBase(100f, new LevelStyle
+            // Rediseño (170 u): tormentas, ARCO REFLEJO (te lanza), surfear el IMPULSO NERVIOSO por un axón y la
+            // CONDUCCIÓN SALTATORIA (nodos de Ranvier que se encienden en orden). Ver LEEME "Médula".
+            BuildLevelBase(170f, new LevelStyle
             {
                 background = new Color(0.05f, 0.02f, 0.12f),
                 wall = new Color(0.2f, 0.08f, 0.32f),
@@ -2071,7 +2379,7 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.03f, 0.08f, 0.2f, 1f),
                 liquidCrest = new Color(0.75f, 1f, 1f, 0.95f)
             }, "NODO: Sistema nervioso. Entraste por la médula espinal: la infección sube hacia el cerebro.",
-                new Vector2(30f, 3.5f), new Vector2(44f, 4f), new Vector2(78f, 3.5f));
+                new Vector2(30f, 3.5f), new Vector2(44f, 4f), new Vector2(68f, 14f), new Vector2(88f, 18f), new Vector2(146f, 4f));
 
             Platform(2f, 2.4f, 3f);
 
@@ -2082,7 +2390,7 @@ namespace HealingKnight.EditorTools
             Platform(16f, 3.8f, 2.6f);
             Platform(21f, 2.4f, 2.6f);
 
-            // Primera tormenta: aprende a leer el destello.
+            // Primera tormenta.
             SetMessage("Tormenta eléctrica: cuando veas el destello violeta, sal de la columna. El escudo NO protege.", 25f);
             Storm(25f, 50f);
             Platform(31.75f, 2.4f, 1.6f);
@@ -2090,21 +2398,50 @@ namespace HealingKnight.EditorTools
             Platform(40.5f, 4f, 2.4f);
             Platform(44f, 5.6f, 2.4f);
             Platform(47.5f, 4f, 2.4f);
+            Checkpoint(52f);
 
-            Arena("Arena_2_Poliovirus", 54f, 20f, "Poliovirus: sus disparos te paralizan un momento. Antiviral. La rabia muerde en ráfaga: Anticonvulsivo. ¡Pelea bajo la tormenta!",
+            // Arco reflejo: la médula responde sola y te lanza sobre la pared.
+            Reflex(56.5f, 0f, 7f);
+            SolidBlock(60f, 64f, FloorY + 5.6f);
+
+            // Surfear el impulso nervioso por un axón (hueco largo).
+            SetMessage("Súbete al IMPULSO NERVIOSO: corre por el axón a más de 100 km/h. ¡No te caigas!", 65f);
+            AxonRail(66f, 84f, 1.6f);
+            Ride("Impulso", new Vector2(66.8f, FloorY + 2.2f), new Vector2(83.6f, FloorY + 2.2f), 6.5f, 2.2f,
+                MovingPlatform.Style.Impulse, 1.2f, null, PrefabSetup.ArtByWidth($"{NerveArt}/Impulso.png", 2.4f));
+            Checkpoint(85f);
+
+            // Conducción saltatoria: los nodos de Ranvier se encienden en orden; solo el encendido es sólido.
+            SetMessage("Conducción SALTATORIA: el impulso salta de nodo en nodo (nodos de Ranvier) y por eso es tan rápido. Solo el nodo ENCENDIDO es sólido: síguelo.", 85f);
+            SaltatoryAt(0.9f, new Vector2(89.5f, 1.8f), new Vector2(93f, 2.6f), new Vector2(96.5f, 1.8f), new Vector2(100f, 2.6f), new Vector2(103.5f, 1.8f));
+            Checkpoint(107f);
+
+            Arena("Arena_2_Poliovirus", 114f, 20f, "Poliovirus: sus disparos te paralizan un momento. Antiviral. La rabia muerde en ráfaga: Anticonvulsivo. ¡Pelea bajo la tormenta!",
                 W(0.6f, E(prefabs.Rabia, data.Rabia, 2), E(prefabs.Meningococo, data.Meningococo, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.Poliovirus, data.Poliovirus, 2), E(prefabs.Rabia, data.Rabia, 1)));
-            Storm(51f, 74f);
-            Platform(57f, 2.4f, 2.6f);
-            Platform(63f, 3.8f, 2.6f);
-            Platform(69f, 2.4f, 2.6f);
+            Storm(110f, 133f);
+            Platform(117f, 2.4f, 2.6f);
+            Platform(123f, 3.8f, 2.6f);
+            Platform(129f, 2.4f, 2.6f);
+            Checkpoint(134f);
 
-            Platform(79.75f, 2.4f, 1.6f);
+            // Segundo arco reflejo sobre una pared y luego un hueco.
+            Reflex(137f, 0f, 7f);
+            SolidBlock(140f, 143.5f, FloorY + 5.8f);
+            Platform(148f, 2.4f, 1.6f);
+
+            // Recta final bajo la tormenta.
+            Storm(152f, 165f);
+            Platform(155f, 2.4f, 2.4f);
+            Platform(159f, 3.8f, 2.4f);
+            Platform(163f, 2.4f, 2.4f);
         }
 
         private void BuildCerebro()
         {
-            LevelManager manager = BuildLevelBase(130f, new LevelStyle
+            // Rediseño (190 u): cada lóbulo tiene su regla. Occipital (vista): oscuridad con destellos. Temporal (oído):
+            // plataformas al ritmo. Cerebelo (equilibrio): subibajas. Frontal (planear): neuronas en orden. Ver LEEME "Cerebro".
+            LevelManager manager = BuildLevelBase(190f, new LevelStyle
             {
                 background = new Color(0.04f, 0.02f, 0.1f),
                 wall = new Color(0.16f, 0.07f, 0.3f),
@@ -2123,9 +2460,8 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.12f, 0.03f, 0.16f, 1f),
                 liquidCrest = new Color(1f, 0.8f, 0.96f, 0.95f)
             }, "NODO: Cerebro. Protege las neuronas azules: los disparos ENEMIGOS las dañan y las infectan. Las tuyas las atraviesan.",
-                new Vector2(29f, 4f), new Vector2(70f, 4f), new Vector2(84f, 4f));
+                new Vector2(36f, 3f), new Vector2(44f, 3.5f), new Vector2(53f, 3f), new Vector2(66f, 22f), new Vector2(118f, 20f));
 
-            // Salud del cerebro (segunda barra del HUD).
             new GameObject("SaludDelCerebro").AddComponent<BrainHealth>();
             SetMessage("Tu cápsula regional es el ANTICONVULSIVO: calma neuronas rojas. Su bomba (L/F) protege a las neuronas 8 s.", 1f);
 
@@ -2139,57 +2475,73 @@ namespace HealingKnight.EditorTools
             Platform(17f, 4.2f, 2.4f);
             Platform(22f, 2.4f, 2.4f);
 
-            // Primera neurona hiperexcitada (roja): suelta descargas. Cálmala con Anticonvulsivo.
-            SetMessage("Neurona ROJA hiperexcitada: suelta descargas y desgasta el cerebro. Cálmala con ANTICONVULSIVO (+5 cerebro).", 24f);
-            RedNeuron(26.5f, 1.6f);
+            SetMessage("Neurona ROJA hiperexcitada: suelta descargas y desgasta el cerebro. Cálmala con ANTICONVULSIVO (+5 cerebro).", 25f);
+            RedNeuron(28f, 1.6f);
+            Checkpoint(31f);
 
-            // Puente de dendritas sobre el primer hueco, con tormenta.
-            Storm(27f, 44f);
-            Platform(31f, 2.4f, 1.8f);
-            Platform(38.5f, 4.2f, 6f);
-            Neuron(36f, 1.8f);
-            Neuron(41f, 1.8f);
+            // LÓBULO OCCIPITAL: a oscuras; los destellos de las neuronas muestran el camino.
+            Darkness(32f, 62f);
+            Platform(40f, 2.4f, 2f);
+            Neuron(40f, 4f);
+            Platform(49f, 3f, 2.4f);
+            EnemyAt(prefabs.Meningococo, 50f, FloorY + 1f);
+            Neuron(58f, 2.2f);
+            Checkpoint(63f);
+
+            // LÓBULO TEMPORAL: plataformas al ritmo sobre un hueco largo.
+            SetMessage("Lóbulo TEMPORAL: aquí se procesa el sonido y la música. Las plataformas aparecen AL RITMO: escucha el golpe y salta.", 63f);
+            Beat(new[] { new Vector3(67.5f, 1.8f, 2f), new Vector3(73f, 2.6f, 2f), new Vector3(78.5f, 1.8f, 2f), new Vector3(84f, 2.6f, 2f) },
+                 new[] { new Vector3(70.2f, 2.6f, 2f), new Vector3(75.7f, 1.8f, 2f), new Vector3(81.2f, 2.6f, 2f), new Vector3(86.6f, 1.8f, 2f) }, 1.25f);
+            Checkpoint(89f);
 
             // Tramo 2: pelea bajo la tormenta con neuronas en medio.
-            Arena("Tramo_2_Encefalitis", 46f, 22f, "Herpes (encefalitis): se vuelve latente (invisible) y reaparece disparando en ráfaga. Antiviral.",
+            Arena("Tramo_2_Encefalitis", 94f, 22f, "Herpes (encefalitis): se vuelve latente (invisible) y reaparece disparando en ráfaga. Antiviral.",
                 W(0.6f, E(prefabs.Herpes, data.Herpes, 2), E(prefabs.Rabia, data.Rabia, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.Meningococo, data.Meningococo, 3, SpawnSide.Both), E(prefabs.Poliovirus, data.Poliovirus, 1)));
-            Storm(43f, 68f);
-            Neuron(52f, 1.1f);
-            Neuron(57.5f, 3.4f);
-            Neuron(63f, 1.8f);
-            RedNeuron(48.5f, 3.6f);
-            Platform(50f, 2.6f, 2.6f);
-            Platform(55f, 4.4f, 2.6f);
-            Platform(60.5f, 2.6f, 2.6f);
-            Platform(65.5f, 4f, 2.4f);
+            Storm(91f, 114f);
+            Neuron(99f, 1.1f);
+            Neuron(104.5f, 3.4f);
+            Neuron(110f, 1.8f);
+            RedNeuron(96.5f, 3.6f);
+            Platform(98f, 2.6f, 2.6f);
+            Platform(103f, 4.4f, 2.6f);
+            Platform(108.5f, 2.6f, 2.6f);
+            Checkpoint(115f);
 
-            // Escalera de tejido nervioso sobre dos huecos.
-            Platform(72f, 2.4f, 1.8f);
-            Platform(77f, 2.4f, 2.4f);
-            Platform(80.5f, 4.2f, 2.4f);
-            Platform(84f, 5.8f, 2.4f);
-            Platform(87.5f, 4.2f, 2.4f);
-            Neuron(80.5f, 1.4f);
-            RedNeuron(76f, 4.4f);
+            // CEREBELO: subibajas sobre un hueco.
+            SetMessage("CEREBELO: controla el equilibrio. Las plataformas son SUBIBAJAS: si te vas a la orilla se ladean y te resbalas. Cruza por el centro.", 115f);
+            Tilt(121f, 2.2f, 4f);
+            Tilt(127.5f, 3f, 4f);
+            Tilt(134f, 2.2f, 4f);
+            Checkpoint(139f);
 
-            // Tramo 3 (clímax sin jefe): la mayor cantidad de enemigos rodeados de neuronas sanas.
-            Arena("Tramo_3_Corteza", 92f, 24f, "NODO: Última zona antes del hipocampo. Muchos virus apuntando a las neuronas: sé rápido.",
+            // LÓBULO FRONTAL: el circuito de neuronas abre la compuerta.
+            FrontalPuzzle(156f, new[] { 2, 0, 3, 1 },
+                new Vector2(143f, 3.2f), new Vector2(146.5f, 4.4f), new Vector2(150f, 3.2f), new Vector2(153.5f, 4.4f));
+            // Cada neurona tiene su repisa (en el piso no se tocan por accidente).
+            Platform(143f, 2.2f, 1.6f);
+            Platform(146.5f, 3.4f, 1.6f);
+            Platform(150f, 2.2f, 1.6f);
+            Platform(153.5f, 3.4f, 1.6f);
+            Checkpoint(157f);
+
+            // Tramo 3 (clímax): la corteza.
+            Arena("Tramo_3_Corteza", 162f, 24f, "NODO: Última zona antes del hipocampo. Muchos virus apuntando a las neuronas: sé rápido.",
                 W(0.6f, E(prefabs.Meningococo, data.Meningococo, 4, SpawnSide.Both)),
                 W(1.0f, E(prefabs.Herpes, data.Herpes, 2), E(prefabs.Rabia, data.Rabia, 2, SpawnSide.Left)),
                 W(1.2f, E(prefabs.Herpes, data.Herpes, 1), E(prefabs.Poliovirus, data.Poliovirus, 3), E(prefabs.Meningococo, data.Meningococo, 2, SpawnSide.Left)));
-            Storm(89f, 113f);
-            Neuron(95f, 1.8f);
-            Neuron(99.5f, 3.6f);
-            Neuron(103.5f, 1.1f);
-            Neuron(107.5f, 3.4f);
-            Neuron(111f, 2f);
-            RedNeuron(97.5f, 4.6f);
-            RedNeuron(108.5f, 1.2f);
-            Platform(97.5f, 2.6f, 2.4f);
-            Platform(102f, 4.4f, 2.6f);
-            Platform(106.5f, 2.6f, 2.4f);
-            Platform(110.5f, 4.4f, 2.4f);
+            Storm(159f, 183f);
+            Neuron(165f, 1.8f);
+            Neuron(169.5f, 3.6f);
+            Neuron(173.5f, 1.1f);
+            Neuron(177.5f, 3.4f);
+            Neuron(181f, 2f);
+            RedNeuron(167.5f, 4.6f);
+            RedNeuron(178.5f, 1.2f);
+            Platform(167.5f, 2.6f, 2.4f);
+            Platform(172f, 4.4f, 2.4f);
+            Platform(176.5f, 2.6f, 2.4f);
+            Platform(180.5f, 4.4f, 2.4f);
 
             SetupUtils.SetString(manager, "completeMessage",
                 "NODO: Cerebro despejado... pero algo corre por los nervios hacia el hipocampo.");
