@@ -533,6 +533,22 @@ namespace HealingKnight.EditorTools
                 case "Bacteria_CDifficile": folder = "Grueso"; prefix = "CDifficile"; width = 0.8f; break;
                 case "Parasito_Oxiuro": folder = "Grueso"; prefix = "Oxiuro"; width = 1.5f; break;
                 case "Parasito_Oxiuro_Huevo": folder = "Grueso"; prefix = "OxiuroHuevo"; width = 1.1f; movePose = "Normal"; attackPose = "Abre"; break;
+                // Boca
+                case "Bacteria_SMutans": folder = "Boca"; prefix = "SMutans"; width = 1.4f; break;
+                // Respiratorio (los voladores con pivote al centro)
+                case "Virus_Rinovirus": folder = "Respiratorio"; prefix = "Rinovirus"; width = 1.4f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Alergeno_Polen": folder = "Respiratorio"; prefix = "Polen"; width = 1f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_SAureus": folder = "Respiratorio"; prefix = "SAureus"; width = 2f; break;
+                case "Bacteria_SAureus_Coco": folder = "Respiratorio"; prefix = "SAureusCoco"; width = 0.9f; break;
+                case "Bacteria_Pertussis": folder = "Respiratorio"; prefix = "Pertussis"; width = 1.5f; break;
+                case "Bacteria_Neumococo": folder = "Respiratorio"; prefix = "Neumococo"; width = 1.6f; break;
+                case "Virus_Influenza": folder = "Respiratorio"; prefix = "Influenza"; width = 1.6f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_Tuberculosis": folder = "Respiratorio"; prefix = "Tuberculosis"; width = 2f; break;
+                // Nervioso
+                case "Virus_Poliovirus": folder = "Nervioso"; prefix = "Poliovirus"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_Meningococo": folder = "Nervioso"; prefix = "Meningococo"; width = 1.6f; break;
+                case "Virus_Herpes": folder = "Nervioso"; prefix = "Herpes"; width = 1.5f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Virus_Rabia": folder = "Nervioso"; prefix = "Rabia"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
                 default: return;
             }
 

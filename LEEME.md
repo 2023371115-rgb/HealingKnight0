@@ -256,6 +256,16 @@ si pones un PNG con el nombre indicado en `Art/Respiratorio/` o `Art/Nervioso/`,
 
 Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`).
 
+
+**Dibujos de enemigos del Respiratorio, Nervioso y Boca:**
+- Ponlos en `Art/Enemigos/Respiratorio/`, `Art/Enemigos/Nervioso/` o `Art/Enemigos/Boca/`.
+- El nombre de cada archivo es `<Prefijo>_<Pose>.png`.
+- Poses: Normal, Mueve, Ataca, Dano, Muere. Si falta alguna, se usa la más parecida.
+- Prefijos:
+  - Boca: SMutans.
+  - Respiratorio: Rinovirus, Polen, SAureus, SAureusCoco, Pertussis, Neumococo, Influenza, Tuberculosis.
+  - Nervioso: Poliovirus, Meningococo, Herpes, Rabia.
+
 ## Menú y mapa del cuerpo (estilo caricatura)
 
 El menú principal y el mapa del cuerpo se dibujan por código con el estilo del juego (`UI/CartoonUI.cs`): formas
