@@ -754,6 +754,8 @@ namespace HealingKnight.EditorTools
             var player = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Player.gameObject);
             player.transform.position = new Vector3(spawn.x, spawn.y, 0f);
 
+            foreach (string face in new[] { "Normal", "Alerta", "Feliz" })   // caras de NODO como Sprite (Resources)
+                PrefabSetup.ArtSprite($"{UIArtFolder}/Resources/Nodo/Nodo_{face}.png", 100f, new Vector2(0.5f, 0.5f));
             var hud = new GameObject("HUD", typeof(HUD)).GetComponent<HUD>();
             SetupUtils.SetRef(hud, "titleFont", signFont);                        // letra del globo de NODO y de los letreros
             SetupUtils.SetString(hud, "theme", signTheme.system ?? "Digestivo");  // color del globo de NODO
@@ -3056,20 +3058,57 @@ namespace HealingKnight.EditorTools
             }
         }
 
-        /// <summary>Ancho en el mundo de cada letrero y dónde va la palabra (fracción del dibujo: centro y tamaño).</summary>
-        private static void SignLayout(Signpost.Kind kind, out float width, out Rect text)
+        /// <summary>Ancho en el mundo de cada letrero (el alto sale del dibujo).</summary>
+        private static float SignWidth(Signpost.Kind kind)
         {
             switch (kind)
             {
-                case Signpost.Kind.Welcome: width = 4.2f; text = new Rect(0.5f, 0.72f, 0.78f, 0.30f); break;
-                case Signpost.Kind.Warning: width = 2.3f; text = new Rect(0.56f, 0.70f, 0.66f, 0.30f); break;
-                case Signpost.Kind.ArrowRight: width = 2.3f; text = new Rect(0.44f, 0.72f, 0.62f, 0.28f); break;
-                case Signpost.Kind.ArrowUp: width = 1.7f; text = new Rect(0.5f, 0.50f, 0.62f, 0.16f); break;
-                case Signpost.Kind.ArrowDown: width = 1.7f; text = new Rect(0.5f, 0.74f, 0.62f, 0.16f); break;
-                case Signpost.Kind.Secret: width = 1.2f; text = new Rect(0.5f, 0.72f, 0.6f, 0.3f); break;
-                case Signpost.Kind.Exit: width = 2.8f; text = new Rect(0.5f, 0.74f, 0.70f, 0.26f); break;
-                default: width = 2.3f; text = new Rect(0.5f, 0.72f, 0.78f, 0.34f); break;
+                case Signpost.Kind.Welcome: return 3.8f;
+                case Signpost.Kind.Warning: return 2.3f;
+                case Signpost.Kind.ArrowRight: return 2.3f;
+                case Signpost.Kind.ArrowUp: return 1.5f;
+                case Signpost.Kind.ArrowDown: return 1.6f;
+                case Signpost.Kind.Secret: return 1.2f;
+                case Signpost.Kind.Exit: return 2.5f;
+                default: return 2.1f;
             }
+        }
+
+        /// <summary>
+        /// Dónde va la palabra en cada dibujo: centro y tamaño como fracción del dibujo (x desde la izquierda,
+        /// y desde abajo). Medido sobre el tablero en blanco de cada letrero (Tools: zona libre más grande).
+        /// </summary>
+        private static readonly Dictionary<string, Rect> SignTextAreas = new Dictionary<string, Rect>
+        {
+                { "Digestivo/Bienvenida", new Rect(0.496f, 0.713f, 0.623f, 0.239f) },
+                { "Digestivo/Info", new Rect(0.488f, 0.613f, 0.629f, 0.231f) },
+                { "Digestivo/Peligro", new Rect(0.581f, 0.714f, 0.411f, 0.286f) },
+                { "Digestivo/Salida", new Rect(0.326f, 0.694f, 0.295f, 0.304f) },
+                { "Digestivo/FlechaDerecha", new Rect(0.5f, 0.655f, 0.585f, 0.209f) },
+                { "Digestivo/FlechaArriba", new Rect(0.504f, 0.628f, 0.358f, 0.338f) },
+                { "Digestivo/FlechaAbajo", new Rect(0.519f, 0.684f, 0.332f, 0.359f) },
+                { "Digestivo/Secreto", new Rect(0.798f, 0.686f, 0.198f, 0.304f) },
+                { "Respiratorio/Bienvenida", new Rect(0.503f, 0.628f, 0.598f, 0.183f) },
+                { "Respiratorio/Info", new Rect(0.597f, 0.633f, 0.439f, 0.304f) },
+                { "Respiratorio/Peligro", new Rect(0.596f, 0.645f, 0.431f, 0.245f) },
+                { "Respiratorio/Salida", new Rect(0.332f, 0.622f, 0.301f, 0.282f) },
+                { "Respiratorio/FlechaDerecha", new Rect(0.511f, 0.635f, 0.536f, 0.215f) },
+                { "Respiratorio/FlechaArriba", new Rect(0.488f, 0.611f, 0.305f, 0.331f) },
+                { "Respiratorio/FlechaAbajo", new Rect(0.508f, 0.634f, 0.348f, 0.315f) },
+                { "Respiratorio/Secreto", new Rect(0.237f, 0.568f, 0.223f, 0.248f) },
+                { "Nervioso/Bienvenida", new Rect(0.501f, 0.662f, 0.575f, 0.223f) },
+                { "Nervioso/Info", new Rect(0.559f, 0.648f, 0.4f, 0.314f) },
+                { "Nervioso/Peligro", new Rect(0.576f, 0.639f, 0.383f, 0.239f) },
+                { "Nervioso/Salida", new Rect(0.345f, 0.636f, 0.299f, 0.272f) },
+                { "Nervioso/FlechaDerecha", new Rect(0.537f, 0.663f, 0.536f, 0.218f) },
+                { "Nervioso/FlechaArriba", new Rect(0.503f, 0.688f, 0.31f, 0.333f) },
+                { "Nervioso/FlechaAbajo", new Rect(0.48f, 0.696f, 0.285f, 0.333f) },
+                { "Nervioso/Secreto", new Rect(0.305f, 0.633f, 0.153f, 0.251f) },
+        };
+
+        private static Rect SignTextArea(string system, Signpost.Kind kind)
+        {
+            return SignTextAreas.TryGetValue($"{system}/{SignFile(kind)}", out Rect r) ? r : new Rect(0.5f, 0.68f, 0.6f, 0.25f);
         }
 
         /// <summary>Colores de los letreros de figuras (mientras no hay dibujo) según el sistema.</summary>
@@ -3109,8 +3148,8 @@ namespace HealingKnight.EditorTools
             go.transform.position = new Vector3(x, y, 0f);
             Transform board = SetupUtils.Child(go.transform, "Tablero", Vector3.zero).transform;
 
-            SignLayout(kind, out float width, out Rect layout);
-            Sprite art = PrefabSetup.ArtByWidth($"{SignArtRoot}/{signTheme.system}/Letrero_{SignFile(kind)}.png", width, new Vector2(0.5f, 0.02f));
+            Rect layout = SignTextArea(signTheme.system, kind);
+            Sprite art = PrefabSetup.ArtByWidth($"{SignArtRoot}/{signTheme.system}/Letrero_{SignFile(kind)}.png", SignWidth(kind), new Vector2(0.5f, 0.015f));
             Vector2 center, size;
             SignColors(kind, out Color post, out Color boardColor, out Color ink);
             const int order = -30;
@@ -3120,7 +3159,7 @@ namespace HealingKnight.EditorTools
                 r.flipX = flip;
                 Vector2 b = art.bounds.size;
                 float cx = flip ? 1f - layout.x : layout.x;
-                center = new Vector2((cx - 0.5f) * b.x, layout.y * b.y);
+                center = new Vector2((cx - 0.5f) * b.x, (layout.y - 0.015f) * b.y);   // el pivote está en la base
                 size = new Vector2(layout.width * b.x, layout.height * b.y);
                 if (kind == Signpost.Kind.Secret) label = null;   // el dibujo ya trae el "?"
             }

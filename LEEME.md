@@ -115,9 +115,10 @@ Cada nivel tiene **letreros** con el estilo de su sistema y NODO habla en un **g
 - **Globo de NODO:** baja desde arriba, escribe letra por letra y dura según lo largo del texto; si llegan varios,
   hace fila. Su color va con el sistema y su cara cambia: normal, alerta (rojo, si el mensaje empieza con "¡" o
   habla de peligro) y feliz (verde, premios y zona limpia).
-- **Dibujos (opcionales, sin ellos se arman con figuras):**
+- **Dibujos (ya están los de los tres sistemas y las caras de NODO; si borras uno, se arma con figuras):**
   - Letreros: `Art/Letreros/{Digestivo|Respiratorio|Nervioso}/Letrero_Bienvenida, _Info, _Peligro, _Salida,
-    _FlechaDerecha, _FlechaArriba, _FlechaAbajo, _Secreto.png`. Tablero en blanco: la palabra la escribe el juego.
+    _FlechaDerecha, _FlechaArriba, _FlechaAbajo, _Secreto.png`. Tablero en blanco: la palabra la escribe el juego
+    dentro de la zona medida de cada dibujo (`SignTextAreas` en `SceneSetup`); si cambias un dibujo, ajusta ahí su zona.
   - NODO: `Art/UI/Resources/Nodo/Nodo_Normal.png`, `Nodo_Alerta.png` y `Nodo_Feliz.png`.
 - **Dónde está:** `Gameplay/Level/Signpost.cs` (letrero), `ButtonPrompt.cs` (globo de botón), `UI/NodoBubble.cs`
   (globo de NODO). Se colocan en `SceneSetup`: `Tip(x, "PALABRA", "lo que dice NODO")` y `Sign(tipo, x, y, "PALABRA")`.

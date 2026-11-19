@@ -151,9 +151,20 @@ namespace HealingKnight.UI
             // Pantalla de NODO: tarjeta redonda con la insignia de la IA.
             Image card = CartoonUI.Blob(prologueRoot.transform, "Tarjeta", new Color(0.12f, 0.06f, 0.14f, 1f), new Vector2(1500f, 520f), 8f, 1.2f);
             UIFactory.Place((RectTransform)card.transform.parent, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 30f), new Vector2(1500f, 520f));
-            TextMeshProUGUI badge = CartoonUI.Badge(card.transform, "N", CartoonUI.Sky, 120f, 64f);
-            UIFactory.Place((RectTransform)badge.transform.parent.parent, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(110f, -20f), new Vector2(120f, 120f));
-            badge.transform.parent.parent.gameObject.AddComponent<UIBob>().height = 5f;
+            Sprite face = Resources.Load<Sprite>("Nodo/Nodo_Normal");   // la cara de NODO (Art/UI/Resources/Nodo)
+            if (face != null)
+            {
+                Image nodo = CartoonUI.Image(card.transform, "NODO", face, Color.white);
+                nodo.preserveAspect = true;
+                UIFactory.Place(nodo.rectTransform, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(110f, -20f), new Vector2(190f, 190f));
+                nodo.gameObject.AddComponent<UIBob>().height = 6f;
+            }
+            else
+            {
+                TextMeshProUGUI badge = CartoonUI.Badge(card.transform, "N", CartoonUI.Sky, 120f, 64f);
+                UIFactory.Place((RectTransform)badge.transform.parent.parent, new Vector2(0f, 1f), new Vector2(0.5f, 0.5f), new Vector2(110f, -20f), new Vector2(120f, 120f));
+                badge.transform.parent.parent.gameObject.AddComponent<UIBob>().height = 5f;
+            }
 
             prologueText = CartoonUI.Text(card.transform, "", 52f, CartoonUI.Cream, false, TextAlignmentOptions.Center, 0.12f);
             UIFactory.Stretch(prologueText.rectTransform, 70f);
