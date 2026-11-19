@@ -136,7 +136,7 @@ namespace HealingKnight.Gameplay.Enemies
         private void Pop()
         {
             if (visual != null) { visual.gameObject.SetActive(true); visual.localPosition = Vector3.zero; }
-            Sfx.EffectAt("Acido_Burbujeo", transform.position, 0.9f);
+            Sfx.EffectAt("Quiste_Sale", transform.position, 0.9f);
         }
 
         private void Surprise()
@@ -154,7 +154,7 @@ namespace HealingKnight.Gameplay.Enemies
             int next = cyst;
             if (cysts.Length > 1) while (next == cyst) next = Random.Range(0, cysts.Length);
             cyst = next;
-            Sfx.EffectAt("Alveolo_Desinfla", transform.position, 0.7f);
+            Sfx.EffectAt("Quiste_Entra", transform.position, 0.8f);
             Hide();
         }
 

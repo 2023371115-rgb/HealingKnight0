@@ -49,7 +49,7 @@ namespace HealingKnight.Gameplay.Level
                 if (b != null) b.Add(bombs);
             }
             GameplayEvents.RaiseMessage(message);
-            Sfx.Effect("Bomba_Ganada", 0.9f);
+            Sfx.Effect("Recoger_Vida", 0.9f);
             gameObject.SetActive(false);
         }
 

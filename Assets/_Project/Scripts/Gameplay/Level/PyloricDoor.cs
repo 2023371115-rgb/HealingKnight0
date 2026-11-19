@@ -35,7 +35,7 @@ namespace HealingKnight.Gameplay.Level
                 isOpen = true;
                 Show(true);
                 pop = 1f;
-                Sfx.Effect("Diente_Secreto", 0.8f);
+                Sfx.Effect("Puerta_Abre", 0.9f);
                 if (!string.IsNullOrEmpty(openMessage)) GameplayEvents.RaiseMessage(openMessage);
             }
 

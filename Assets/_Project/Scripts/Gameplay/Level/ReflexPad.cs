@@ -43,7 +43,7 @@ namespace HealingKnight.Gameplay.Level
             if (cooldown > 0f) cooldown -= dt;
             PlayerController player = PlayerController.Current;
             bool on = CodeSprites.Standing(player, transform.position, width);
-            if (armed < 0f && on && cooldown <= 0f) { armed = delay; Sfx.EffectAt("Neurona_Carga", transform.position, 0.6f); }
+            if (armed < 0f && on && cooldown <= 0f) { armed = delay; Sfx.EffectAt("Reflejo_Arma", transform.position, 0.6f); }
             if (armed >= 0f)
             {
                 armed -= dt;
@@ -55,7 +55,7 @@ namespace HealingKnight.Gameplay.Level
                     if (CodeSprites.Standing(player, transform.position, width + 0.4f))
                     {
                         player.Bounce(height, 15.8f * Mathf.Sqrt(height / 4f));
-                        Sfx.Effect("Neurona_Descarga", 0.8f);
+                        Sfx.Effect("Reflejo_Salta", 0.9f);
                         Camera cam = Camera.main;
                         if (cam != null && cam.TryGetComponent(out GameCamera gc)) gc.Shake(0.12f, 0.15f);
                         if (!explained && !string.IsNullOrEmpty(firstMessage)) { explained = true; GameplayEvents.RaiseMessage(firstMessage); }

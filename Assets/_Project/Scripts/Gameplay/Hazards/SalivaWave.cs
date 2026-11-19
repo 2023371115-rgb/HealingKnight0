@@ -58,7 +58,7 @@ namespace HealingKnight.Gameplay.Hazards
                     hit.Clear();
                     healedPlayer = false;
                     wave.gameObject.SetActive(true);
-                    Sfx.Effect("Acido_Burbujeo", 0.7f);
+                    Sfx.Effect("Saliva_Ola", 0.8f);
                     if (!said && !string.IsNullOrEmpty(message)) { said = true; GameplayEvents.RaiseMessage(message); }
                 }
                 return;

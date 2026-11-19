@@ -108,7 +108,7 @@ namespace HealingKnight.Gameplay.Hazards
             brokenTimer = reformTime;
             breakAnim = 0f;
             floor.enabled = false;
-            Sfx.EffectAt("Alveolo_Desinfla", transform.position, 0.7f);
+            Sfx.EffectAt("Grasa_Revienta", transform.position, 0.7f);
         }
 
         private void Reform()

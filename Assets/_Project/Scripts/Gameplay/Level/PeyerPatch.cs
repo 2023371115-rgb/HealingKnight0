@@ -76,7 +76,7 @@ namespace HealingKnight.Gameplay.Level
             if (LevelManager.Current != null) LevelManager.Current.SetCheckpoint(transform.position.x + 1f);
             player.Health.Heal(heal);
             GameplayEvents.RaiseMessage(message);
-            Sfx.Effect("Bomba_Ganada", 0.7f);
+            Sfx.Effect("Inmune_Activa", 0.8f);
         }
 
         private void Build()

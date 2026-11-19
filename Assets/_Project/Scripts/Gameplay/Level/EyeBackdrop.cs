@@ -81,7 +81,7 @@ namespace HealingKnight.Gameplay.Level
             if (blinkT < 0f)
             {
                 blinkTimer -= dt;
-                if (blinkTimer <= 0f) { blinkT = 0f; Sfx.Effect("Alveolo_Desinfla", 0.25f); }
+                if (blinkTimer <= 0f) { blinkT = 0f; Sfx.Effect("Ojo_Parpadeo", 0.35f); }
             }
             else
             {

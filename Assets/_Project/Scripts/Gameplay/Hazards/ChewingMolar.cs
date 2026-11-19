@@ -76,7 +76,7 @@ namespace HealingKnight.Gameplay.Hazards
             if (k >= 0.99f && !hitThisBite)
             {
                 hitThisBite = true;
-                Sfx.EffectAt("Lombriz_Retumbo", transform.position, 0.6f);
+                Sfx.EffectAt("Muela_Mastica", transform.position, 0.8f);
                 Camera cam = Camera.main;
                 if (cam != null && cam.TryGetComponent(out GameCamera gc)) gc.Shake(0.15f, 0.15f);
             }

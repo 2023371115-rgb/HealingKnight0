@@ -85,7 +85,7 @@ namespace HealingKnight.Gameplay.Level
             visual.gameObject.SetActive(false);
             player.Health.Heal(heal);
             int total = all.Count;
-            Sfx.Effect("Bomba_Ganada", 0.6f);
+            Sfx.Effect("Memoria_Recoge", 0.8f);
             string head = $"Recuerdo recuperado ({collected}/{total})";
             if (collected == total && lost == 0)
             {

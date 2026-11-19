@@ -55,7 +55,7 @@ namespace HealingKnight.Gameplay.Level
             if (Vector2.Distance(player.Position + Vector2.up * 0.9f, transform.position) > 1f) return;
             if (player.Health.Current >= player.Health.Max) return;
             player.Health.Heal(heal);
-            Sfx.EffectAt("Alveolo_Infla", transform.position, 0.8f);
+            Sfx.EffectAt("Oxigeno_Recoge", transform.position, 0.8f);
             visual.gameObject.SetActive(false);
             hiddenFor = respawn;
         }

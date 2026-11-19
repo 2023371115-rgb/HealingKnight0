@@ -120,7 +120,7 @@ namespace HealingKnight.Gameplay.Hazards
         {
             b.active = false;
             b.root.SetActive(false);
-            Sfx.EffectAt("Alveolo_Desinfla", b.root.transform.position, 0.6f);
+            Sfx.EffectAt("Gas_Revienta", b.root.transform.position, 0.7f);
         }
 
         private Bubble Create()

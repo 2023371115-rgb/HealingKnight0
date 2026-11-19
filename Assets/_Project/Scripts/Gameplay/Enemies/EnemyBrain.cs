@@ -165,8 +165,18 @@ namespace HealingKnight.Gameplay.Enemies
             {
                 state = State.Special;
                 timer = data.specialDuration;
+                PlaySound("Especial", 0.7f);
             }
         }
+
+        /// <summary>
+        /// Sonido de un momento del enemigo, por nombre de archivo en Audio/Resources/SFX:
+        /// "&lt;archivo&gt;_&lt;evento&gt;" (Virus_Rotavirus_Prepara), si no "&lt;tipo&gt;_&lt;evento&gt;" (Virus_Prepara), si no
+        /// "Enemigo_&lt;evento&gt;". Eventos: Prepara (aviso antes de atacar), Ataca (cuerpo a cuerpo), Especial
+        /// (se entierra, se vuelve espora, latente...), Eclosiona (huevo). Si no hay archivo, no suena nada.
+        /// </summary>
+        private void PlaySound(string evento, float volume = 1f) =>
+            Sfx.PlayAt(Sfx.EnemySound(data, evento), Position, CombatAudio.Enemies * volume);
 
         private void Update()
         {
@@ -679,6 +689,7 @@ namespace HealingKnight.Gameplay.Enemies
             timer = data.attackWindup;
             attackDirection = direction;
             health.SetTelegraph(true);
+            PlaySound("Prepara", 0.7f);
             PlayerController p = PlayerController.Current;
             lockedTarget = p != null ? p.Position + Vector2.up * 0.8f : Position;
         }
@@ -717,6 +728,8 @@ namespace HealingKnight.Gameplay.Enemies
         {
             health.SetTelegraph(false);
             attackLanded = false;
+            // Los que disparan ya suenan con su disparo (tos, polen que revienta, ráfagas).
+            if (!rangedAttack && Behavior != EnemyBehavior.Drifter && Behavior != EnemyBehavior.Cougher) PlaySound("Ataca");
 
             if (rangedAttack)
             {
@@ -1169,6 +1182,7 @@ namespace HealingKnight.Gameplay.Enemies
             timer = duration;
             health.SetTelegraph(false);
             AttackTokens.Release(this);
+            PlaySound("Especial");
         }
 
         private void EndSpecial()
@@ -1280,6 +1294,7 @@ namespace HealingKnight.Gameplay.Enemies
                     if (timer <= 0f)
                     {
                         // ¡Sale disparado hacia arriba!
+                        PlaySound("Ataca");
                         health.SetTelegraph(false);
                         health.Invulnerable = false;
                         fadeTarget = 1f;
@@ -1303,6 +1318,7 @@ namespace HealingKnight.Gameplay.Enemies
 
         private void Hatch()
         {
+            PlaySound("Eclosiona");
             SpawnChildren(1);
             state = State.Dead;
             Destroy(gameObject); // el cascarón se rompe (no cuenta como "derrotado")

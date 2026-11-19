@@ -53,7 +53,7 @@ namespace HealingKnight.Gameplay.Level
 
             sys.Deliver();
             pulse = 1f;
-            Sfx.EffectAt("Bomba_Ganada", center, 0.9f);
+            Sfx.EffectAt("Inmune_Activa", center, 0.9f);
             if (allies.Count >= maxAllies && allies.Count > 0) { Destroy(allies[0].gameObject); allies.RemoveAt(0); }
             var go = new GameObject("LinfocitoB");
             go.transform.position = center + Random.insideUnitCircle * 0.8f;

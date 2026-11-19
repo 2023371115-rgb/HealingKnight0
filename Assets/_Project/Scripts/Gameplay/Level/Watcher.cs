@@ -165,7 +165,7 @@ namespace HealingKnight.Gameplay.Level
                 if (near && lit[i] <= 0f)
                 {
                     lit[i] = 3f;
-                    if (i == step) { StealthMeter.Current?.Noise(noise); Sfx.EffectAt("Neurona_Golpe", cells[i].position, 0.25f); }
+                    if (i == step) { StealthMeter.Current?.Noise(noise); Sfx.EffectAt("Piso_Ruidoso", cells[i].position, 0.5f); }
                 }
                 if (lit[i] > 0f) lit[i] -= dt;
                 float k = Mathf.Clamp01(lit[i]);

@@ -72,7 +72,7 @@ namespace HealingKnight.Gameplay.Hazards
                     Projectile s = shots[i];
                     if (s == null || s.SourceTeam != Team.Player || Vector2.Distance(s.Position, p) > 0.55f) continue;
                     s.Consume();
-                    Sfx.EffectAt("Impacto_Antibiotico", p, 0.5f);
+                    Sfx.EffectAt("Azucar_Rompe", p, 0.6f);
                     Kill(c);
                     break;
                 }

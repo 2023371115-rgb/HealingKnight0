@@ -130,7 +130,7 @@ namespace HealingKnight.Gameplay.Hazards
             b.floor.enabled = false;
             b.art.localScale = Vector3.one;
             b.art.localRotation = Quaternion.identity;
-            Sfx.EffectAt("Acido_Burbujeo", from, 0.5f);
+            Sfx.EffectAt("Moco_Dispara", from, 0.7f);
         }
 
         private void StepBall(Ball b, PlayerController player, float dt)
@@ -164,7 +164,7 @@ namespace HealingKnight.Gameplay.Hazards
                     b.floor.enabled = true;
                     b.art.localRotation = Quaternion.identity;
                     b.art.localScale = ballArt != null ? new Vector3(1.6f, 1.1f, 1f) : new Vector3(1.6f, 0.7f, 1f);
-                    Sfx.EffectAt("Alveolo_Desinfla", hit.point, 0.4f);
+                    Sfx.EffectAt("Moco_Splat", hit.point, 0.6f);
                     return;
                 }
                 b.root.position = next;

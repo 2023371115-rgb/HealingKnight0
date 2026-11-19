@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using HealingKnight.Core.Flow;
+using HealingKnight.Gameplay.Audio;
 using HealingKnight.Gameplay.Enemies;
 using TMPro;
 using UnityEngine;
@@ -116,6 +117,7 @@ namespace HealingKnight.UI
                 toastPicture.enabled = e.portrait != null;
                 toastTimer = 0f;
                 toast.gameObject.SetActive(true);
+                Sfx.Effect("Bestiario_Nuevo", 0.7f);
             }
 
             toastTimer += Time.unscaledDeltaTime;

@@ -97,7 +97,7 @@ namespace HealingKnight.Gameplay.Hazards
                         Blowing++;
                         timer = duration;
                         if (!string.IsNullOrEmpty(blastMessage) && !explained) { explained = true; GameplayEvents.RaiseMessage(blastMessage); }
-                        Sfx.Effect("Alveolo_Desinfla", 1f);
+                        Sfx.Effect(useMeter ? "Estornudo" : "Tos_Rafaga", 1f);
                         Shake(0.3f, duration);
                     }
                     break;
@@ -129,7 +129,7 @@ namespace HealingKnight.Gameplay.Hazards
             state = State.Warning;
             timer = warning;
             if (!string.IsNullOrEmpty(warnMessage)) GameplayEvents.RaiseMessage(warnMessage);
-            Sfx.Effect("Lombriz_Retumbo", 0.5f);
+            Sfx.Effect(useMeter ? "Estornudo_Aviso" : "Tos_Aviso", 0.8f);
             Shake(0.06f, warning);
         }
 

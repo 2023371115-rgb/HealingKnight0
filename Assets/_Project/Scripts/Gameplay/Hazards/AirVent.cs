@@ -78,7 +78,7 @@ namespace HealingKnight.Gameplay.Hazards
             {
                 launchedThisBlow = true;
                 player.Bounce(launchHeight, 15.8f * Mathf.Sqrt(launchHeight / 4f));
-                Sfx.Effect("Alveolo_Rebote", 0.9f);
+                Sfx.Effect("Aire_Impulso", 0.9f);
             }
         }
 

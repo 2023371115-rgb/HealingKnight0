@@ -101,7 +101,7 @@ namespace HealingKnight.Gameplay.Level
                         if (demoIndex > 0) SetColor(order[demoIndex - 1], idle);
                         if (demoIndex >= order.Length) { state = State.Input; progress = 0; break; }
                         SetColor(order[demoIndex], show);
-                        Sfx.EffectAt("Neurona_Carga", neurons[order[demoIndex]], 0.6f);
+                        Note(order[demoIndex], 0.6f);
                         demoIndex++;
                         timer = 0.7f;
                     }
@@ -143,14 +143,14 @@ namespace HealingKnight.Gameplay.Level
                 if (i == order[progress])
                 {
                     SetColor(i, good);
-                    Sfx.EffectAt("Neurona_Descarga", neurons[i], 0.7f);
+                    Note(i, 0.8f);
                     progress++;
                     if (progress >= order.Length) Solve();
                 }
                 else
                 {
                     SetColor(i, bad);
-                    Sfx.Effect("Rayo_Cae", 0.5f);
+                    Sfx.Effect("Secuencia_Error", 0.7f);
                     DamageInfo info = DamageInfo.Create(5f, DamageKind.Contact, Team.Enemy, neurons[i]);
                     info.knockback = 5f;
                     player.Health.ApplyDamage(info);
@@ -161,10 +161,14 @@ namespace HealingKnight.Gameplay.Level
             }
         }
 
+        /// <summary>Cada neurona tiene su nota (Secuencia_Nota_0..4): así el orden también se aprende de oído.</summary>
+        private void Note(int i, float volume) =>
+            Sfx.PlayAt(Sfx.LoadFirst("Secuencia_Nota_" + (i % 5), "Neurona_Carga"), neurons[i], CombatAudio.Effects * volume, 0f);
+
         private void Solve()
         {
             state = State.Solved;
-            Sfx.Effect("Bomba_Ganada", 0.8f);
+            Sfx.Effect("Secuencia_Correcta", 0.9f);
             GameplayEvents.RaiseMessage("¡Circuito completo! La compuerta se abre.");
             if (gate != null) Destroy(gate);
             foreach (SpriteRenderer r in cores) r.color = good;

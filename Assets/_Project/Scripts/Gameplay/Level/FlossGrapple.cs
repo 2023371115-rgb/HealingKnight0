@@ -96,7 +96,7 @@ namespace HealingKnight.Gameplay.Level
 
             if (hook.Rippable && hook.Pull(Time.deltaTime))
             {
-                Sfx.EffectAt("Escudo_Parry", hook.transform.position, 0.8f);
+                Sfx.EffectAt("Hilo_Engancha", hook.transform.position, 0.8f);
                 // Jalón: sales disparado hacia atrás.
                 Vector2 away = (Hand(p) - (Vector2)hook.transform.position).normalized;
                 Release(p, false);

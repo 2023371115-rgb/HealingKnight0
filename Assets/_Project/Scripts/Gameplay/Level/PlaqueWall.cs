@@ -59,7 +59,7 @@ namespace HealingKnight.Gameplay.Level
             hook.Configure(0.8f, true, 3.5f);
             hook.Ripped += _ =>
             {
-                Sfx.EffectAt("Bomba_Ganada", transform.position, 0.6f);
+                Sfx.EffectAt("Placa_Rompe", transform.position, 0.8f);
                 GameplayEvents.RaiseMessage("¡Placa arrancada! Así limpia el hilo dental.");
                 Destroy(gameObject);
             };

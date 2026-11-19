@@ -43,7 +43,7 @@ namespace HealingKnight.Gameplay.Level
             if (Vector2.Distance(player.Position + Vector2.up * 0.9f, transform.position) > radius + 0.6f) return;
             FriendlyBacteria.Rally(duration);
             GameplayEvents.RaiseMessage(message);
-            Sfx.Effect("Bomba_Ganada", 0.9f);
+            Sfx.Effect("Recoger_Capsula", 0.9f);
             hidden = true;
             hiddenUntil = Time.time + respawnTime;
             if (visual != null) visual.gameObject.SetActive(false);

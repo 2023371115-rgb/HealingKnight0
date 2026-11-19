@@ -111,7 +111,7 @@ namespace HealingKnight.Gameplay.Level
         private void StartUveitis(PlayerController p)
         {
             uveitis = uveitisTime;
-            Sfx.Effect("Rabia_Chillido", 0.7f);
+            Sfx.Effect("Sigilo_Detectado", 0.8f);
             GameplayEvents.RaiseMessage("¡UVEÍTIS! Te detectaron: el ojo se inflamó y casi no se ve. ¡Llegan defensas!");
             if (reinforcement == null || p == null) return;
             for (int i = 0; i < 2; i++)

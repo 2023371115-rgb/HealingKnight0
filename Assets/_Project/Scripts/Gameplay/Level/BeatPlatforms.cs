@@ -70,7 +70,7 @@ namespace HealingKnight.Gameplay.Level
                 lastBeat = index;
                 PlayerController p = PlayerController.Current;
                 if (p != null && pads.Count > 0 && Mathf.Abs(p.Position.x - pads[0].box.transform.position.x) < 25f)
-                    Sfx.Effect("Neurona_Golpe", 0.3f);
+                    Sfx.Effect("Pulso_Ritmo", 0.35f);
             }
 
             foreach (Pad pad in pads)

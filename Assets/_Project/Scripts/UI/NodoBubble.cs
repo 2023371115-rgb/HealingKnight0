@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using HealingKnight.Gameplay.Audio;
 using TMPro;
 using UnityEngine;
 using UnityEngine.UI;
@@ -132,6 +133,7 @@ namespace HealingKnight.UI
             if (mood == Mood.Alert) panelColor = Color.Lerp(theme.panel, new Color(0.62f, 0.12f, 0.1f), 0.55f);
             if (mood == Mood.Happy) panelColor = Color.Lerp(theme.panel, new Color(0.15f, 0.45f, 0.25f), 0.5f);
             panel.color = panelColor;
+            Sfx.Effect(mood == Mood.Alert ? "Nodo_Alerta" : "Nodo_Mensaje", 0.6f);
             if (portrait != null)
                 portrait.sprite = mood == Mood.Alert && alertFace != null ? alertFace : mood == Mood.Happy && happyFace != null ? happyFace : normalFace;
             shake = mood == Mood.Alert ? 0.35f : 0f;

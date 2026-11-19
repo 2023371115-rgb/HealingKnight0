@@ -60,7 +60,7 @@ namespace HealingKnight.Gameplay.Hazards
                         front = player.Position.x - startGap;
                         visual.gameObject.SetActive(true);
                         GameplayEvents.RaiseMessage(startMessage);
-                        Sfx.Effect("Lombriz_Ruge", 0.9f);
+                        Sfx.Effect("Peristalsis_Ola", 1f);
                         Shake(0.25f, 0.6f);
                     }
                     break;

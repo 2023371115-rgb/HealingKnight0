@@ -483,9 +483,10 @@ Todos los sonidos viven en `Assets/_Project/Audio/Resources/SFX` y el juego los 
 | `Jugador_Salto`, `Jugador_SaltoDoble`, `Jugador_Herido`, `Jugador_Muere` | Jugador |
 | `Escudo_Bloquea`, `Escudo_Parry`, `Escudo_Rompe` | Escudo |
 | `Bomba_Lanza`, `Bomba_Explota`, `Bomba_Ganada` | Bombas (ganada = se llenó la barra peleando) |
-| `<archivo del enemigo>_Disparo` / `_Muere` | Un enemigo en particular, p. ej. `Virus_Rinovirus_Muere` |
-| `<tipo>_Disparo` / `_Muere` | Todo un tipo si el enemigo no tiene el suyo: `Virus_`, `Bacteria_`, `Parasito_`, `Bloqueo_`, `Jefe_`... |
-| `Enemigo_Disparo` / `Enemigo_Muere` | Lo que no tenga ninguno de los dos anteriores |
+| `<archivo del enemigo>_<evento>` | Un enemigo en particular, p. ej. `Virus_Rinovirus_Disparo` (estornuda) o `Bacteria_SAureus_Muere` (¡plip-plop!) |
+| `<tipo>_<evento>` | Todo un tipo si el enemigo no tiene el suyo: `Virus_`, `Bacteria_`, `Parasito_`, `Alergeno_`, `Bloqueo_`, `Jefe_`... |
+| `Enemigo_<evento>` | Lo que no tenga ninguno de los dos anteriores |
+| Eventos de enemigo | `Disparo`, `Muere`, `Prepara` (el aviso antes de atacar: se infla, gruñe, toma aire), `Ataca` (embestida, mordida, brinco, sale de abajo), `Especial` (se entierra, se vuelve espora o granuloma, se hace latente, aparece el huevo), `Eclosiona` (el huevo se rompe). Si un evento no tiene archivo, no suena |
 | `Neurona_Hiperexcitada_Muere` | Calmar una neurona roja (vuelve a ser sana) |
 | `Acido_Burbujeo` (bucle), `Acido_Quema` | Charco de ácido: burbujea cerca, chisporrotea al quemarte |
 | `Lombriz_Retumbo`, `Lombriz_Sale`, `Lombriz_Entra`, `Lombriz_Ruge` | Aviso bajo tierra, salir, meterse, quedar expuesta / huir |
@@ -496,9 +497,24 @@ Todos los sonidos viven en `Assets/_Project/Audio/Resources/SFX` y el juego los 
 | `Campo_Neuroprotector` | Bomba de anticonvulsivo |
 | `Rabia_Chillido` | La cadena de rabia da la vuelta |
 | `Diente_Secreto` | Tocar el diente secreto del Estómago (lleva a la Boca) |
-| `Ambiente_<Sistema>` (bucle) | Fondo de cada sistema según el nombre de la escena (`Ambiente_Digestivo`, `_Respiratorio`, `_Nervioso`). `Ambiente_<Escena>` (p. ej. `Ambiente_Nervioso_Hipocampo`) le gana para un nivel en particular |
+| `Gas_Revienta`, `Moco_Dispara`, `Moco_Splat`, `Grasa_Revienta`, `Saliva_Ola`, `Azucar_Rompe`, `Muela_Mastica`, `Peristalsis_Ola`, `Puerta_Abre` | Burbujas de gas, cañón de moco, gotas de grasa, ola de saliva, lluvia de azúcar, muela, peristalsis, píloro |
+| `Estornudo_Aviso` / `Estornudo`, `Tos_Aviso` / `Tos_Rafaga` | Ráfagas de la nariz ("a... a... ¡ACHÚ!") y de la tráquea |
+| `Tos_Inhala`, `Tos_Fuerte` | Reina de la tos ferina: toma aire con silbido ("whoop") y tose |
+| `Aire_Impulso`, `Oxigeno_Recoge` | Ventila de aire, burbuja de oxígeno |
+| `Quiste_Sale`, `Quiste_Entra` | El toxoplasma sale y se esconde en sus quistes |
+| `Ojo_Parpadeo`, `Memoria_Desvanece`, `Memoria_Recoge` | Parpadeo del ojo, burbuja de memoria que se borra, fragmento de memoria |
+| `Piso_Ruidoso`, `Sigilo_Detectado` | Piso que cruje en el Ojo (te pueden oír) y el "¡!" cuando te ven |
+| `Pulso_Ritmo`, `Reflejo_Arma`, `Reflejo_Salta` | Plataformas al ritmo, almohadilla de reflejo |
+| `Secuencia_Nota_0`…`_4`, `Secuencia_Error`, `Secuencia_Correcta` | Puzle del lóbulo frontal: cada neurona tiene su nota (el orden también se aprende de oído) |
+| `Recoger_Vida`, `Recoger_Capsula`, `Inmune_Activa`, `Placa_Rompe`, `Hilo_Engancha` | Vida, cápsulas (omeprazol, probiótico), placas de Peyer y centro germinal, placa que se rompe, hilo dental |
+| `Nodo_Mensaje`, `Nodo_Alerta`, `Bestiario_Nuevo` | Llega un mensaje de NODO (normal o urgente), patógeno nuevo en el bestiario |
+| `Ambiente_<Escena>` (bucle) | Fondo de cada nivel (los 12 tienen el suyo): el estómago revuelve y burbujea, la nariz respira, los pulmones respiran al mismo ritmo que el nivel (5.5 s) con el corazón al lado, la médula zumba y manda impulsos de un oído al otro, el hipocampo tiene campanitas de recuerdos, el ojo casi no suena (sigilo). Si una escena no tiene el suyo, usa `Ambiente_<Sistema>` |
 
 Los sonidos que pasan fuera de la pantalla se oyen más bajo y, si están muy lejos, no suenan. Disparos e impactos: cortos (menos de 0.2 s) y en mono.
+
+Los efectos los hace `Tools/Audio/generar_sonidos.py` (ahora con filtros, FM, reverb y eco por sonido) y los ambientes
+de nivel `Tools/Audio/generar_ambientes.py` (bucles estéreo de 16 s; casi todo ruido y eventos sueltos, sin notas,
+para no chocar con la música).
 
 ## Música adaptativa (por capas)
 
@@ -519,11 +535,32 @@ La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
 
 - Archivos: `Assets/_Project/Audio/Resources/MusicAdaptive/<NombreDeLaEscena>/` con `Ambiente, Armonia, Melodia,
   Bajo, Percusion, Combate, Victoria` (y `Entrada` en las de jefe) + `manifest.json` (BPM, compases, largo).
-- Los genera `Tools/Audio/generar_musica_adaptativa.py` (v4: estructura integrada al juego + motor de sonido de la v3 del
-  equipo: acid con filtro resonante, pads supersaw, lead de trance, pluck y reese; melodía con pluck en el digestivo,
-  lead en el respiratorio y campanas en el nervioso) (`--todos`, o `--nivel Digestivo_Estomago --preview`
+- Los genera `Tools/Audio/generar_musica_adaptativa.py` (v5) (`--todos`, o `--nivel Digestivo_Estomago --preview`
   para oír la mezcla completa en `Tools/Audio/preview/`). Cada capa queda a un volumen fijo para que ninguna tape a
   las demás, y todas juntas nunca pasan de 0.9.
+- Cada nivel sigue el género de su sistema:
+
+| Nivel | Género | BPM | Qué la hace distinta |
+|---|---|---|---|
+| Boca (secreto) | Acid house | 124 | Rebota: acid de onda cuadrada, shuffle y cencerro |
+| Estómago | Acid house | 128 | El clásico: 303 con acentos y slides, órgano de house |
+| Intestino delgado | Acid house | 126 | Groove: más swing, acordes de 4 notas y shaker |
+| Intestino grueso | Acid techno | 130 | Oscuro: bombo con retumbo, 303 distorsionada, stabs |
+| Jefe digestivo | Acid house pesado | 134 | Dos 303, palmadas en cada tiempo al final |
+| Nariz | Trance | 136 | Aire: lidio, bajo galopante, pad picado ("trancegate") |
+| Tráquea | Trance | 138 | Clásico: bajo rodante, arpegios con eco |
+| Pulmones | Trance | 138 | Respira: el pad se abre y crece al inhalar, bajo en contratiempo |
+| Amígdalas (secreto) | Trance aireado | 136 | Campanitas de vidrio en lugar de arpegio |
+| Jefe respiratorio | Psytrance | 145 | Bajo "bum-ba-ba-ba", acid agudo, gritos psicodélicos |
+| Médula | Neurofunk | 172 | Rodante: bajo reese que no para |
+| Cerebro | Neurofunk | 174 | Stabs con eco, reese que "habla" en el combate |
+| Hipocampo | Neurofunk | 174 | Memoria: campanas de vidrio con mucho eco y recuerdos al revés |
+| Ojo (secreto) | Liquid drum & bass | 160 | Sigilo: rhodes, sub tibio, batería suave |
+| Jefe nervioso | Neurofunk pesado | 176 | Batería partida, reese y growl más duros |
+
+- Producción v5: arreglo de 32 compases (A, A', B, B') con la melodía que cambia, redobles al final de cada 8,
+  subidas de ruido y platillo antes de cada parte nueva, reverb y eco que dan la vuelta al loop (no se nota el corte),
+  bombeo con el bombo (sidechain), swing en el house y un limitador suave en la batería.
 - **Para Victor:** si hace su música, que exporte cada canción en esas 6 capas (mismo largo exacto, en loop) con los
   mismos nombres, y edite el `manifest.json` (sobre todo `bpm` y `bars`, que se usan para cambiar en el compás).
 - Si una escena no tiene carpeta, suena la pista normal de `Resources/Music` como antes.

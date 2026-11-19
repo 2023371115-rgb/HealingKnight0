@@ -75,7 +75,7 @@ namespace HealingKnight.Gameplay.Level
                 box.enabled = false;
                 hidden = respawn;
                 SetAlpha(0f);
-                Sfx.EffectAt("Alveolo_Desinfla", transform.position, 0.5f);
+                Sfx.EffectAt("Memoria_Desvanece", transform.position, 0.6f);
             }
         }
 

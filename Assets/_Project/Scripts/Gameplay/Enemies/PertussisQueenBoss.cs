@@ -136,7 +136,7 @@ namespace HealingKnight.Gameplay.Enemies
                         cycles++;
                         minions.RemoveAll(m => m == null || !m.IsAlive);
                         if (phase >= 2 && cycles % 3 == 0 && minions.Count < 3) { state = State.Summon; timer = 0.8f; }
-                        else { state = State.Inhale; timer = 1f; Sfx.EffectAt("Alveolo_Infla", transform.position); }
+                        else { state = State.Inhale; timer = 1f; Sfx.EffectAt("Tos_Inhala", transform.position); }
                     }
                     break;
 
@@ -188,7 +188,7 @@ namespace HealingKnight.Gameplay.Enemies
 
         private void CoughOnce(PlayerController player, int phase)
         {
-            Sfx.EffectAt("Alveolo_Desinfla", transform.position, 1f);
+            Sfx.EffectAt("Tos_Fuerte", transform.position, 1f);
             Camera cam = Camera.main;
             if (cam != null && cam.TryGetComponent(out GameCamera gc)) gc.Shake(0.2f, 0.2f);
             SpawnWave(-1);
