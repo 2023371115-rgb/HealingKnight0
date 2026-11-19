@@ -26,6 +26,8 @@ namespace HealingKnight.Gameplay.Enemies
         [SerializeField] private string bossName = "CÁLCULO GIGANTE";
         [SerializeField] private string rewardSecret = "premio_depuracion";
         [SerializeField] private float radius = 2.6f;
+        [Tooltip("Dónde brillan las 3 grietas (en orden), respecto al centro de la piedra. Si hay dibujo, donde están dibujadas.")]
+        [SerializeField] private Vector2[] crackSpots = { new Vector2(-1.7f, -0.9f), new Vector2(0.2f, 1.9f), new Vector2(1.7f, -0.8f) };
         [SerializeField] private float slamEvery = 4.5f;
 
         private class Crack { public Vector2 local; public Transform glow; }
@@ -103,15 +105,21 @@ namespace HealingKnight.Gameplay.Enemies
             }
         }
 
+        /// <summary>Dónde están las grietas del dibujo (las pone PrefabSetup).</summary>
+        public void ConfigureCracks(Vector2 first, Vector2 second, Vector2 third) => crackSpots = new[] { first, second, third };
+
         private void BuildCracks()
         {
-            foreach (Vector2 c in new[] { new Vector2(-1.7f, -0.9f), new Vector2(0.2f, 1.9f), new Vector2(1.7f, -0.8f) })
+            foreach (Vector2 c in crackSpots)
             {
                 var crack = new Crack { local = c };
                 Transform g = new GameObject("Grieta").transform;
                 g.SetParent(art, false);
                 g.localPosition = c;
-                CodeSprites.Add(g, CodeSprites.Glow, new Color(0.5f, 0.9f, 1f, 0.8f), 15, Vector2.zero, Vector2.one * 1.8f, "Brillo");
+                // Con dibujo la grieta ya está pintada: solo un brillo cálido encima; con figuras, brillo y rayas.
+                CodeSprites.Add(g, CodeSprites.Glow, poses != null ? new Color(1f, 0.95f, 0.6f, 0.85f) : new Color(0.5f, 0.9f, 1f, 0.8f), 15,
+                    Vector2.zero, Vector2.one * (poses != null ? 1.5f : 1.8f), "Brillo");
+                if (poses != null) { crack.glow = g; cracks.Add(crack); continue; }
                 for (int k = 0; k < 3; k++)
                     CodeSprites.Add(g, CodeSprites.Square, new Color(0.15f, 0.1f, 0.05f), 16, new Vector2(-0.2f + k * 0.2f, (k - 1) * 0.15f), new Vector2(0.5f, 0.07f), "Raya")
                         .transform.localRotation = Quaternion.Euler(0f, 0f, -40f + k * 35f);

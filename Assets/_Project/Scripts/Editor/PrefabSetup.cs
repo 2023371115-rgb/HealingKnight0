@@ -678,7 +678,7 @@ namespace HealingKnight.EditorTools
                 case "Plasmodium_Esporozoito": folder = "Circulatorio"; prefix = "Esporozoito"; width = 1.6f; pivot = new Vector2(0.5f, 0.5f); break;
                 case "Plasmodium_Merozoito": folder = "Circulatorio"; prefix = "Merozoito"; width = 0.95f; pivot = new Vector2(0.5f, 0.5f); break;
                 case "Coagulo_Embolo": folder = "Circulatorio"; prefix = "Embolo"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
-                case "Bacteria_SViridans": folder = "Circulatorio"; prefix = "SViridans"; width = 1.8f; break;
+                case "Bacteria_SViridans": folder = "Circulatorio"; prefix = "SViridans"; width = 2.2f; break;
                 case "Bacteria_EColi": folder = "Circulatorio"; prefix = "EColi"; width = 1.9f; break;
                 default: return;
             }
@@ -1758,8 +1758,10 @@ namespace HealingKnight.EditorTools
             EnemyData d = data.CalculoJefe;
             GameObject root = BossRoot("Calculo_Rinon", d, out Transform v, out EnemyHealth health);
             SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 2.6f), new Vector2(1.1f, 1.1f));
-            AddBossPoses(root, "Calculo", "Calculo", 5.6f, new Vector2(0.5f, 0.5f), 11);   // si hay dibujo, lo pone KidneyStoneBoss
-            root.AddComponent<KidneyStoneBoss>();
+            BossPoses stoneArt = AddBossPoses(root, "Calculo", "Calculo", 5.6f, new Vector2(0.5f, 0.5f), 11);   // si hay dibujo, lo pone KidneyStoneBoss
+            var stone = root.AddComponent<KidneyStoneBoss>();
+            // Las grietas brillan donde están dibujadas (medido en Calculo_Normal.png: izquierda, arriba y abajo a la derecha).
+            if (stoneArt != null) stone.ConfigureCracks(new Vector2(-1.3f, -0.52f), new Vector2(0.25f, 1.16f), new Vector2(0.93f, -1.38f));
             return root;
         }
 
@@ -1823,10 +1825,11 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(1.75f, s * 0.2f, 0f), new Vector2(0.32f, 0.36f), 4);
                 SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(1.82f, s * 0.19f, 0f), Vector2.one * 0.16f, 5);
             }
-            if (DrawBoss(root, v, "TCruzi", "TCruzi", 4.6f, new Vector2(0.5f, 0.5f), 3, out SpriteRenderer drawn) != null)
-                body = new System.Collections.Generic.List<Object> { drawn };
+            bool drawing = DrawBoss(root, v, "TCruzi", "TCruzi", 4.6f, new Vector2(0.5f, 0.5f), 3, out SpriteRenderer drawn) != null;
+            if (drawing) body = new System.Collections.Generic.List<Object> { drawn };
             SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
-            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(3.6f, 1.2f));
+            // El dibujo es más alto que la figura (el cuerpo en C con su membrana): le cabe un cuerpo más grande.
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, drawing ? new Vector2(3.8f, 2f) : new Vector2(3.6f, 1.2f));
             var boss = root.AddComponent<TrypanosomaBoss>();
             SetupUtils.SetRef(boss, "visual", v);
             SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);

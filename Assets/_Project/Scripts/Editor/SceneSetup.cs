@@ -4016,8 +4016,10 @@ namespace HealingKnight.EditorTools
         /// <summary>El minijefe: la PLACA DE ATEROMA, pegada a la pared de abajo (casi tapa la arteria).</summary>
         private void AtheromaBossAt(float x)
         {
-            const float width = 8f;
             float height = FemoralRadius * 2f - 0.75f;   // arriba queda un hueco donde no cabes ni encogido
+            // Con dibujo, la placa mide lo que el dibujo (a lo alto debe tapar casi toda la arteria); sin dibujo, 8 de ancho.
+            float aspect = BossArtAspect("Ateroma");
+            float width = aspect > 0f ? Mathf.Max(8f, (height + 0.15f) / aspect) : 8f;
             GameObject go = Node("Jefe_PlacaDeAteroma", x, FemoralBottomY(x));
             PlaqueDome(go, width, height, 1104);
             // Unas células espumosas pegadas a la placa (de adorno) y grietas en la capa fibrosa.
@@ -4333,6 +4335,13 @@ namespace HealingKnight.EditorTools
         /// Jefe con figuras armadas aquí ('art'): si existe Art/Jefes/&lt;jefe&gt;/&lt;jefe&gt;_Normal.png, quita las figuras y
         /// pone el dibujo con sus poses (BossPoses). Sin PNG no hace nada.
         /// </summary>
+        /// <summary>Alto / ancho del dibujo Normal de un jefe (0 si todavía no hay dibujo).</summary>
+        private static float BossArtAspect(string boss)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Project/Art/Jefes/{boss}/{boss}_Normal.png");
+            return tex != null && tex.width > 0 ? (float)tex.height / tex.width : 0f;
+        }
+
         private static void BossDrawing(GameObject go, Transform art, string boss, float width, Vector2 pivot, int order)
         {
             if (AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Project/Art/Jefes/{boss}/{boss}_Normal.png") == null) return;

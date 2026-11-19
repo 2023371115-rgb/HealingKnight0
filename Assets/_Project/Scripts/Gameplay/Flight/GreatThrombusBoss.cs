@@ -68,12 +68,26 @@ namespace HealingKnight.Gameplay.Flight
                 health.SetFlashRenderers(drawn);
             }
             else BuildFigure(rnd);
-            if (box != null) box.SetBox(Vector2.zero, new Vector2(3.4f, 3.8f));
+            if (box != null) box.SetBox(Vector2.zero, drawn != null ? DrawnBox() : new Vector2(3.4f, 3.8f));
             emboliTimer = emboliEvery;
             netTimer = netEvery;
             BuildMeter();
             art.gameObject.SetActive(false);
             if (box != null) box.enabled = false;
+        }
+
+        /// <summary>
+        /// Dónde se le puede pegar al dibujo: la cámara va girada (vuelo hacia arriba), así que el ancho del dibujo
+        /// queda a lo alto del mundo y su alto, a lo ancho.
+        /// </summary>
+        private Vector2 DrawnBox()
+        {
+            Vector2 size = drawn.sprite != null ? (Vector2)drawn.sprite.bounds.size : Vector2.one * 4f;
+            size.x *= drawn.transform.localScale.x;
+            size.y *= drawn.transform.localScale.y;
+            FlightRoute r = FlightRoute.Current;
+            bool turned = r != null && Mathf.Abs(Mathf.DeltaAngle(r.Roll, 0f)) > 45f;
+            return turned ? new Vector2(size.y * 0.85f, size.x * 0.8f) : new Vector2(size.x * 0.8f, size.y * 0.85f);
         }
 
         /// <summary>El coágulo con figuras (mientras no hay dibujo).</summary>
@@ -132,7 +146,7 @@ namespace HealingKnight.Gameplay.Flight
                 if (!route.Launched || route.CameraPosition.x < startX) return;
                 started = true;
                 art.gameObject.SetActive(true);
-                if (box != null) box.enabled = true;
+                if (box != null) { box.enabled = true; if (drawn != null) box.SetBox(Vector2.zero, DrawnBox()); }   // ya con la cámara girada
                 if (meter != null) meter.gameObject.SetActive(true);
                 GameplayEvents.RaiseBossStarted(bossName, health);
                 GameplayEvents.RaiseMessage("¡EL GRAN TROMBO! Va rumbo al CEREBRO: si llega, es una EMBOLIA. Solo lo deshace el ANTICOAGULANTE. " +

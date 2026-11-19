@@ -36,6 +36,12 @@ def canales_del_fondo(x):
 
 
 def quitar_verde(im, maximo=640):
+    """Quita el fondo, recorta y achica (lo que hace el script con cada archivo)."""
+    return recortar(quitar_fondo(im), maximo)
+
+
+def quitar_fondo(im):
+    """Solo quita el fondo (verde o magenta) y su halo; no recorta ni cambia el tamaño."""
     x = np.asarray(im.convert("RGBA")).astype(np.float32)
     llave = canales_del_fondo(x)
     if llave is not None and x[..., 3].min() > 250:
@@ -58,11 +64,13 @@ def quitar_verde(im, maximo=640):
         tope = fuera + 8.0
         for c in np.where(llave)[0]:
             x[..., c] = np.where(cerca & (fondo > 30.0), np.minimum(x[..., c], tope), x[..., c])
-    out = Image.fromarray(np.clip(x, 0, 255).astype(np.uint8), "RGBA")
-    # Recorte con margen.
+    return Image.fromarray(np.clip(x, 0, 255).astype(np.uint8), "RGBA")
+
+
+def recortar(out, maximo=640, m=6):
+    """Recorta lo transparente de alrededor (deja 'm' px de margen) y achica si pasa de 'maximo'."""
     caja = out.getchannel("A").point(lambda v: 255 if v > 8 else 0).getbbox()
     if caja:
-        m = 6
         caja = (max(0, caja[0] - m), max(0, caja[1] - m), min(out.width, caja[2] + m), min(out.height, caja[3] + m))
         out = out.crop(caja)
     if maximo and max(out.size) > maximo:

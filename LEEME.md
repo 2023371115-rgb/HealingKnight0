@@ -555,6 +555,13 @@ están en el proyecto de Claude: `claude/sprites-circulatorio.md`.
 - Hazlos con **fondo verde puro** (#00FF00), o **magenta** (#FF00FF) si el personaje es verde, y **mirando a la
   derecha**. `python Tools/Art/quitar_fondo_verde.py <archivo o carpeta>` quita el fondo (adivina el color por las
   esquinas), el halo de las orillas y recorta.
+- **Hojas con todas las poses:** `python Tools/Art/cortar_hoja.py hoja.png <ruta/Prefijo> Normal Ataca Dano Muere`
+  quita el fondo, separa los dibujos (en orden de lectura) y los guarda a la misma escala. Si ya existe
+  `<Prefijo>_Normal.png` no lo reemplaza y escala las demás poses para que midan lo mismo; una pose `-` se ignora.
+- **Ya están** (19 nov): `LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito`, `Embolo`, `SViridans` (Normal), y los jefes
+  `Ateroma` (Normal y Enojado), `EpsteinBarr`, `TCruzi`, `GranTrombo` y `Calculo` (Normal). Con dibujo, la placa de
+  ateroma mide lo que su dibujo (a lo alto tapa casi toda la arteria), las grietas del cálculo brillan donde están
+  dibujadas, y el gran trombo y T. cruzi ajustan dónde se les puede pegar.
 
 | Qué | Archivo(s) | Notas |
 |---|---|---|
