@@ -357,6 +357,10 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 
 ## Menú y mapa del cuerpo (estilo caricatura)
 
+Toda la interfaz usa un lienzo de 1920 x 1080 que **nunca se aplasta**: en ventanas más anchas o más altas
+(Free Aspect, 21:9, 4:3, 16:10) sobra espacio a los lados o arriba en vez de encimarse los textos
+(`UIFactory.CreateCanvas`, modo *Expand*).
+
 El menú principal y el mapa del cuerpo se dibujan por código con el estilo del juego (`UI/CartoonUI.cs`): formas
 redondas con contorno grueso, brillo y sombra, letra **Titan One** (`Art/UI/Fuentes`, licencia OFL libre), botones que se
 inflan y rebotan (`UI/CartoonButton.cs`) y microbios de los niveles flotando de fondo (`UI/UIMotion.cs`).

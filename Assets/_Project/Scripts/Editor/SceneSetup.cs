@@ -3029,15 +3029,15 @@ namespace HealingKnight.EditorTools
         private static SignTheme SignThemeFor(string path)
         {
             if (path == EstomagoPath) return T("Digestivo", "ESTÓMAGO", "¡ÁCIDO!", "PÍLORO");
-            if (path == DelgadoPath) return T("Digestivo", "INTESTINO DELGADO", "¡BILIS!", "AL COLON");
+            if (path == DelgadoPath) return T("Digestivo", "INTESTINO DELGADO", "¡BILIS!", "COLON");
             if (path == GruesoPath) return T("Digestivo", "INTESTINO GRUESO", "¡CUIDADO!", "SALIDA");
             if (path == BocaPath) return T("Digestivo", "BOCA", "¡SALIVA!", "SALIDA");
-            if (path == NarizPath) return T("Respiratorio", "NARIZ", "¡HUECO!", "A LA TRÁQUEA");
-            if (path == TraqueaPath) return T("Respiratorio", "TRÁQUEA", "¡HUECO!", "A LOS PULMONES");
+            if (path == NarizPath) return T("Respiratorio", "NARIZ", "¡HUECO!", "TRÁQUEA");
+            if (path == TraqueaPath) return T("Respiratorio", "TRÁQUEA", "¡HUECO!", "PULMONES");
             if (path == PulmonesPath) return T("Respiratorio", "PULMONES", "¡HUECO!", "SALIDA");
             if (path == AmigdalasPath) return T("Respiratorio", "AMÍGDALAS", "¡HUECO!", "SALIDA");
-            if (path == MedulaPath) return T("Nervioso", "MÉDULA ESPINAL", "¡HUECO!", "AL CEREBRO");
-            if (path == CerebroPath) return T("Nervioso", "CEREBRO", "¡HUECO!", "AL HIPOCAMPO");
+            if (path == MedulaPath) return T("Nervioso", "MÉDULA ESPINAL", "¡HUECO!", "CEREBRO");
+            if (path == CerebroPath) return T("Nervioso", "CEREBRO", "¡HUECO!", "HIPOCAMPO");
             if (path == HipocampoPath) return T("Nervioso", "HIPOCAMPO", "¡HUECO!", "SALIDA");
             if (path == OjoPath) return T("Nervioso", "OJO", null, "SALIDA");
             return new SignTheme();
@@ -3083,23 +3083,23 @@ namespace HealingKnight.EditorTools
                 { "Digestivo/Bienvenida", new Rect(0.496f, 0.713f, 0.623f, 0.239f) },
                 { "Digestivo/Info", new Rect(0.488f, 0.613f, 0.629f, 0.231f) },
                 { "Digestivo/Peligro", new Rect(0.581f, 0.714f, 0.411f, 0.286f) },
-                { "Digestivo/Salida", new Rect(0.326f, 0.694f, 0.295f, 0.304f) },
+                { "Digestivo/Salida", new Rect(0.36f, 0.69f, 0.44f, 0.27f) },
                 { "Digestivo/FlechaDerecha", new Rect(0.5f, 0.655f, 0.585f, 0.209f) },
                 { "Digestivo/FlechaArriba", new Rect(0.504f, 0.628f, 0.358f, 0.338f) },
                 { "Digestivo/FlechaAbajo", new Rect(0.519f, 0.684f, 0.332f, 0.359f) },
                 { "Digestivo/Secreto", new Rect(0.798f, 0.686f, 0.198f, 0.304f) },
                 { "Respiratorio/Bienvenida", new Rect(0.503f, 0.628f, 0.598f, 0.183f) },
-                { "Respiratorio/Info", new Rect(0.597f, 0.633f, 0.439f, 0.304f) },
+                { "Respiratorio/Info", new Rect(0.5f, 0.585f, 0.72f, 0.2f) },
                 { "Respiratorio/Peligro", new Rect(0.596f, 0.645f, 0.431f, 0.245f) },
-                { "Respiratorio/Salida", new Rect(0.332f, 0.622f, 0.301f, 0.282f) },
+                { "Respiratorio/Salida", new Rect(0.35f, 0.62f, 0.38f, 0.26f) },
                 { "Respiratorio/FlechaDerecha", new Rect(0.511f, 0.635f, 0.536f, 0.215f) },
                 { "Respiratorio/FlechaArriba", new Rect(0.488f, 0.611f, 0.305f, 0.331f) },
                 { "Respiratorio/FlechaAbajo", new Rect(0.508f, 0.634f, 0.348f, 0.315f) },
                 { "Respiratorio/Secreto", new Rect(0.237f, 0.568f, 0.223f, 0.248f) },
                 { "Nervioso/Bienvenida", new Rect(0.501f, 0.662f, 0.575f, 0.223f) },
-                { "Nervioso/Info", new Rect(0.559f, 0.648f, 0.4f, 0.314f) },
+                { "Nervioso/Info", new Rect(0.5f, 0.6f, 0.7f, 0.2f) },
                 { "Nervioso/Peligro", new Rect(0.576f, 0.639f, 0.383f, 0.239f) },
-                { "Nervioso/Salida", new Rect(0.345f, 0.636f, 0.299f, 0.272f) },
+                { "Nervioso/Salida", new Rect(0.355f, 0.635f, 0.37f, 0.25f) },
                 { "Nervioso/FlechaDerecha", new Rect(0.537f, 0.663f, 0.536f, 0.218f) },
                 { "Nervioso/FlechaArriba", new Rect(0.503f, 0.688f, 0.31f, 0.333f) },
                 { "Nervioso/FlechaAbajo", new Rect(0.48f, 0.696f, 0.285f, 0.333f) },

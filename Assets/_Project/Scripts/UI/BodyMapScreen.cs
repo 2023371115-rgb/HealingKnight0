@@ -284,9 +284,14 @@ namespace HealingKnight.UI
                 text.text = $"{label}\n<size=70%><color=#{subColor}>{sub}</color></size>";
                 text.alignment = TextAlignmentOptions.MidlineLeft;
                 text.color = playable || done ? Color.white : TextDim;
-                text.rectTransform.offsetMin = new Vector2(78f, 4f);
-                text.rectTransform.offsetMax = new Vector2(done ? -48f : -10f, -4f);
-                text.fontSize = label.Length > 16 ? 23f : 26f;
+                text.rectTransform.offsetMin = new Vector2(78f, 0f);
+                text.rectTransform.offsetMax = new Vector2(done ? -48f : -10f, 0f);
+                text.lineSpacing = -12f;   // nombre y estado más juntitos (caben sin achicarse)
+                // Nombre en una línea: si no cabe se achica (antes "Intestino grueso" se partía en dos y se salía).
+                text.textWrappingMode = TextWrappingModes.NoWrap;
+                text.enableAutoSizing = true;
+                text.fontSizeMin = 15f;
+                text.fontSizeMax = 26f;
             }
 
             if (done)

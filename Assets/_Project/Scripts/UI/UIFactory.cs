@@ -31,7 +31,9 @@ namespace HealingKnight.UI
             var scaler = go.GetComponent<CanvasScaler>();
             scaler.uiScaleMode = CanvasScaler.ScaleMode.ScaleWithScreenSize;
             scaler.referenceResolution = new Vector2(1920f, 1080f);
-            scaler.matchWidthOrHeight = 0.5f;
+            // Expand: la pantalla siempre tiene al menos 1920 x 1080 de espacio. En ventanas más anchas o más altas
+            // (Free Aspect, 21:9, 4:3) sobra espacio en vez de aplastarse, así los textos nunca se enciman.
+            scaler.screenMatchMode = CanvasScaler.ScreenMatchMode.Expand;
 
             EnsureEventSystem();
             return canvas;

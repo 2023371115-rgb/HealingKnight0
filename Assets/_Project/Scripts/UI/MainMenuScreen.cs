@@ -118,28 +118,30 @@ namespace HealingKnight.UI
             }
 
             // Subtítulo en una cinta.
-            Image ribbon = CartoonUI.Blob(menuRoot.transform, "Cinta", new Color(0.35f, 0.08f, 0.16f, 1f), new Vector2(1180f, 76f), 6f, 1f, true, false);
-            UIFactory.Place((RectTransform)ribbon.transform.parent, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 75f), new Vector2(1180f, 76f));
+            Image ribbon = CartoonUI.Blob(menuRoot.transform, "Cinta", new Color(0.35f, 0.08f, 0.16f, 1f), new Vector2(1400f, 70f), 6f, 1f, true, false);
+            UIFactory.Place((RectTransform)ribbon.transform.parent, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 80f), new Vector2(1400f, 70f));
             TextMeshProUGUI sub = CartoonUI.Text(ribbon.transform, "Diagnostica, elige el medicamento correcto y salva al paciente desde adentro.", 30f, CartoonUI.Cream, false, TextAlignmentOptions.Center, 0.15f);
-            UIFactory.Stretch(sub.rectTransform, 8f);
+            sub.enableAutoSizing = true; sub.fontSizeMin = 20f; sub.fontSizeMax = 30f;
+            sub.textWrappingMode = TextWrappingModes.NoWrap;   // una sola línea: se achica si no cabe
+            UIFactory.Stretch(sub.rectTransform, 10f);
 
             var column = new GameObject("Botones", typeof(RectTransform));
             column.transform.SetParent(menuRoot.transform, false);
-            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -228f), new Vector2(560f, 500f));
-            UIFactory.VerticalLayout(column, 14f);
+            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -205f), new Vector2(560f, 440f));
+            UIFactory.VerticalLayout(column, 12f);
 
-            playButton = CartoonUI.Button(column.transform, "¡JUGAR!", OnPlay, new Vector2(500f, 120f), CartoonUI.Red, 58f);
+            playButton = CartoonUI.Button(column.transform, "¡JUGAR!", OnPlay, new Vector2(500f, 110f), CartoonUI.Red, 56f);
             Button bestiaryButton = null;
             bestiaryButton = CartoonUI.Button(column.transform, "Bestiario", () => BestiaryScreen.Open(() => UIFactory.Select(bestiaryButton)),
-                new Vector2(420f, 76f), new Color(0.35f, 0.55f, 0.6f), 32f);
+                new Vector2(420f, 68f), new Color(0.35f, 0.55f, 0.6f), 30f);
             Button controlsButton = null;
             controlsButton = CartoonUI.Button(column.transform, "Controles", () => ControlsScreen.Open(() => UIFactory.Select(controlsButton)),
-                new Vector2(420f, 76f), new Color(0.95f, 0.6f, 0.25f), 32f);
-            CartoonUI.Button(column.transform, "Borrar progreso", ShowConfirm, new Vector2(420f, 76f), new Color(0.75f, 0.35f, 0.55f), 32f);
-            CartoonUI.Button(column.transform, "Salir", Quit, new Vector2(420f, 76f), new Color(0.55f, 0.3f, 0.5f), 32f);
+                new Vector2(420f, 68f), new Color(0.95f, 0.6f, 0.25f), 30f);
+            CartoonUI.Button(column.transform, "Borrar progreso", ShowConfirm, new Vector2(420f, 68f), new Color(0.75f, 0.35f, 0.55f), 30f);
+            CartoonUI.Button(column.transform, "Salir", Quit, new Vector2(420f, 68f), new Color(0.55f, 0.3f, 0.5f), 30f);
 
             TextMeshProUGUI footer = CartoonUI.Text(menuRoot.transform, "PACIENTE 001  ·  AURELIS NANOMEDICINA  ·  PROGRAMA CENTINELA", 22f, new Color(1f, 0.85f, 0.88f, 0.75f), false, TextAlignmentOptions.Center, 0.12f);
-            UIFactory.Place(footer.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f), new Vector2(1600f, 40f));
+            UIFactory.Place(footer.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 18f), new Vector2(1600f, 36f));
         }
 
         private void BuildPrologue(Transform parent)

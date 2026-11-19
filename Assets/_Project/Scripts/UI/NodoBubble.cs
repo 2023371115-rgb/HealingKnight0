@@ -20,7 +20,7 @@ namespace HealingKnight.UI
 
         private struct Theme { public Color panel, accent, name; }
 
-        private const float Width = 1100f, Height = 150f, Top = -92f, OffsetX = 200f;   // a la derecha del panel de vida
+        private const float Width = 1100f, Height = 150f, Top = -106f, OffsetX = 200f;   // a la derecha del panel de vida
         private const float CharsPerSecond = 55f;
 
         private readonly Queue<string> queue = new Queue<string>();
@@ -65,7 +65,7 @@ namespace HealingKnight.UI
             root = (RectTransform)transform;
             UIFactory.Place(root, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, 200f), new Vector2(Width, Height));
 
-            panel = CartoonUI.Blob(root, "Globo", theme.panel, new Vector2(Width - 120f, Height - 20f), 6f, 1f, true, true);
+            panel = CartoonUI.Blob(root, "Globo", theme.panel, new Vector2(Width - 120f, Height - 20f), 6f, 1f, true, false);   // sin brillo: tapaba la 1a línea
             UIFactory.Place((RectTransform)panel.transform.parent, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(110f, 0f), new Vector2(Width - 120f, Height - 20f));
 
             // Cara de NODO (dibujo o insignia "N").
