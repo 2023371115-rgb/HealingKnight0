@@ -53,11 +53,18 @@ namespace HealingKnight.Gameplay.Flight
                  "cuando sube, sale el letrero \"¡MÁS RÁPIDO!\".")]
         [SerializeField] private Vector2[] speedKeys = new Vector2[0];
 
+        [Header("Giro de la cámara (vuelo hacia ARRIBA)")]
+        [Tooltip("(x, grados): la cámara gira según por dónde va. -90 = lo que está adelante (+X) se ve ARRIBA: así el " +
+                 "mismo mundo horizontal se juega como nave vertical. Entre puntos gira suave.")]
+        [SerializeField] private Vector2[] rollKeys = new Vector2[0];
+
         public static FlightRoute Current { get; private set; }
 
         public Vector2 CameraPosition { get; private set; }
         public Vector2 ScrollVelocity { get; private set; }
         public Rect View { get; private set; }
+        /// <summary>Giro de la cámara ahora (grados). Lo que se mueve con el control se gira igual (arriba = adelante).</summary>
+        public float Roll { get; private set; }
         public float HalfWidth { get; private set; }
         public float HalfHeight { get; private set; }
         public bool Launched => launched;
@@ -101,18 +108,7 @@ namespace HealingKnight.Gameplay.Flight
         public void ConfigureSpeeds(Vector2[] keys) => speedKeys = keys;
 
         /// <summary>Velocidad de la zona en esa X (curva suave entre los puntos).</summary>
-        public float AreaSpeedAt(float x)
-        {
-            if (speedKeys == null || speedKeys.Length == 0) return baseSpeed;
-            if (x <= speedKeys[0].x) return speedKeys[0].y;
-            for (int i = 1; i < speedKeys.Length; i++)
-            {
-                if (x > speedKeys[i].x) continue;
-                float k = Mathf.InverseLerp(speedKeys[i - 1].x, speedKeys[i].x, x);
-                return Mathf.Lerp(speedKeys[i - 1].y, speedKeys[i].y, k * k * (3f - 2f * k));
-            }
-            return speedKeys[speedKeys.Length - 1].y;
-        }
+        public float AreaSpeedAt(float x) => KeysAt(speedKeys, x, baseSpeed);
 
         /// <summary>
         /// Impulso (adrenalina, multiplicador &gt; 1) o freno (betabloqueador, &lt; 1) por unos segundos. También cambia el
@@ -191,6 +187,7 @@ namespace HealingKnight.Gameplay.Flight
             Build(0);
             CameraPosition = active.Length > 0 ? active[0] : Vector2.zero;
             GameCamera.Override = () => CameraPosition;
+            GameCamera.RollOverride = () => Roll;
             UpdateView();
         }
 
@@ -198,6 +195,7 @@ namespace HealingKnight.Gameplay.Flight
         {
             if (Current == this) Current = null;
             GameCamera.Override = null;
+            GameCamera.RollOverride = null;
             if (player != null) player.Respawned -= OnRespawned;
         }
 
@@ -267,9 +265,42 @@ namespace HealingKnight.Gameplay.Flight
         private void UpdateView()
         {
             Camera cam = Camera.main;
-            HalfHeight = cam != null ? cam.orthographicSize : 5.4f;
-            HalfWidth = HalfHeight * (cam != null ? cam.aspect : 16f / 9f);
+            float screenH = cam != null ? cam.orthographicSize : 5.4f;
+            float screenW = screenH * (cam != null ? cam.aspect : 16f / 9f);
+            Roll = KeysAt(rollKeys, CameraPosition.x, 0f);
+            // Lo que se ve, medido en el mundo: con la cámara girada 90° el ancho y el alto se cambian.
+            float c = Mathf.Abs(Mathf.Cos(Roll * Mathf.Deg2Rad)), s = Mathf.Abs(Mathf.Sin(Roll * Mathf.Deg2Rad));
+            // A medio giro se usa el rectángulo más grande que cabe ADENTRO de la pantalla girada (para que la nave
+            // no se salga): primero se cambian el ancho y el alto poco a poco y luego se encoge hasta que quepa.
+            float t = s * s;
+            float a = Mathf.Lerp(screenW, screenH, t), b = Mathf.Lerp(screenH, screenW, t);
+            float fit = Mathf.Min(1f, Mathf.Min(screenW / Mathf.Max(0.01f, a * c + b * s), screenH / Mathf.Max(0.01f, a * s + b * c)));
+            HalfWidth = a * fit;
+            HalfHeight = b * fit;
             View = new Rect(CameraPosition.x - HalfWidth, CameraPosition.y - HalfHeight, HalfWidth * 2f, HalfHeight * 2f);
+        }
+
+        /// <summary>Gira un vector de la pantalla (el control) al mundo.</summary>
+        public Vector2 ScreenToWorld(Vector2 v)
+        {
+            if (Mathf.Abs(Roll) < 0.01f) return v;
+            return Quaternion.Euler(0f, 0f, Roll) * v;
+        }
+
+        /// <summary>Giro por zona: (x, grados), de izquierda a derecha.</summary>
+        public void ConfigureRoll(Vector2[] keys) => rollKeys = keys;
+
+        private static float KeysAt(Vector2[] keys, float x, float fallback)
+        {
+            if (keys == null || keys.Length == 0) return fallback;
+            if (x <= keys[0].x) return keys[0].y;
+            for (int i = 1; i < keys.Length; i++)
+            {
+                if (x > keys[i].x) continue;
+                float k = Mathf.InverseLerp(keys[i - 1].x, keys[i].x, x);
+                return Mathf.Lerp(keys[i - 1].y, keys[i].y, k * k * (3f - 2f * k));
+            }
+            return keys[keys.Length - 1].y;
         }
 
         private void Hook()

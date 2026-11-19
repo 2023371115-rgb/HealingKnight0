@@ -29,9 +29,11 @@ namespace HealingKnight.Gameplay.CameraSystem
         /// y solo le agrega el temblor. null = sigue al jugador como siempre.
         /// </summary>
         public static System.Func<Vector2> Override;
+        /// <summary>Giro de la cámara en grados mientras hay Override (el vuelo hacia arriba gira la cámara -90°).</summary>
+        public static System.Func<float> RollOverride;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
-        private static void ResetStatics() => Override = null;
+        private static void ResetStatics() { Override = null; RollOverride = null; }
 
         private void Awake()
         {
@@ -51,8 +53,10 @@ namespace HealingKnight.Gameplay.CameraSystem
                     p += (Vector3)(Random.insideUnitCircle * shakeStrength);
                 }
                 transform.position = p;
+                transform.rotation = Quaternion.Euler(0f, 0f, RollOverride != null ? RollOverride() : 0f);
                 return;
             }
+            transform.rotation = Quaternion.identity;   // (por si venía girada del vuelo)
 
             PlayerController player = PlayerController.Current;
             float targetX = transform.position.x;

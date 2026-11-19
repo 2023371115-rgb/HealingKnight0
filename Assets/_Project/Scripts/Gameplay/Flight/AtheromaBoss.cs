@@ -46,6 +46,7 @@ namespace HealingKnight.Gameplay.Flight
         public float BlockX => transform.position.x - 0.2f;
         public bool Blocking => health != null && health.IsAlive;
         public int Branch => 0;
+        public float PassX => float.MaxValue;   // un jefe: la pantalla espera aunque te le pongas enfrente
 
         public void Configure(float plaqueWidth, float plaqueHeight, Projectile shot, EnemyHealth foamCell, EnemyData clotEnemy, EffectivenessTable effectiveness)
         {

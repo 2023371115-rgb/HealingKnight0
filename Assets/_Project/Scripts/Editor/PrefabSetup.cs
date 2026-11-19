@@ -30,7 +30,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth SPyogenes, SarroJefe, AbscesoJefe, ToxoplasmaJefe;
         public EnemyHealth Poliovirus, Meningococo, Herpes, Rabia;
         public EnemyHealth SAureusCoco, OxiuroHuevo;
-        public EnemyHealth Ldl, CelulaEspumosa;
+        public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -138,6 +138,8 @@ namespace HealingKnight.EditorTools
             // Sistema circulatorio (vuelo): bolitas de colesterol LDL y células espumosas (las suelta la placa de ateroma).
             Ldl = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Lipido_LDL.prefab", BuildLdl);
             CelulaEspumosa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Celula_Espumosa.prefab", BuildFoamCell);
+            Esporozoito = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Plasmodium_Esporozoito.prefab", BuildSporozoite);
+            Merozoito = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Plasmodium_Merozoito.prefab", BuildMerozoite);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -570,6 +572,37 @@ namespace HealingKnight.EditorTools
                     new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f) * s, Vector2.one * size * s, 1);
             }
             SetupUtils.SpriteChild(visual, "Nucleo", PlaceholderArt.Circle, new Color(0.6f, 0.4f, 0.7f), new Vector3(-0.16f, -0.1f, 0f) * s, new Vector2(0.26f, 0.2f) * s, 1);
+            return go;
+        }
+
+        /// <summary>Esporozoíto: gusanito delgado y curvo (media luna) morado.</summary>
+        private GameObject BuildSporozoite()
+        {
+            GameObject go = BuildEnemy("Plasmodium_Esporozoito", data.Esporozoito, EnemyShape.Round);
+            Transform visual = RoundWithoutSpikes(go);
+            Transform body = go.transform.Find("Visual/Body");
+            float s = data.Esporozoito.visualScale;
+            if (body != null) body.localScale = new Vector3(1.5f * s * 0.9f, 0.42f * s * 0.9f, 1f);
+            Color edge = new Color(0.3f, 0.1f, 0.4f), fill = data.Esporozoito.tint;
+            for (int i = 0; i < 5; i++)
+            {
+                float t = (i - 2) / 2f;
+                var p = new Vector3(t * 0.55f * s, -Mathf.Abs(t) * 0.18f * s, 0f);
+                SetupUtils.SpriteChild(visual, "Borde" + i, PlaceholderArt.Circle, edge, p, Vector2.one * 0.36f * s, -2);
+                SetupUtils.SpriteChild(visual, "Segmento" + i, PlaceholderArt.Circle, fill, p, Vector2.one * 0.28f * s, -1);
+            }
+            return go;
+        }
+
+        /// <summary>Merozoíto: gotita morada con su "puntita" y un núcleo oscuro.</summary>
+        private GameObject BuildMerozoite()
+        {
+            GameObject go = BuildEnemy("Plasmodium_Merozoito", data.Merozoito, EnemyShape.Round);
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Merozoito.visualScale;
+            SetupUtils.SpriteChild(visual, "Contorno", PlaceholderArt.Circle, new Color(0.25f, 0.05f, 0.35f), Vector3.zero, Vector2.one * 0.98f * s, -3);
+            SetupUtils.SpriteChild(visual, "Punta", PlaceholderArt.Circle, data.Merozoito.tint, new Vector3(-0.42f * s, 0f, 0f), new Vector2(0.4f, 0.28f) * s, -2);
+            SetupUtils.SpriteChild(visual, "Nucleo", PlaceholderArt.Circle, new Color(0.35f, 0.1f, 0.5f), new Vector3(0.08f, -0.08f, 0f) * s, Vector2.one * 0.3f * s, 1);
             return go;
         }
 

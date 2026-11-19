@@ -202,6 +202,8 @@ namespace HealingKnight.Gameplay.Flight
             Shrunk = !blocked && input.LockHeld;
             Vector2 move = blocked ? Vector2.zero : input.Move;
             if (move.sqrMagnitude > 1f) move.Normalize();
+            // Con la cámara girada (vuelo hacia arriba), "arriba" en el control es "adelante" en el mundo.
+            if (route != null) move = route.ScreenToWorld(move);
 
             if (Time.time > slowUntil) slowFactor = 1f;
             bool thick = slowFactor < 0.99f;

@@ -396,8 +396,8 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 ## Sistema circulatorio: modo de VUELO (prueba)
 
 Plan completo del sistema (Bazo → Arterias y venas → Corazón → El gran trombo, y el Riñón secreto) en el proyecto de
-Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo de vuelo** con los tres primeros tramos de
-**Arterias y venas**: la Aorta, la aorta abdominal con las ilíacas y la arteria femoral enferma. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
+Claude: `claude/plan-sistema-circulatorio.md`. **Arterias y venas** está completo (6 tramos, en vuelo): la aorta, la aorta
+abdominal con las ilíacas, la femoral enferma, los capilares, las venas de la pierna y la vena cava. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
 (en el mapa todavía no se puede jugar: va después del Bazo, que aún no existe).
 
 **La nave** (`Gameplay/Flight/ShipFlight.cs`): NODO se vuelve una nanocápsula con el caballero sentado adentro.
@@ -479,6 +479,30 @@ acabar la que escogiste la pantalla se va a **negro** y sigues por "una pierna" 
   enfrente: mientras exista, tus balas no le hacen nada; disuélvelo con anticoagulante (vuelve a salir a los 9 s).
 - Código en `SceneSetup`: `FemoralCenterY`, `Plaque`, `PlaqueNarrow`, `PlaqueDome`, `FormingClot`, `AtheromaBossAt` y
   `BuildDiseasedFemoral`. Datos nuevos: `Lipido_LDL`, `Celula_Espumosa`, `Bloqueo_PlacaColesterol`, `Jefe_Ateroma`.
+
+**Vuelo hacia ARRIBA (la cámara gira):** `FlightRoute.ConfigureRoll` gira la cámara por zonas. Con −90° lo que está
+adelante (+X) se ve arriba: el mundo sigue siendo horizontal (todo lo que va por X sigue igual) pero se juega como nave
+vertical. El control se gira igual (`ScreenToWorld`: arriba = adelante), `View`/`HalfWidth`/`HalfHeight` se miden en el
+mundo (con −90° se cambian el ancho y el alto: adelante solo se ven 5.4) y el fondo gira con la cámara.
+
+**Tramo 4, CAPILARES** (1214–1470): la sangre va más lento que en ningún lado (2.6). Tres **carriles** separados por
+tejido con huecos para cambiarte; los glóbulos van en **fila** por carril (`BloodStream.ConfigureLanes`). **Células sin
+oxígeno** (`OxygenCell`, azules): pasa cerca y se ponen rositas (+3 de vida); con el 80 % hay premio (+20 y una bomba).
+**Pericitos** que angostan el carril (solo cabes encogido). Al final se juntan en una vena y la cámara **gira** (1446–1472).
+
+**Tramo 5, VENAS DE LA PIERNA** (1474–1846, hacia arriba): `GravityPull` te jala para abajo. **Válvulas**
+(`VenousValve`): dos aletas en "V" que se abren con la **bomba muscular** (`MusclePump`: cada ~4 s el músculo aprieta, te
+avienta hacia arriba y la pantalla acelera) y se cierran (sólidas, la pantalla espera; si te agarran adentro, −8 y para
+abajo). **Picadura de mosquito**: entran los **esporozoítos** del Plasmodium. **Várices**: la vena se hincha, válvulas
+rotas, sangre que se regresa (`FlowZone` hacia atrás), **remolinos** (`FlowSwirl`), sangre estancada y un coágulo que se
+forma (trombosis venosa profunda).
+
+**Tramo 6, VENA CAVA** (1846–2186): llega la vena de la otra pierna, las renales y las hepáticas (`SideVein`, te empujan
+hacia adentro); merozoítos y esporozoítos. **Jefe: PLASMODIUM** (`PlasmodiumBoss`): un anillo de glóbulos rojos da
+vueltas y el parásito está escondido en el que tiene un **anillito morado**. Los sanos tapan las balas; si le pegas 4
+veces al infectado lo revientas. Cada 11 s hay **FIEBRE**: el glóbulo revienta solo, salen merozoítos y el Plasmodium
+queda al descubierto 5.5 s (antiparasitario). Después se mete a otro. Al vencerlo: "¡AL CORAZÓN!" y fin del nivel.
+Datos nuevos: `Plasmodium_Esporozoito`, `Plasmodium_Merozoito`, `Jefe_Plasmodium`.
 
 Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
 `Impacto_Anticoagulante`. Falta la música del sistema (synthwave, en el plan).

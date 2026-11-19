@@ -30,6 +30,7 @@ namespace HealingKnight.EditorTools
         public LevelData NerviosoOjo, RespiratorioAmigdalas;
         public EnemyData SarroJefe, SPyogenes, AbscesoJefe, ToxoplasmaJefe;
         public EnemyData Plaquetas, Ldl, CelulaEspumosa, PlacaColesterol, AteromaJefe;
+        public EnemyData Esporozoito, Merozoito, PlasmodiumJefe;
         public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
 
         public void Run()
@@ -42,6 +43,7 @@ namespace HealingKnight.EditorTools
             CreateRespiratoryEnemies();
             CreateNervousEnemies();
             CreateCirculatoryEnemies();
+            CreateMalariaEnemies();
             CreateOffspring();
             CreateCatalog();
             CreateBestiary();
@@ -727,6 +729,53 @@ namespace HealingKnight.EditorTools
                 e.projectileColor = new Color(1f, 0.85f, 0.3f);
                 e.tint = new Color(1f, 0.86f, 0.45f);
                 AllMedications(e, Effectiveness.Partial, Antiinflamatorio);
+            });
+        }
+
+        /// <summary>Tramos 5 y 6 de Arterias y venas: la MALARIA (Plasmodium) entra por la picadura de un mosquito.</summary>
+        private void CreateMalariaEnemies()
+        {
+            Esporozoito = Enemy("Plasmodium_Esporozoito", e =>
+            {
+                e.displayName = "Esporozoíto";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "La forma del Plasmodium que mete el mosquito Anopheles al picar: unos gusanitos que nadan rapidísimo " +
+                    "por la sangre rumbo al hígado. El antiparasitario es lo mejor.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 2f;
+                e.maxHealth = 6f; e.moveSpeed = 3.5f;
+                e.attackDamage = 7f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.tint = new Color(0.78f, 0.55f, 1f);
+                e.visualScale = 0.75f;
+            });
+            Merozoito = Enemy("Plasmodium_Merozoito", e =>
+            {
+                e.displayName = "Merozoíto";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "Lo que sale cuando el Plasmodium revienta un glóbulo rojo: muchos parásitos chiquitos que se meten a " +
+                    "otros glóbulos. Cada vez que revientan juntos, da fiebre.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 2f;
+                e.maxHealth = 9f; e.moveSpeed = 2.6f;
+                e.attackDamage = 8f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 1;
+                e.tint = new Color(0.66f, 0.38f, 0.9f);
+                e.visualScale = 0.8f;
+            });
+            PlasmodiumJefe = Enemy("Jefe_Plasmodium", e =>
+            {
+                e.displayName = "Plasmodium";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "El parásito de la malaria. Vive dentro de los glóbulos rojos, se multiplica y los revienta; por eso da " +
+                    "fiebre cada 2 o 3 días y anemia. Lo pasa el mosquito Anopheles. Antiparasitario.";
+                e.maxHealth = 520f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
+                e.attackDamage = 9f;
+                e.projectileColor = new Color(0.8f, 0.5f, 1f);
+                e.tint = new Color(0.62f, 0.3f, 0.85f);
+                // Lo demás le hace poquito (la tabla ya da antiparasitario fuerte y antibiótico/antihistamínico parcial).
+                foreach (MedicationData m in new[] { Antiviral, Antiinflamatorio, Mucolitico, Anticonvulsivo, Anticoagulante })
+                    if (m != null) e.weaknesses.Add(new EnemyWeakness { medication = m, result = Effectiveness.Partial });
             });
         }
 

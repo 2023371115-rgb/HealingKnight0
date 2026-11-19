@@ -46,6 +46,7 @@ namespace HealingKnight.Gameplay.Flight
         public float BlockX => Area.xMin;
         public bool Blocking => full && Alive;
         public int Branch => branch;
+        public float PassX => BlockX - 0.5f;
 
         public void Configure(bool blocksAll, Vector2 area, string firstMessage, float secondsToClose = 0f)
         {

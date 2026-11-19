@@ -11,6 +11,9 @@ namespace HealingKnight.Gameplay.Flight
     {
         [SerializeField, TextArea] private string message;
         [SerializeField] private int branch;
+        [Tooltip("Letrero grande arriba de la pantalla (opcional), además del mensaje de NODO.")]
+        [SerializeField] private string banner;
+        [SerializeField] private Color bannerColor = Color.white;
 
         private bool shown;
 
@@ -20,13 +23,20 @@ namespace HealingKnight.Gameplay.Flight
             branch = routeBranch;
         }
 
+        public void ConfigureBanner(string bannerText, Color color)
+        {
+            banner = bannerText;
+            bannerColor = color;
+        }
+
         private void Update()
         {
-            if (shown || string.IsNullOrEmpty(message)) return;
+            if (shown || (string.IsNullOrEmpty(message) && string.IsNullOrEmpty(banner))) return;
             FlightRoute route = FlightRoute.Current;
             if (route == null || !route.InBranch(branch) || route.CameraPosition.x < transform.position.x) return;
             shown = true;
-            GameplayEvents.RaiseMessage(message);
+            if (!string.IsNullOrEmpty(message)) GameplayEvents.RaiseMessage(message);
+            if (!string.IsNullOrEmpty(banner)) SpeedBanner.Show(banner, bannerColor, 1.8f);
         }
     }
 }

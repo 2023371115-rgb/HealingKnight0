@@ -3838,10 +3838,46 @@ namespace HealingKnight.EditorTools
         // Las ilíacas terminan en BranchEndX; un fundido a negro y sigue la femoral (una sola: "la pierna").
         private const float BranchEndX = 774f, FemoralStart = 806f, FemoralRadius = 3.4f;
 
-        /// <summary>Centro de la arteria femoral (ondula suave).</summary>
-        private static float FemoralCenterY(float x) => 1f + 1.6f * Mathf.Sin((x - FemoralStart) * 0.035f);
-        private static float FemoralTopY(float x) => FemoralCenterY(x) + FemoralRadius;
-        private static float FemoralBottomY(float x) => FemoralCenterY(x) - FemoralRadius;
+        // Tramos 4–6, después de la femoral: CAPILARES (con carriles), VENAS de la pierna (la cámara gira: se juega hacia
+        // ARRIBA) y la VENA CAVA con el jefe Plasmodium.
+        private const float BedStart = 1222f, BedLanesStart = 1232f, BedLanesEnd = 1430f, VeinStart = 1462f;
+        private const float VaricesFrom = 1650f, VaricesTo = 1732f, CavaStart = 1868f;
+        private static readonly float[] CapillaryLanes = { -2.9f, 0f, 2.9f };
+
+        private static float Smooth01(float a, float b, float x)
+        {
+            float k = Mathf.Clamp01((x - a) / (b - a));
+            return k * k * (3f - 2f * k);
+        }
+
+        /// <summary>Centro del vaso de la femoral en adelante: la femoral ondula, los capilares van rectos y la vena serpentea.</summary>
+        private static float FemoralCenterY(float x)
+        {
+            float femoral = 1f + 1.6f * Mathf.Sin((x - FemoralStart) * 0.035f);
+            if (x < 1180f) return femoral;
+            if (x < BedStart) return Mathf.Lerp(femoral, 1f, Smooth01(1180f, BedStart, x));
+            if (x < VeinStart) return 1f;
+            float vein = 1f + 2.2f * Mathf.Sin((x - VeinStart) * 0.018f);
+            float k = Smooth01(VeinStart, VeinStart + 30f, x) * (1f - Smooth01(1830f, CavaStart, x));
+            return Mathf.Lerp(1f, vein, k);
+        }
+
+        /// <summary>Radio del vaso: femoral 3.4, capilares (todo el lecho) 4, venas 4.6 (se hinchan en las várices) y cava 7.</summary>
+        private static float VesselRadius(float x)
+        {
+            if (x < 1206f) return FemoralRadius;
+            if (x < BedStart) return Mathf.Lerp(FemoralRadius, 4f, Smooth01(1206f, BedStart, x));
+            if (x < 1440f) return 4f;
+            if (x < 1470f) return Mathf.Lerp(4f, 4.6f, Smooth01(1440f, 1470f, x));
+            float r = 4.6f;
+            if (x > VaricesFrom && x < VaricesTo)
+                r += 2.1f * Mathf.Sin(Mathf.PI * (x - VaricesFrom) / (VaricesTo - VaricesFrom)) * (1f + 0.22f * Mathf.Sin(x * 0.45f));
+            if (x > 1836f) r = Mathf.Lerp(r, 7f, Smooth01(1836f, CavaStart, x));
+            return r;
+        }
+
+        private static float FemoralTopY(float x) => FemoralCenterY(x) + VesselRadius(x);
+        private static float FemoralBottomY(float x) => FemoralCenterY(x) - VesselRadius(x);
 
         /// <summary>
         /// Domo de colesterol (dibujo + colisionador): mitad de un óvalo de 'width' x 'height' que sale de la pared. El
@@ -3912,7 +3948,7 @@ namespace HealingKnight.EditorTools
         private void FormingClot(float x, float seconds, string message)
         {
             float cy = FemoralCenterY(x);
-            var size = new Vector2(2.4f, FemoralRadius * 2f + 1f);
+            var size = new Vector2(2.4f, VesselRadius(x) * 2f + 1f);
             GameObject go = Node("CoaguloFormandose", x, cy);
             go.layer = PhysicsLayers.Ground;
             var art = new GameObject("Dibujo").transform;
@@ -4003,6 +4039,285 @@ namespace HealingKnight.EditorTools
         private void ThickBlood(float fromX, float toX, float centerY, float halfHeight, string message, int branch = 0) =>
             Node("SangreEspesa", (fromX + toX) * 0.5f, centerY).AddComponent<ThickBloodZone>().Configure(fromX, toX, halfHeight, message, branch);
 
+        // ---------- Tramos 4–6: piezas ----------
+
+        /// <summary>
+        /// Vena que llega a la cava por un lado (arriba o abajo): un tubito y una corriente que te empuja hacia adentro
+        /// (la sangre ENTRA a la cava) y un poco hacia adelante.
+        /// </summary>
+        private void SideVein(float x, float half, bool up, float push)
+        {
+            float y = up ? FemoralTopY(x) : FemoralBottomY(x);
+            float s = up ? 1f : -1f;
+            if (up)
+            {
+                VesselWall(new Vector2(x - half, y + 7f), new Vector2(x - half, y - 0.3f), 1.4f);
+                VesselWall(new Vector2(x + half, y - 0.3f), new Vector2(x + half, y + 7f), 1.4f);
+            }
+            else
+            {
+                VesselWall(new Vector2(x - half, y + 0.3f), new Vector2(x - half, y - 7f), 1.4f);
+                VesselWall(new Vector2(x + half, y - 7f), new Vector2(x + half, y + 0.3f), 1.4f);
+            }
+            Node("CorrienteQueLlega", x, y - s * 1.8f).AddComponent<FlowZone>().Configure(new Vector2(half * 2f + 1.2f, 3.6f), new Vector2(push * 0.5f, -s * push));
+        }
+
+        /// <summary>
+        /// Tejido entre dos capilares (separa los carriles): una barra sólida de 'x0' a 'x1' con su orilla brillante
+        /// arriba y abajo y las puntas redondas.
+        /// </summary>
+        private void CapillaryDivider(float x0, float x1, float y, float half)
+        {
+            if (x1 - x0 < 0.5f) return;
+            var go = new GameObject("TejidoEntreCapilares");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3((x0 + x1) * 0.5f, y, 0f);
+            go.layer = PhysicsLayers.Ground;
+            go.AddComponent<BoxCollider2D>().size = new Vector2(x1 - x0, half * 2f);
+            var art = new GameObject("Dibujo").transform;
+            art.SetParent(go.transform, false);
+            art.gameObject.AddComponent<HeartPulse>().Configure(HeartPulse.Mode.Throb, -0.05f);
+            float len = x1 - x0;
+            Color fill = new Color(0.62f, 0.12f, 0.2f), lip = new Color(0.98f, 0.5f, 0.55f);
+            if (tissueFill != null) TiledChild(art, "Relleno", tissueFill, new Vector3(0f, half, 0f), new Vector2(len, half * 2f), -100, Color.white);
+            else SetupUtils.SpriteChild(art, "Relleno", PlaceholderArt.SquareCentered, fill, Vector3.zero, new Vector2(len, half * 2f), -100);
+            SetupUtils.SpriteChild(art, "OrillaArriba", PlaceholderArt.SquareCentered, lip, new Vector3(0f, half - 0.05f, 0f), new Vector2(len, 0.12f), -99);
+            SetupUtils.SpriteChild(art, "OrillaAbajo", PlaceholderArt.SquareCentered, lip, new Vector3(0f, -half + 0.05f, 0f), new Vector2(len, 0.12f), -99);
+            foreach (int side in new[] { -1, 1 })
+            {
+                SetupUtils.SpriteChild(art, "PuntaOrilla", PlaceholderArt.Circle, lip, new Vector3(side * len * 0.5f, 0f, 0f), Vector2.one * (half * 2f + 0.1f), -101);
+                SetupUtils.SpriteChild(art, "Punta", PlaceholderArt.Circle, fill, new Vector3(side * len * 0.5f, 0f, 0f), Vector2.one * half * 2f, -100);
+            }
+        }
+
+        /// <summary>Divisor de carriles con huecos (para cambiarte de carril): 'gaps' son (x, medio ancho).</summary>
+        private void CapillaryDividerWithGaps(float y, float half, float[] gapXs, float gapHalf)
+        {
+            float x = BedLanesStart;
+            foreach (float g in gapXs)
+            {
+                CapillaryDivider(x, g - gapHalf, y, half);
+                x = g + gapHalf;
+            }
+            CapillaryDivider(x, BedLanesEnd, y, half);
+        }
+
+        /// <summary>Bultito de tejido (un pericito) que angosta un capilar: sólido; para pasar hay que ENCOGERSE.</summary>
+        private void TissueBump(float x, float wallY, bool fromTop, float width, float height)
+        {
+            GameObject go = Node(fromTop ? "Pericito_Arriba" : "Pericito", x, wallY);
+            if (fromTop) go.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
+            go.layer = PhysicsLayers.Ground;
+            var pts = new List<Vector2> { new Vector2(width * 0.5f, -0.5f) };
+            for (int i = 0; i <= 10; i++)
+            {
+                float a = Mathf.PI * i / 10f;
+                pts.Add(new Vector2(Mathf.Cos(a) * width * 0.5f, Mathf.Sin(a) * height));
+            }
+            pts.Add(new Vector2(-width * 0.5f, -0.5f));
+            go.AddComponent<PolygonCollider2D>().points = pts.ToArray();
+            var art = new GameObject("Dibujo").transform;
+            art.SetParent(go.transform, false);
+            SetupUtils.SpriteChild(art, "Contorno", PlaceholderArt.Circle, new Color(0.4f, 0.06f, 0.12f), Vector3.zero, new Vector2(width + 0.16f, height * 2f + 0.16f), -98);
+            SetupUtils.SpriteChild(art, "Pericito", PlaceholderArt.Circle, new Color(0.9f, 0.45f, 0.5f), Vector3.zero, new Vector2(width, height * 2f), -97);
+            SetupUtils.SpriteChild(art, "Nucleo", PlaceholderArt.Circle, new Color(0.65f, 0.25f, 0.35f), new Vector3(0f, height * 0.45f, 0f), new Vector2(width * 0.35f, height * 0.45f), -96);
+        }
+
+        /// <summary>Célula sin oxígeno pegada a una pared del capilar (se pone rosita si pasas cerca).</summary>
+        private void OxygenCellAt(float x, float y) => Node("CelulaSinOxigeno", x, y).AddComponent<OxygenCell>();
+
+        /// <summary>Válvula de la vena de la pierna (se abre con la bomba muscular; 'broken' = rota, en las várices).</summary>
+        private void ValveAt(float x, float delay, bool broken = false) =>
+            Node(broken ? "ValvulaRota" : "ValvulaVenosa", x, FemoralCenterY(x)).AddComponent<VenousValve>().Configure(VesselRadius(x) - 0.05f, delay, broken);
+
+        /// <summary>Mensaje de NODO con letrero grande arriba.</summary>
+        private void FlightBannerNote(float x, string banner, Color color, string text = null)
+        {
+            var m = Node("MensajeVuelo", x, FemoralCenterY(x)).AddComponent<FlightMessage>();
+            m.Configure(text);
+            m.ConfigureBanner(banner, color);
+        }
+
+        // ================= TRAMO 4: CAPILARES =================
+        private void BuildCapillaries()
+        {
+            float c = 1f;   // centro del lecho de capilares
+            Checkpoint(1214f);
+            FlightNote(1218f, "CAPILARES: tan delgados que los glóbulos rojos pasan en FILA, uno por uno. Aquí la sangre va MÁS LENTO que en " +
+                "ningún otro lado: así le da tiempo de soltar el OXÍGENO.");
+            FlightBannerNote(1226f, "CAPILARES", new Color(1f, 0.75f, 0.8f));
+            // Tres carriles separados por tejido, con huecos para cambiarte de carril.
+            CapillaryDividerWithGaps(c + 1.45f, 0.35f, new[] { 1262f, 1314f, 1366f, 1412f }, 1.9f);
+            CapillaryDividerWithGaps(c - 1.45f, 0.35f, new[] { 1288f, 1340f, 1392f }, 1.9f);
+
+            // Células sin oxígeno en las paredes de cada carril.
+            FlightNote(1236f, "Esas células AZULES de las paredes se están quedando sin OXÍGENO. Pásales CERCA: se ponen rositas y te curan " +
+                "un poco. Cámbiate de carril para llegarles a todas.");
+            float[] lane0 = { 1244f, 1278f, 1320f, 1358f, 1400f };
+            float[] lane1 = { 1252f, 1298f, 1334f, 1374f, 1420f };
+            float[] lane2 = { 1262f, 1306f, 1342f, 1388f };
+            for (int i = 0; i < lane0.Length; i++) OxygenCellAt(lane0[i], c - 4f + 0.35f);
+            for (int i = 0; i < lane1.Length; i++) OxygenCellAt(lane1[i], (i % 2 == 0 ? c - 1.1f + 0.3f : c + 1.1f - 0.3f));
+            for (int i = 0; i < lane2.Length; i++) OxygenCellAt(lane2[i], c + 4f - 0.35f);
+
+            // Pericitos que angostan los carriles: ahí solo cabes encogido.
+            FlightNote(1292f, "¡Se angosta! Mantén {fijar} para ENCOGERTE y pasar.");
+            TissueBump(1302f, c - 1.1f, false, 2.2f, 0.6f);
+            TissueBump(1352f, c + 4f, true, 2.2f, 0.6f);
+            TissueBump(1380f, c - 4f, false, 2.2f, 0.6f);
+            TissueBump(1406f, c + 1.1f, true, 2.2f, 0.6f);
+
+            // Pocos enemigos: es la calma antes de las venas.
+            var k1 = Spec(prefabs.SAureus, 1, FlightPattern.Hover, 2.9f, 0f, 2f);
+            k1.hoverX = 5.5f; k1.hoverTime = 5f; k1.fireEveryBeats = 2;
+            k1.message = "Una bacteria se atoró en un capilar. Desde el mismo carril le das; los glóbulos de enfrente te tapan las balas.";
+            FlightWaveAt(1270f, k1);
+            var k2 = Spec(prefabs.Ldl, 4, FlightPattern.Line, -2.9f, 0f, 3f);
+            k2.interval = 0.6f;
+            FlightWaveAt(1326f, k2);
+            var k3 = Spec(prefabs.Neumococo, 3, FlightPattern.Line, 0f, 0f, 3.2f);
+            k3.interval = 0.7f;
+            FlightWaveAt(1360f, k3);
+            var k4 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, -2.9f, 5.8f, 2f);
+            k4.hoverX = 5.5f; k4.hoverTime = 4.5f; k4.fireEveryBeats = 2; k4.interval = 0.4f;
+            FlightWaveAt(1392f, k4);
+            Checkpoint(1340f);
+
+            // Los capilares se juntan en una vénula y la pantalla gira: de aquí en adelante, HACIA ARRIBA.
+            FlightNote(1434f, "Los capilares se juntan en VENAS. La sangre ya soltó el oxígeno y regresa al CORAZÓN... y en la pierna " +
+                "eso es CUESTA ARRIBA. ¡Ahora ARRIBA es adelante!");
+            FlightBannerNote(1452f, "¡HACIA ARRIBA!", new Color(1f, 0.9f, 0.6f));
+        }
+
+        // ================= TRAMO 5: VENAS DE LA PIERNA (hacia arriba) =================
+        private void BuildLegVeins()
+        {
+            Checkpoint(1474f);
+            Node("Gravedad", 1660f, FemoralCenterY(1660f)).AddComponent<GravityPull>().Configure(1474f, 1842f, 1.4f);
+            FlightNote(1478f, "VENAS de la pierna: la sangre SUBE contra la GRAVEDAD (te jala hacia abajo). Mantén ARRIBA.");
+            Node("BombaMuscular", 1560f, FemoralCenterY(1560f)).AddComponent<MusclePump>().Configure(1490f, 1646f, 4.2f);
+            FlightNote(1488f, "VÁLVULAS: se abren cuando el MÚSCULO de la pantorrilla aprieta la vena (¡bomba!) y se cierran para que la " +
+                "sangre no se regrese. Cruza cuando estén ABIERTAS. (Por eso caminar ayuda a la circulación.)");
+            ValveAt(1504f, 0f);
+            ValveAt(1530f, 0.3f);
+            Checkpoint(1540f);
+            ValveAt(1556f, 0.6f);
+            var v1 = Spec(prefabs.SAureus, 2, FlightPattern.Line, 2f, -4f, 2.4f);
+            v1.splitPrefab = prefabs.SAureusCoco; v1.splitCount = 2; v1.interval = 0.5f;
+            FlightWaveAt(1546f, v1);
+
+            // Picadura de mosquito: entran los esporozoítos del Plasmodium (la malaria).
+            FlightNote(1566f, "¡Te picó un MOSQUITO en la pierna! Metió ESPOROZOÍTOS de PLASMODIUM, el parásito de la MALARIA. " +
+                "Van rapidísimo: ¡ANTIPARASITARIO!");
+            var m1 = Spec(prefabs.Esporozoito, 5, FlightPattern.Line, 3f, -1.5f, 6f);
+            m1.warn = true; m1.interval = 0.35f;
+            FlightWaveAt(1570f, m1);
+            var m2 = Spec(prefabs.Esporozoito, 4, FlightPattern.Chase, 2f, -1.3f, 2.8f);
+            m2.hoverTime = 5f; m2.interval = 0.5f;
+            FlightWaveAt(1580f, m2);
+            ValveAt(1588f, 0.9f);
+            Checkpoint(1598f);
+            var m3 = Spec(prefabs.Esporozoito, 6, FlightPattern.Line, -3f, 1.2f, 6.5f);
+            m3.warn = true; m3.interval = 0.3f;
+            FlightWaveAt(1604f, m3);
+            ValveAt(1616f, 1.2f);
+            ValveAt(1640f, 1.5f);
+            SpeedPad(1647f, FemoralCenterY(1647f), FlightSpeedPad.Kind.BetaBlocker);
+
+            // ---------- Várices: válvulas rotas, sangre que se regresa, remolinos y un coágulo (trombosis) ----------
+            FlightNote(1652f, "VÁRICES: aquí las válvulas están ROTAS. La sangre se REGRESA, se estanca y hace REMOLINOS; por eso la " +
+                "vena se hincha.");
+            FlightBannerNote(1656f, "VÁRICES", new Color(0.8f, 0.6f, 1f));
+            ValveAt(1664f, 0f, true);
+            Node("SangreQueSeRegresa", 1670f, FemoralCenterY(1670f)).AddComponent<FlowZone>().Configure(new Vector2(10f, VesselRadius(1670f) * 2f), new Vector2(-2.6f, 0f));
+            Node("Remolino", 1678f, FemoralCenterY(1678f) + 2.6f).AddComponent<FlowSwirl>().Configure(3f, 5.5f, true);
+            Node("Remolino", 1692f, FemoralCenterY(1692f) - 2.8f).AddComponent<FlowSwirl>().Configure(3.2f, 5.5f, false);
+            ThickBlood(1684f, 1712f, FemoralCenterY(1698f), 5.5f,
+                "Sangre ESTANCADA: no circula, se pone espesa y todo va lento (sin dash).");
+            ValveAt(1702f, 0f, true);
+            Node("SangreQueSeRegresa", 1708f, FemoralCenterY(1708f)).AddComponent<FlowZone>().Configure(new Vector2(10f, VesselRadius(1708f) * 2f), new Vector2(-2.6f, 0f));
+            Node("Remolino", 1716f, FemoralCenterY(1716f) + 2f).AddComponent<FlowSwirl>().Configure(2.8f, 5f, true);
+            var vx = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 1.5f, 1.4f, 2.6f);
+            vx.edge = FlightEdge.Top; vx.interval = 0.5f;
+            FlightWaveAt(1690f, vx);
+            FormingClot(1726f, 2.2f, "¡TROMBOSIS! La sangre estancada forma COÁGULOS en las venas. ¡ANTICOAGULANTE antes de que se cierre! " +
+                "(Por eso en los viajes largos hay que pararse y caminar.)");
+            Checkpoint(1740f);
+
+            // ---------- Más arriba: válvulas sanas otra vez ----------
+            Node("BombaMuscular", 1790f, FemoralCenterY(1790f)).AddComponent<MusclePump>().Configure(1744f, 1840f, 3.8f);
+            ValveAt(1756f, 0f);
+            var v2 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 2.5f, -5f, 2.4f);
+            v2.hoverX = 3.6f; v2.hoverTime = 4f; v2.fireEveryBeats = 2; v2.interval = 0.3f;
+            FlightWaveAt(1764f, v2);
+            ValveAt(1782f, 0.3f);
+            IVSerum(1792f, FemoralCenterY(1792f) - 2f);
+            Checkpoint(1796f);
+            var v3 = Spec(prefabs.Esporozoito, 5, FlightPattern.Line, 0f, 0f, 6f);
+            v3.warn = true; v3.interval = 0.35f;
+            FlightWaveAt(1800f, v3);
+            ValveAt(1810f, 0.6f);
+            var v4 = Spec(prefabs.Neumococo, 4, FlightPattern.Line, 3f, -2f, 3f);
+            v4.interval = 0.4f;
+            FlightWaveAt(1818f, v4);
+            ValveAt(1834f, 0.9f);
+        }
+
+        // ================= TRAMO 6: VENA CAVA y el PLASMODIUM =================
+        private void BuildVenaCava(float endX)
+        {
+            Checkpoint(1846f);
+            FlightNote(1860f, "Se une la vena de la OTRA pierna: ahora es la VENA CAVA INFERIOR, ¡la vena más grande del cuerpo!");
+            FlightBannerNote(1868f, "VENA CAVA", new Color(0.7f, 0.75f, 1f));
+            FlightNote(1890f, "Dato: la sangre de las venas NO es azul. Es rojo oscuro; solo se VE azul a través de la piel.");
+            SpeedPad(1898f, FemoralCenterY(1898f) + 2f, FlightSpeedPad.Kind.Adrenaline);
+            var c1 = Spec(prefabs.Merozoito, 6, FlightPattern.Line, 4f, -1.6f, 3.2f);
+            c1.amplitude = 0.8f; c1.frequency = 0.5f; c1.interval = 0.3f;
+            c1.message = "MEROZOÍTOS: el Plasmodium ya se metió a los glóbulos rojos, se multiplicó y los está REVENTANDO. ¡Antiparasitario!";
+            FlightWaveAt(1910f, c1);
+            var c2 = Spec(prefabs.Esporozoito, 6, FlightPattern.Line, -4f, 1.6f, 6.5f);
+            c2.warn = true; c2.interval = 0.3f;
+            FlightWaveAt(1928f, c2);
+            Checkpoint(1940f);
+            var c3 = Spec(prefabs.SAureus, 3, FlightPattern.Hover, 4.5f, -4.5f, 2.6f);
+            c3.hoverX = 3.4f; c3.hoverTime = 5f; c3.fireEveryBeats = 2; c3.shots = 3; c3.spreadDegrees = 24f; c3.interval = 0.3f;
+            FlightWaveAt(1948f, c3);
+            FlightNote(1956f, "Aquí llegan las venas RENALES: la sangre que ya limpiaron los RIÑONES. Te empujan hacia el centro.");
+            var c4 = Spec(prefabs.Merozoito, 5, FlightPattern.Chase, 3f, -1.5f, 2.6f);
+            c4.hoverTime = 5f; c4.interval = 0.5f;
+            FlightWaveAt(1976f, c4);
+            var c5 = Spec(prefabs.Neumococo, 6, FlightPattern.Swoop, 0.5f, 0.75f, 3f);
+            c5.edge = FlightEdge.Bottom; c5.interval = 0.35f;
+            FlightWaveAt(1994f, c5);
+            FlightNote(2006f, "Las venas HEPÁTICAS: la sangre que pasó por el HÍGADO. (Ahí es donde el Plasmodium se esconde primero.)");
+            SpeedPad(2028f, FemoralCenterY(2028f) - 2f, FlightSpeedPad.Kind.BetaBlocker);
+            var c6 = Spec(prefabs.Merozoito, 8, FlightPattern.Line, 0f, 0f, 3.6f);
+            c6.amplitude = 3f; c6.frequency = 0.6f; c6.interval = 0.3f;
+            FlightWaveAt(2034f, c6);
+            IVSerum(2046f, FemoralCenterY(2046f));
+            Checkpoint(2052f);
+
+            FlightNote(2066f, "NODO: Muchos glóbulos rojos dando vueltas... y uno tiene algo morado ADENTRO. Ten listo el ANTIPARASITARIO.");
+            Checkpoint(2084f);
+            PlasmodiumBossAt(2108f);
+
+            FlightNote(2136f, "¡Lo lograste! La vena cava desemboca en la AURÍCULA DERECHA del corazón: diste la vuelta completa al cuerpo.");
+            FlightBannerNote(2160f, "¡AL CORAZÓN!", new Color(1f, 0.5f, 0.55f));
+        }
+
+        /// <summary>El jefe: el Plasmodium escondido en un anillo de glóbulos rojos, a media vena cava.</summary>
+        private void PlasmodiumBossAt(float x)
+        {
+            GameObject go = Node("Jefe_Plasmodium", x, FemoralCenterY(x));
+            var health = go.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.PlasmodiumJefe);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            var hurt = go.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
+            SetupUtils.SetVector2(hurt, "offset", Vector2.zero);
+            SetupUtils.SetVector2(hurt, "size", new Vector2(1.7f, 1.7f));
+            go.AddComponent<PlasmodiumBoss>().Configure(prefabs.EnemyProjectile, prefabs.Merozoito);
+        }
+
         private FlightWaveSpec Spec(EnemyHealth prefab, int count, FlightPattern pattern, float entry, float step, float speed)
         {
             return new FlightWaveSpec
@@ -4036,7 +4351,7 @@ namespace HealingKnight.EditorTools
             //   8) Coágulos que se van FORMANDO (disuélvelos antes de que se cierren) y una placa rota con coágulo encima.
             //   9) Minijefe: la PLACA DE ATEROMA (detiene la pantalla; a la mitad se rompe y le sale un coágulo).
             // Todo es relativo a la cámara, que avanza sola por el centro del vaso (FlightRoute).
-            const float length = 1220f;
+            const float length = 2200f;
             const float startX = -10f, endX = startX + length;
             LevelManager manager = BuildLevelBase(length, new LevelStyle
             {
@@ -4093,8 +4408,14 @@ namespace HealingKnight.EditorTools
                 new Vector2(392f, 4.1f), new Vector2(566f, 4.1f),    // aorta abdominal
                 new Vector2(606f, 4.4f), new Vector2(BranchEndX + 10f, 4.4f),   // ilíacas
                 new Vector2(FemoralStart, 4.6f), new Vector2(1112f, 4.6f),       // femoral
-                new Vector2(1130f, 5.2f)                              // después del minijefe: sprint final
+                new Vector2(1130f, 5.2f), new Vector2(1190f, 5.2f),   // después del minijefe: sprint
+                new Vector2(1224f, 2.6f), new Vector2(1430f, 2.6f),   // capilares: lo MÁS LENTO de todo el cuerpo
+                new Vector2(1466f, 3f), new Vector2(1736f, 3f),       // venas de la pierna (hacia arriba)
+                new Vector2(1752f, 3.3f), new Vector2(1850f, 3.3f),
+                new Vector2(1876f, 3.7f)                              // vena cava
             });
+            // La pantalla GIRA al salir de los capilares: de ahí en adelante se vuela hacia ARRIBA (la pierna, rumbo al corazón).
+            route.ConfigureRoll(new[] { new Vector2(1446f, 0f), new Vector2(1472f, -90f) });
             route.ConfigureFork(upper.ToArray(), lower.ToArray(), new Vector2(tipX, AortaCenterY(tipX)), 1.15f,
                 "Ilíaca IZQUIERDA: la sangre corre más rápido aquí. Más enemigos... y suero.",
                 "Ilíaca DERECHA: más coágulos y más glóbulos rojos. Ten listo el ANTICOAGULANTE.");
@@ -4112,8 +4433,15 @@ namespace HealingKnight.EditorTools
             const float iliacWallsEnd = BranchEndX + 16f;   // lo que se ve de la ilíaca antes del fundido
             WallWithGaps(OuterBottomY, -40f, iliacWallsEnd, true, bottomGaps);
             WallWithGaps(OuterTopY, -40f, iliacWallsEnd, false, topGaps);
-            WallWithGaps(FemoralBottomY, FemoralStart - 12f, endX + 25f, true, new List<Vector2>());
-            WallWithGaps(FemoralTopY, FemoralStart - 12f, endX + 25f, false, new List<Vector2>());
+            // En la vena cava llegan otras venas: la ilíaca de la otra pierna (arriba), las renales y las hepáticas.
+            var cavaTop = new List<Vector2> { new Vector2(1874f, 2.6f), new Vector2(1962f, 1.5f), new Vector2(2012f, 1.6f) };
+            var cavaBottom = new List<Vector2> { new Vector2(1966f, 1.5f) };
+            WallWithGaps(FemoralBottomY, FemoralStart - 12f, endX + 25f, true, cavaBottom);
+            WallWithGaps(FemoralTopY, FemoralStart - 12f, endX + 25f, false, cavaTop);
+            SideVein(1874f, 2.6f, true, 6f);
+            SideVein(1962f, 1.5f, true, 4f);
+            SideVein(1966f, 1.5f, false, 4f);
+            SideVein(2012f, 1.6f, true, 4f);
             BranchTube(121f, 1.4f, true, 7f);
             BranchTube(134f, 1.4f, true, 7f);
             BranchTube(147f, 1.4f, true, 7f);
@@ -4153,7 +4481,12 @@ namespace HealingKnight.EditorTools
             new GameObject("GlobulosRojos").AddComponent<BloodStream>().Configure(14f, tipX + 4f, 7, 2.5f, cellArt);
             new GameObject("GlobulosRojos_Izquierda").AddComponent<BloodStream>().Configure(ForkWide, BranchEndX + 2f, 4, 1.8f, cellArt, 1);
             new GameObject("GlobulosRojos_Derecha").AddComponent<BloodStream>().Configure(ForkWide, BranchEndX + 2f, 11, 2.2f, cellArt, 2);
-            new GameObject("GlobulosRojos_Femoral").AddComponent<BloodStream>().Configure(FemoralStart, endX - 8f, 5, 1.6f, cellArt);
+            new GameObject("GlobulosRojos_Femoral").AddComponent<BloodStream>().Configure(FemoralStart, 1210f, 5, 1.6f, cellArt);
+            var lanes = new GameObject("GlobulosRojos_Capilares").AddComponent<BloodStream>();
+            lanes.Configure(BedLanesStart, BedLanesEnd, 7, 0.04f, cellArt);
+            lanes.ConfigureLanes(CapillaryLanes, new Vector2(1.3f, 1.55f), new Vector2(0.3f, 0.8f));
+            new GameObject("GlobulosRojos_Venas").AddComponent<BloodStream>().Configure(1470f, CavaStart, 5, 2.8f, cellArt);
+            new GameObject("GlobulosRojos_Cava").AddComponent<BloodStream>().Configure(CavaStart, endX - 8f, 9, 4.6f, cellArt);
 
             // ================= TRAMO 1: la aorta =================
             // ---------- Aorta ascendente ----------
@@ -4360,13 +4693,16 @@ namespace HealingKnight.EditorTools
             FlightNote(BranchEndX - 16f, "¡Ilíaca derecha superada! De aquí sale la arteria FEMORAL, rumbo a la pierna...", 2);
 
             BuildDiseasedFemoral(endX);
+            BuildCapillaries();
+            BuildLegVeins();
+            BuildVenaCava(endX);
 
             // Inicio dentro del ventrículo.
             var spawn = new Vector2(startX + 4f, AortaCenterY(startX) - 0.6f);
             SetupUtils.SetVector2(manager, "spawnPoint", spawn);
             var player = Object.FindAnyObjectByType<HealingKnight.Gameplay.Player.PlayerController>();
             if (player != null) player.transform.position = spawn;
-            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Aorta, ilíacas y femoral limpias! Le quitaste las placas a la arteria. (Fin del tramo 3 de prueba.)");
+            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Diste la vuelta completa: del corazón a la pierna y de regreso! Arterias, capilares y venas, limpios.");
         }
 
         /// <summary>TRAMO 3: la arteria femoral enferma (placas, LDL, células espumosas, coágulos que se forman y la placa de ateroma).</summary>
@@ -4455,7 +4791,7 @@ namespace HealingKnight.EditorTools
             var c12 = Spec(prefabs.CelulaEspumosa, 2, FlightPattern.Chase, 1.6f, -3.2f, 2.6f);
             c12.hoverTime = 5f; c12.interval = 0.5f;
             FlightWaveAt(1156f, c12);
-            FlightNote(endX - 26f, "¡Arteria femoral limpia! Más adelante la sangre llega a los CAPILARES... (fin del tramo 3).");
+            FlightNote(1184f, "¡Arteria femoral limpia! Ahora se hace más y más delgada: arteriolas... y luego CAPILARES.");
         }
 
         private void BuildSandbox()

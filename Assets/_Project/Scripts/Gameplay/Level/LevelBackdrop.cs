@@ -70,6 +70,13 @@ namespace HealingKnight.Gameplay.Level
             float maxY = Mathf.Max(0f, (size.y * scale - viewH) * 0.5f);
             float y = c.y + verticalOffset - Mathf.Clamp((c.y - baseCameraY) * verticalParallax, -maxY, maxY);
 
+            // Si la cámara está girada (vuelo hacia arriba), el fondo gira con ella para tapar toda la pantalla y casi
+            // no se desliza (sus márgenes ya no van en esa dirección).
+            transform.rotation = cam.transform.rotation;
+            float straight = Mathf.Abs(cam.transform.right.x);
+            x = Mathf.Lerp(c.x, x, straight);
+            y = Mathf.Lerp(c.y, y, straight);
+
             transform.position = new Vector3(x, y, 5f);
         }
     }

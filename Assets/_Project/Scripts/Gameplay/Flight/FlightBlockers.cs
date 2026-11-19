@@ -12,6 +12,8 @@ namespace HealingKnight.Gameplay.Flight
         bool Blocking { get; }
         /// <summary>0 = siempre; 1/2 = solo en esa rama de la bifurcación.</summary>
         int Branch { get; }
+        /// <summary>Si la nave ya va más adelante que esto, ya no detiene la pantalla (un jefe: float.MaxValue).</summary>
+        float PassX { get; }
     }
 
     /// <summary>La lista de lo que detiene la pantalla (la revisa FlightRoute cada cuadro).</summary>
@@ -26,8 +28,8 @@ namespace HealingKnight.Gameplay.Flight
         public static void Remove(IFlightBlocker b) => all.Remove(b);
 
         /// <summary>
-        /// ¿Algo detiene la pantalla en 'stopX'? Solo cuenta lo que está ADELANTE de la nave (si ya lo pasaste, no) y de
-        /// la rama en la que vas.
+        /// ¿Algo detiene la pantalla en 'stopX'? Solo cuenta lo que la nave no ha pasado (PassX) y de la rama en la que
+        /// vas.
         /// </summary>
         public static bool Blocks(float stopX, float shipX, int routeBranch)
         {
@@ -36,7 +38,7 @@ namespace HealingKnight.Gameplay.Flight
                 IFlightBlocker b = all[i];
                 Object unityObject = b as Object;
                 if (b == null || (!ReferenceEquals(unityObject, null) && unityObject == null)) { all.RemoveAt(i); continue; }
-                if (!b.Blocking || b.BlockX > stopX || b.BlockX < shipX + 0.5f) continue;
+                if (!b.Blocking || b.BlockX > stopX || shipX > b.PassX) continue;
                 if (b.Branch != 0 && b.Branch != routeBranch) continue;
                 return true;
             }

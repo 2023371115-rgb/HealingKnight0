@@ -25,6 +25,8 @@ namespace HealingKnight.Gameplay.Flight
         [SerializeField] private Sprite art;
         [Tooltip("0 = siempre; 1/2 = solo en esa rama de la bifurcación.")]
         [SerializeField] private int branch;
+        [Tooltip("Carriles (capilares): si hay, cada glóbulo va en uno de estos (respecto al centro) en fila; 'band' es cuánto se mueve.")]
+        [SerializeField] private float[] lanes = new float[0];
 
         private class Cell
         {
@@ -36,6 +38,14 @@ namespace HealingKnight.Gameplay.Flight
         }
 
         private readonly List<Cell> pool = new List<Cell>();
+
+        /// <summary>En fila por carriles (capilares): un glóbulo por carril, uno tras otro.</summary>
+        public void ConfigureLanes(float[] laneOffsets, Vector2 sizes, Vector2 lags)
+        {
+            lanes = laneOffsets;
+            sizeRange = sizes;
+            lagRange = lags;
+        }
         private float aspect = 1f;   // alto / ancho del dibujo (el de arte es un disco visto de lado)
 
         public void Configure(float startX, float endX, int count, float verticalBand, Sprite sprite, int routeBranch = 0)
@@ -97,14 +107,15 @@ namespace HealingKnight.Gameplay.Flight
                     c.lag = Random.Range(lagRange.x, lagRange.y);
                     c.spin = Random.Range(0.6f, 1.4f) * (Random.value < 0.5f ? -1f : 1f);
                     c.phase = Random.value * 6f;
-                    c.screen = new Vector2(hw + c.size, Random.Range(-band, band));
+                    float laneY = lanes != null && lanes.Length > 0 ? lanes[Random.Range(0, lanes.Length)] : 0f;
+                    c.screen = new Vector2(hw + c.size, laneY + Random.Range(-band, band));
                     c.t.gameObject.SetActive(true);
                 }
 
                 // Avanzan con la sangre, un poco más lento que tú; con cada latido se empujan un poco.
                 c.screen.x -= (c.lag - Heartbeat.SurgeNow * 0.6f) * dt;
                 c.phase += c.spin * dt;
-                c.screen.y += Mathf.Sin(c.phase * 0.7f) * 0.25f * dt;
+                if (lanes == null || lanes.Length == 0) c.screen.y += Mathf.Sin(c.phase * 0.7f) * 0.25f * dt;
                 Vector2 world = route.CameraPosition + c.screen;
                 c.t.position = new Vector3(world.x, world.y, 0f);
                 // Disco que gira: se ve delgado de canto y redondo de frente.
