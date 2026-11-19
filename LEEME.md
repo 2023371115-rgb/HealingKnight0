@@ -102,6 +102,26 @@ Los dibujos hechos con IA (fondo verde quitado) ya están en el juego:
 
 Para cambiar un dibujo: guarda el PNG nuevo con el mismo nombre (fondo transparente, mirando a la derecha) y regenera.
 
+## Letreros e indicaciones
+
+Cada nivel tiene **letreros** con el estilo de su sistema y NODO habla en un **globo** con su cara.
+- **Automáticos:** Bienvenida con el nombre del órgano al empezar, Salida al final, "¡JEFE!" antes de cada jefe y un
+  aviso de Peligro antes del primer hueco o lago y de los grandes ("¡ÁCIDO!", "¡BILIS!", "¡SALIVA!", "¡HUECO!").
+- **De cada nivel:** un letrero de Info donde se enseña algo nuevo (DUODENO, CILIOS, RETINA...). Se ve desde lejos y,
+  al llegar, NODO lo explica. Flechas donde el camino sube o baja (colon ascendente y descendente, corrientes de aire),
+  avisos de zonas (¡CORRE!, ¡TOS!, ¡ESTORNUDO!, ¡TORMENTA!) y un "?" chiquito debajo de los pasajes secretos.
+- **Globos de botón:** cerca de un gancho de hilo dental sale "[tecla] Hilo dental" y junto a un escondite del Ojo
+  "[tecla] Esconderse", siempre con la tecla o el botón que tengas puesto.
+- **Globo de NODO:** baja desde arriba, escribe letra por letra y dura según lo largo del texto; si llegan varios,
+  hace fila. Su color va con el sistema y su cara cambia: normal, alerta (rojo, si el mensaje empieza con "¡" o
+  habla de peligro) y feliz (verde, premios y zona limpia).
+- **Dibujos (opcionales, sin ellos se arman con figuras):**
+  - Letreros: `Art/Letreros/{Digestivo|Respiratorio|Nervioso}/Letrero_Bienvenida, _Info, _Peligro, _Salida,
+    _FlechaDerecha, _FlechaArriba, _FlechaAbajo, _Secreto.png`. Tablero en blanco: la palabra la escribe el juego.
+  - NODO: `Art/UI/Resources/Nodo/Nodo_Normal.png`, `Nodo_Alerta.png` y `Nodo_Feliz.png`.
+- **Dónde está:** `Gameplay/Level/Signpost.cs` (letrero), `ButtonPrompt.cs` (globo de botón), `UI/NodoBubble.cs`
+  (globo de NODO). Se colocan en `SceneSetup`: `Tip(x, "PALABRA", "lo que dice NODO")` y `Sign(tipo, x, y, "PALABRA")`.
+
 ## Estilo de arte: caricatura (tipo Hora de Aventura)
 
 El juego ya no usa pixel art: colores planos, contorno grueso oscuro (el mismo tono en todo), formas redondas,

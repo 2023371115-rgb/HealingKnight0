@@ -10,16 +10,21 @@ using UnityEngine.UI;
 namespace HealingKnight.UI
 {
     /// <summary>
-    /// HUD del nivel: salud, energía del escudo, medicamento seleccionado, nombre del nivel
-    /// y mensajes breves (NODO, "¡AVANZA!", tutorial). Se construye solo al iniciar la escena.
+    /// HUD del nivel: salud, energía del escudo, medicamento seleccionado, nombre del nivel, el globo de NODO
+    /// con las indicaciones (NodoBubble), "¡AVANZA!" y la ayuda de controles. Se construye solo al iniciar la escena.
     /// </summary>
     public class HUD : MonoBehaviour
     {
+        [Tooltip("Letra del juego (Titan One). La asigna SceneSetup; también la usan los letreros del nivel.")]
+        [SerializeField] private Font titleFont;
+        [Tooltip("Sistema del nivel (Digestivo, Respiratorio, Nervioso): da el color del globo de NODO.")]
+        [SerializeField] private string theme = "Digestivo";
+
+        private NodoBubble nodo;
         private UIBar healthBar;
         private UIBar shieldBar;
         private TextMeshProUGUI medicationText;
         private Image medicationSwatch;
-        private TextMeshProUGUI messageText;
         private TextMeshProUGUI goText;
         private TextMeshProUGUI levelText;
         private TextMeshProUGUI controlsText;
@@ -34,12 +39,16 @@ namespace HealingKnight.UI
         private EnemyHealth boss;
 
         private PlayerController player;
-        private float messageTimer;
         private float goTimer;
         private float controlsTimer = 12f;
 
         private void Awake()
         {
+            if (titleFont != null)
+            {
+                CartoonUI.SetFonts(titleFont, titleFont);
+                if (WorldText.DefaultFont == null) WorldText.DefaultFont = titleFont;
+            }
             Build();
         }
 
@@ -130,9 +139,8 @@ namespace HealingKnight.UI
             levelText = UIFactory.Text(root, "", 30f, new Color(1f, 1f, 1f, 0.85f));
             UIFactory.Place(levelText.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -30f), new Vector2(900f, 50f));
 
-            // Mensajes (centro)
-            messageText = UIFactory.Text(root, "", 46f, UIFactory.TextColor);
-            UIFactory.Place(messageText.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 260f), new Vector2(1400f, 160f));
+            // Indicaciones: el globo de NODO (arriba, con su cara y el color del sistema).
+            nodo = NodoBubble.Create(root, theme);
             // "¡AVANZA! →"
             goText = UIFactory.Text(root, "¡AVANZA!  →", 64f, new Color(1f, 0.85f, 0.2f), TextAlignmentOptions.Right);
             UIFactory.Place(goText.rectTransform, new Vector2(1f, 0.5f), new Vector2(1f, 0.5f), new Vector2(-60f, 120f), new Vector2(700f, 100f));
@@ -219,9 +227,7 @@ namespace HealingKnight.UI
 
         private void ShowMessage(string text)
         {
-            messageText.text = PlayerControls.Format(text);   // {saltar}, {disparar}... = tu tecla o botón
-            messageText.alpha = 1f;
-            messageTimer = 3f;
+            nodo.Show(PlayerControls.Format(text));   // {saltar}, {disparar}... = tu tecla o botón
         }
 
         private void OnBossStarted(string bossName, EnemyHealth health)
@@ -254,12 +260,6 @@ namespace HealingKnight.UI
             float dt = Time.unscaledDeltaTime;
 
             if (boss != null) bossBar.SetValue(boss.Health01);
-
-            if (messageTimer > 0f)
-            {
-                messageTimer -= dt;
-                if (messageTimer < 0.6f) messageText.alpha = Mathf.Clamp01(messageTimer / 0.6f);
-            }
 
             if (goTimer > 0f)
             {

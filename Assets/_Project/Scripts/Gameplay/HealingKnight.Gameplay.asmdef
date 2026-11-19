@@ -3,7 +3,8 @@
     "rootNamespace": "HealingKnight.Gameplay",
     "references": [
         "HealingKnight.Core",
-        "Unity.InputSystem"
+        "Unity.InputSystem",
+        "Unity.TextMeshPro"
     ],
     "includePlatforms": [],
     "excludePlatforms": [],

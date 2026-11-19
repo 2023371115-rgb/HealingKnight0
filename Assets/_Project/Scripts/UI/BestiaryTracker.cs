@@ -85,7 +85,7 @@ namespace HealingKnight.UI
             Canvas canvas = UIFactory.CreateCanvas("Bestiario Aviso", 40, transform);
             Image body = CartoonUI.Blob(canvas.transform, "Aviso", new Color(0.32f, 0.13f, 0.27f, 1f), new Vector2(520f, 140f), 6f, 1f, true, true);
             toast = (RectTransform)body.transform.parent;
-            UIFactory.Place(toast, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(600f, -40f), new Vector2(520f, 140f));
+            UIFactory.Place(toast, new Vector2(1f, 1f), new Vector2(1f, 1f), new Vector2(600f, -260f), new Vector2(520f, 140f));
 
             Image glow = CartoonUI.Image(body.transform, "Halo", CartoonUI.Glow, new Color(1f, 0.85f, 0.5f, 0.45f));
             UIFactory.Place(glow.rectTransform, new Vector2(0f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(66f, 0f), new Vector2(170f, 170f));
@@ -124,7 +124,7 @@ namespace HealingKnight.UI
             float outT = Mathf.Clamp01((toastTimer - (toastTime - 0.35f)) / 0.35f);
             float ease = 1f - Mathf.Pow(1f - inT, 3f);
             float x = Mathf.Lerp(600f, -30f, ease) + Mathf.Lerp(0f, 600f, outT * outT);
-            toast.anchoredPosition = new Vector2(x, -40f);
+            toast.anchoredPosition = new Vector2(x, -260f);   // debajo del globo de NODO
             float pop = 1f + Mathf.Sin(Mathf.Clamp01(toastTimer / 0.5f) * Mathf.PI) * 0.06f;
             toast.localScale = new Vector3(pop, pop, 1f);
 

@@ -110,10 +110,14 @@ namespace HealingKnight.EditorTools
             // del disco (no se crea nada nuevo: ya existen).
             data.Run();
             prefabs.Run();
+            signTheme = SignThemeFor(path);
+            signRoot = null;
+            placedSigns.Clear();
 
             try
             {
                 build();
+                FinishSigns();
             }
             catch (System.Exception e)
             {
@@ -733,6 +737,9 @@ namespace HealingKnight.EditorTools
             }
 
             Vector2 spawn = new Vector2(startX + 3f, FloorY + 0.05f);
+            currentSpawn = spawn;
+            currentExitX = endX - 4f;
+            signFont = AssetDatabase.LoadAssetAtPath<Font>($"{UIArtFolder}/Fuentes/TitanOne-Regular.ttf");
 
             var managerGo = new GameObject("LevelManager");
             var manager = managerGo.AddComponent<LevelManager>();
@@ -747,7 +754,9 @@ namespace HealingKnight.EditorTools
             var player = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Player.gameObject);
             player.transform.position = new Vector3(spawn.x, spawn.y, 0f);
 
-            new GameObject("HUD", typeof(HUD));
+            var hud = new GameObject("HUD", typeof(HUD)).GetComponent<HUD>();
+            SetupUtils.SetRef(hud, "titleFont", signFont);                        // letra del globo de NODO y de los letreros
+            SetupUtils.SetString(hud, "theme", signTheme.system ?? "Digestivo");  // color del globo de NODO
             new GameObject("PauseMenu", typeof(PauseMenu));
             new GameObject("Bestiario", typeof(BestiaryTracker));   // desbloquea fichas al ver / derrotar patógenos
 
@@ -895,6 +904,7 @@ namespace HealingKnight.EditorTools
             arena.waves = new List<Wave>(waves);
             arena.effectivenessTable = data.Table;
             arena.startMessage = startMessage;
+            BossSignIfNeeded(triggerX, waves);
             return arena;
         }
 
@@ -1373,6 +1383,8 @@ namespace HealingKnight.EditorTools
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 2)));
 
             // ----- 2) Lagos con comida "viva" y chorros de ácido -----
+            Tip(18.6f, "¡ÁCIDO!", "Lago de ÁCIDO: no lo toques. Brinca en la comida que flota: la DONA rebota, la SALCHICHA rueda y la HAMBURGUESA se hunde si te quedas encima.", FloorY, Signpost.Kind.Warning);
+            Sign(Signpost.Kind.Info, 36.7f, FloorY, "OMEPRAZOL");
             Food("Dona", 23.4f, 0.95f, FloatingFood.FoodKind.Bouncy);          // rebota: trampolín
             Food("Salchicha", 28.2f, 0.79f, FloatingFood.FoodKind.Rolling);    // rueda hacia donde caminas
             Food("Hamburguesa", 33.2f, 0.95f, FloatingFood.FoodKind.Sinking);  // se hunde si te quedas
@@ -1397,6 +1409,7 @@ namespace HealingKnight.EditorTools
             Platform(62f, 3.4f, 3f);
 
             // ----- 4) Burbujas de gas y el sushi -----
+            Tip(69.6f, "GAS", "Burbujas de GAS: es el aire que tragas al comer (por eso eructas). Párate encima y te suben; arriba revientan, así que brinca a tiempo.");
             GasVent(74.6f, 6.6f);
             GasVent(80.2f, 7.4f, 3f);
             Platform(77.4f, 5.6f, 2.6f);
@@ -1416,6 +1429,7 @@ namespace HealingKnight.EditorTools
             Food("Salchicha", 102.4f, 0.79f, FloatingFood.FoodKind.Rolling);
 
             // ----- 6) Huida: la contracción te persigue hasta la arena del jefe -----
+            Sign(Signpost.Kind.Warning, 107.6f, FloorY, "¡CORRE!");
             Peristalsis(109f, 125f);
             Geyser(115.5f, FloorY, 3.5f, 2.2f, 0f);
             Geyser(121.5f, FloorY, 3.5f, 2.2f, 1.1f);
@@ -1471,7 +1485,7 @@ namespace HealingKnight.EditorTools
                 W(0.6f, E(prefabs.Giardia, data.Giardia, 2)),
                 W(1.0f, E(prefabs.Giardia, data.Giardia, 2, SpawnSide.Both)));
 
-            SetMessage("NODO: Duodeno. La bilis rompe la grasa en gotitas (la emulsiona). Cruza las gotas ANTES de que llegue el chorro.", 26f);
+            Tip(26f, "DUODENO", "NODO: Duodeno. La bilis rompe la grasa en gotitas (la emulsiona). Cruza las gotas ANTES de que llegue el chorro.");
             AcidGeyser g1 = BileGeyser(32.8f, bottom, 4.5f, 3.2f, 0f);
             AcidGeyser g2 = BileGeyser(38.4f, bottom, 4.5f, 3.2f, 1.1f);
             AcidGeyser g3 = BileGeyser(44f, bottom, 4.5f, 3.2f, 2.2f);
@@ -1483,7 +1497,7 @@ namespace HealingKnight.EditorTools
             FatDrop(44f, 1.9f, 1.8f, g3);
 
             // ---------- 2) Yeyuno: vellosidades ----------
-            SetMessage("NODO: Yeyuno. Las vellosidades absorben la comida. Brinca de punta en punta... y cuidado: hay Giardias escondidas en la bilis.", 50f);
+            Tip(50f, "YEYUNO", "NODO: Yeyuno. Las vellosidades absorben la comida. Brinca de punta en punta... y cuidado: hay Giardias escondidas en la bilis.");
             Villus(54f, bottom, 3f);
             Villus(57.2f, bottom, 3.8f);
             Villus(60.4f, bottom, 3.2f);
@@ -1515,7 +1529,7 @@ namespace HealingKnight.EditorTools
 
             // ---------- 4) Íleon: el río de quimo ----------
             Peyer(124.5f);
-            SetMessage("NODO: Íleon. Súbete a la salchicha: el quimo te lleva río abajo. Brinca los chorros de bilis.", 126f);
+            Tip(126f, "ÍLEON", "NODO: Íleon. Súbete a la salchicha: el quimo te lleva río abajo. Brinca los chorros de bilis.");
             Food("Salchicha", 130f, 0.79f, FloatingFood.FoodKind.Raft);
             BileGeyser(138f, bottom, 3.2f, 3.6f, 0f);
             BileGeyser(146.5f, bottom, 3.2f, 3.6f, 1.2f);
@@ -1527,6 +1541,7 @@ namespace HealingKnight.EditorTools
             // ---------- 5) Persecución de la lombriz ----------
             Peyer(163.5f);
             // Zona de pelea más larga: sale en 4 puntos separados y la pantalla se cierra alrededor de cada uno.
+            Sign(Signpost.Kind.Warning, 163f, FloorY, "¡CORRE!");
             WormChaseAt(164f, 170f, 178f, 186f, 194f);
             IleocecalValve(199f);
         }
@@ -1565,7 +1580,7 @@ namespace HealingKnight.EditorTools
             Arena("Arena_1_Amebas", 10f, 18f, "Entamoeba: ameba lenta; su seudópodo llega lejos y te jala. No te quedes enfrente. Antiparasitario.",
                 W(0.6f, E(prefabs.Entamoeba, data.Entamoeba, 1), E(prefabs.Oxiuro, data.Oxiuro, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.Entamoeba, data.Entamoeba, 1), E(prefabs.Oxiuro, data.Oxiuro, 2, SpawnSide.Both)));
-            SetMessage("NODO: Haustras. Las bolsas del colon se aprietan y te lanzan: úsalas para subir.", 26f);
+            Tip(26f, "HAUSTRAS", "NODO: Haustras. Las bolsas del colon se aprietan y te lanzan: úsalas para subir.");
             Haustra(28f, 0f);
             Haustra(31.5f, 0.9f);
             Haustra(35f, 1.8f);
@@ -1574,7 +1589,7 @@ namespace HealingKnight.EditorTools
             AppendixReward(31.5f, 6.8f);
 
             // ---------- 2) Colon ascendente: la subida ----------
-            SetMessage("NODO: Colon ascendente. Sube... ¡y no dejes que te alcance lo que viene de abajo!", 40f);
+            Tip(40f, "¡SUBE!", "NODO: Colon ascendente. Sube... ¡y no dejes que te alcance lo que viene de abajo!", FloorY, Signpost.Kind.ArrowUp);
             Flood(41.5f, 57f, top - 0.5f, 0.5f);
             Platform(45f, 2.4f, 2.8f);
             Platform(49.5f, 4.7f, 2.8f);
@@ -1589,7 +1604,7 @@ namespace HealingKnight.EditorTools
 
             // ---------- 3) Colon transverso (arriba): la microbiota ----------
             SolidBlock(57f, 122f, top);
-            SetMessage("NODO: Microbiota. Las bacterias verdes son BUENAS: no les dispares antibiótico o crecerá C. difficile.", 58f);
+            Tip(58.6f, "MICROBIOTA", "NODO: Microbiota. Las bacterias verdes son BUENAS: no les dispares antibiótico o crecerá C. difficile.", top);
             foreach (float fx in new[] { 60.5f, 64f, 67.5f, 71f, 74.5f }) FloraAt(fx, top);
             Probiotic(66f, top + 1.6f);
             ArenaZone cdiff = Arena("Arena_2_CDifficile", 80f, 22f, "C. difficile: herida se vuelve espora y todo le rebota. Solo el antibiótico... ¡y cuidado con la flora buena!",
@@ -1606,7 +1621,7 @@ namespace HealingKnight.EditorTools
             Ambush(116f, top + 3f, prefabs.Oxiuro, data.Oxiuro, 3, 0.5f, 7f, new Vector2(0f, 2f), false);
 
             // ---------- 4) Colon descendente: la bajada ----------
-            SetMessage("NODO: Colon descendente. El colon absorbe el agua: todo se vuelve LODO espeso. No te quedes parado.", 120f);
+            Tip(120f, "¡BAJA!", "NODO: Colon descendente. El colon absorbe el agua: todo se vuelve LODO espeso. No te quedes parado.", top, Signpost.Kind.ArrowDown);
             Bolus(new Vector2(124.5f, top - 0.6f), new Vector2(124.5f, 1.2f), 2.2f, 0f);
             Bolus(new Vector2(130f, 1.2f), new Vector2(130f, top - 2f), 2.2f, 0.5f);
             Platform(127.5f, 11f, 2.4f);
@@ -1617,7 +1632,7 @@ namespace HealingKnight.EditorTools
             Ulcer(145f);
 
             // ---------- 5) Sigmoide y recto ----------
-            SetMessage("NODO: Recto. Los oxiuros ponen sus huevos aquí: rómpelos antes de que salgan más.", 152f);
+            Tip(152.6f, "RECTO", "NODO: Recto. Los oxiuros ponen sus huevos aquí: rómpelos antes de que salgan más.");
             foreach (float ex in new[] { 154f, 156.5f, 159f }) EnemyAt(prefabs.OxiuroHuevo, ex, FloorY);
             Arena("Arena_3_Nidos", 165f, 18f, "Nidos de oxiuros: los huevos se abren si los dejas. Antiparasitario.",
                 W(0.6f, E(prefabs.Oxiuro, data.Oxiuro, 3)),
@@ -1824,17 +1839,17 @@ namespace HealingKnight.EditorTools
             Platform(21f, 2.4f, 2.6f);
 
             // Cañones de moco: la mucosa te lanza bolas. Te frenan, pero las que caen se pegan y sirven de escalón.
-            SetMessage("La mucosa lanza bolas de MOCO: si te pegan te frenan, pero las que caen se quedan pegadas un rato y sirven de plataforma. El mucolítico las disuelve.", 24f);
+            Tip(24f, "MOCO", "La mucosa lanza bolas de MOCO: si te pegan te frenan, pero las que caen se quedan pegadas un rato y sirven de plataforma. El mucolítico las disuelve.");
             MucusGland(30f, 2.6f, 0f);
             Platform(28f, 2.4f, 2.2f);
             MucusGland(38f, 2.8f, 1.2f);
             Platform(38.5f, 3.4f, 2.6f);
-            SetMessage("Mucosidad: tapa el paso y te frena si la tocas. Dispárale MUCOLÍTICO (el antihistamínico también sirve, pero menos).", 41f);
+            Tip(41f, "MUCOSIDAD", "Mucosidad: tapa el paso y te frena si la tocas. Dispárale MUCOLÍTICO (el antihistamínico también sirve, pero menos).");
             Block(44f, true);
             Checkpoint(46f);
 
             // EL ESTORNUDO: el polen irrita la nariz y llena la barra; al llenarse, ¡ACHÚ! y el aire te avienta atrás.
-            SetMessage("¡El polen irrita la nariz! Mira la barra de COMEZÓN: cuando se llene vas a estornudar y el aire te avienta hacia atrás. Agárrate de los PELOS NASALES o escóndete tras un cornete. Matar polen la llena más lento.", 47f);
+            Tip(47f, "¡COMEZÓN!", "¡El polen irrita la nariz! Mira la barra de COMEZÓN: cuando se llene vas a estornudar y el aire te avienta hacia atrás. Agárrate de los PELOS NASALES o escóndete tras un cornete. Matar polen la llena más lento.", FloorY, Signpost.Kind.Warning);
             Sneeze(47f, 94f);
             NasalHairAt(52f);
             EnemyAt(prefabs.Polen, 56f, FloorY + 2.5f);
@@ -1874,6 +1889,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(143f);
 
             // Recta final: el último estornudo, más polen.
+            Sign(Signpost.Kind.Warning, 144.6f, FloorY, "¡ESTORNUDO!");
             Sneeze(145f, 166f);
             NasalHairAt(148f);
             EnemyAt(prefabs.Polen, 151f, FloorY + 2.5f);
@@ -1914,11 +1930,11 @@ namespace HealingKnight.EditorTools
             Platform(18f, 2.4f, 2.6f);
 
             // Epiglotis: se cierra cada vez que tragas.
-            SetMessage("La EPIGLOTIS es una tapita que cierra la tráquea cada vez que tragas, para que la comida no se vaya a los pulmones. Pasa cuando esté abierta.", 22f);
+            Tip(22f, "EPIGLOTIS", "La EPIGLOTIS es una tapita que cierra la tráquea cada vez que tragas, para que la comida no se vaya a los pulmones. Pasa cuando esté abierta.");
             Epiglottis(25.5f, 2.4f, 2f, 0f);
 
             // Escalera de cilios: el piso te empuja hacia atrás y rueda moco hacia ti.
-            SetMessage("Los CILIOS barren el moco hacia la garganta: en el piso te empujan HACIA ATRÁS y te mandan bolas de moco. Sáltalas, ve por arriba o disuélvelas con Mucolítico.", 27f);
+            Tip(27f, "CILIOS", "Los CILIOS barren el moco hacia la garganta: en el piso te empujan HACIA ATRÁS y te mandan bolas de moco. Sáltalas, ve por arriba o disuélvelas con Mucolítico.");
             Cilia(28f, 52f, 3.2f, 2.2f);
             Platform(31f, 2.2f, 2.2f);
             Platform(36.5f, 3.6f, 2.2f);
@@ -1926,11 +1942,12 @@ namespace HealingKnight.EditorTools
             Platform(47.5f, 3.4f, 2.2f);
             Checkpoint(53f);
 
-            SetMessage("Inflamación: el tejido hinchado cierra el paso. Dispárale ANTIINFLAMATORIO hasta que se contraiga.", 53f);
+            Tip(53f, "INFLAMACIÓN", "Inflamación: el tejido hinchado cierra el paso. Dispárale ANTIINFLAMATORIO hasta que se contraiga.");
             Block(56f, false);
 
             // LA TOS: cada cierto tiempo te avienta hacia atrás; cúbrete bajo los anillos de cartílago.
             Cough(58f, 92f, 6f);
+            Sign(Signpost.Kind.Warning, 58.2f, FloorY, "¡TOS!");
             CartilageRing(61f);
             CartilageRing(70f);
             EnemyAt(prefabs.Pertussis, 75f, FloorY + 2f);
@@ -1940,13 +1957,14 @@ namespace HealingKnight.EditorTools
             // Secreto: una corriente escondida junto al anillo te sube a la GARGANTA (entrada a las Amígdalas).
             Vent(89.8f, 8.2f, 3.2f, 0.8f);
             Platform(90.6f, 7.4f, 2.2f);
+            Sign(Signpost.Kind.Secret, 88.6f, FloorY, "?");   // pista: algo hay arriba
             SecretEntrance(90.6f, 8.5f, data.RespiratorioAmigdalas, "respiratorio_amigdalas",
                 "¡Un pasaje hacia arriba, a la GARGANTA! Ahí están las amígdalas.",
                 "De vuelta a las amígdalas: trae antígenos.", false);
             Checkpoint(92f);
 
             // Corrientes de aire hacia arriba: te lanzan a la ruta alta sobre el hueco grande.
-            SetMessage("Corrientes de AIRE: cuando soplen, párate encima y te lanzan muy alto.", 93f);
+            Tip(93f, "¡AIRE!", "Corrientes de AIRE: cuando soplen, párate encima y te lanzan muy alto.", FloorY, Signpost.Kind.ArrowUp);
             Vent(95.5f, 6.5f, 3f, 0f);
             Platform(98.5f, 6.2f, 3f);
             Platform(103.5f, 4.6f, 2.4f);
@@ -2006,7 +2024,7 @@ namespace HealingKnight.EditorTools
             Platform(20.5f, 2.4f, 2.6f);
 
             // Desde aquí el pulmón respira (sincronizado con los alvéolos).
-            SetMessage("NODO: Todo el pulmón RESPIRA. Al INHALAR el aire te jala hacia adelante y los alvéolos se inflan (trampolines); al EXHALAR te empuja hacia atrás y se desinflan.", 27f);
+            Tip(27f, "RESPIRA", "NODO: Todo el pulmón RESPIRA. Al INHALAR el aire te jala hacia adelante y los alvéolos se inflan (trampolines); al EXHALAR te empuja hacia atrás y se desinflan.");
             Breathing(26f, 186f);
             Alveolus(32f, 1.2f, 2f, 0f);
             Platform(35.8f, 4.4f, 2.4f);
@@ -2016,7 +2034,7 @@ namespace HealingKnight.EditorTools
             Platform(51.2f, 4.2f, 2f);
 
             // Oxígeno y dióxido de carbono.
-            SetMessage("Burbujas de O₂ (oxígeno): te curan. Nubes de CO₂ (el gas de desecho que exhalas): te asfixian si te quedas dentro.", 55f);
+            Tip(55f, "O<sub>2</sub> y CO<sub>2</sub>", "Burbujas de O<sub>2</sub> (oxígeno): te curan. Nubes de CO<sub>2</sub> (el gas de desecho que exhalas): te asfixian si te quedas dentro.");
             O2(58f, 1.4f);
             CO2(62f, 1.5f);
             Platform(65f, 3.4f, 2.4f);
@@ -2026,7 +2044,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(75f);
 
             // Bronquiolos: el camino se divide. Arriba (difícil): oxígeno y una bomba. Abajo (fácil): CO₂ y bacterias.
-            SetMessage("Los bronquiolos se dividen: ARRIBA hay oxígeno y una bomba, pero hay que saltar bien; ABAJO es más fácil pero está lleno de CO₂.", 76f);
+            Tip(76.4f, "¿ARRIBA O ABAJO?", "Los bronquiolos se dividen: ARRIBA hay oxígeno y una bomba, pero hay que saltar bien; ABAJO es más fácil pero está lleno de CO<sub>2</sub>.");
             Alveolus(78f, 1.2f, 2f, 0f);
             Platform(82f, 4.6f, 2.6f);
             Platform(86.5f, 6.2f, 3f);
@@ -2097,6 +2115,7 @@ namespace HealingKnight.EditorTools
         {
             GameObject go = Node("GanchoDiente", x, FloorY + y);
             go.AddComponent<FlossHook>().Configure(0f, true, 3.8f);
+            go.AddComponent<ButtonPrompt>().Configure("herramienta", "Hilo dental", new Vector2(0f, -1.1f), 4.6f, ButtonPrompt.HideWhen.Swinging, signFont);
             Sprite tooth = PrefabSetup.ArtByWidth($"{MouthArt}/DienteArriba.png", 1.6f, new Vector2(0.5f, 0.05f));
             if (tooth != null) { SetupUtils.SpriteChild(go.transform, "Diente", tooth, Color.white, new Vector3(0f, -0.2f, 0f), Vector2.one, -8); return; }   // el aro del dibujo queda en el gancho
             Color line = new Color(0.3f, 0.2f, 0.22f), enamel = new Color(0.98f, 0.96f, 0.9f);
@@ -2173,7 +2192,12 @@ namespace HealingKnight.EditorTools
             Node("Vigilante", fromX, FloorY + y).AddComponent<Watcher>().Configure(fromX, toX, 1.4f,
                 PrefabSetup.ArtByWidth($"{EyeArt}/Macrofago.png", 1.9f, new Vector2(0.5f, 0.02f)));
 
-        private void Cover(float x, float y = 0f) => Node("Escondite", x, FloorY + y).AddComponent<HidingSpot>().Configure(2.2f, 1.6f, false, Vector2.zero, 6f);
+        private void Cover(float x, float y = 0f)
+        {
+            GameObject go = Node("Escondite", x, FloorY + y);
+            go.AddComponent<HidingSpot>().Configure(2.2f, 1.6f, false, Vector2.zero, 6f);
+            go.AddComponent<ButtonPrompt>().Configure("abajo", "Esconderse", new Vector2(0f, 2.3f), 2.2f, ButtonPrompt.HideWhen.Crouching, signFont);
+        }
 
         private void Floater(float x, float y, float driftX, float period) =>
             Node("MoscaVolante", x, FloorY + y).AddComponent<HidingSpot>().Configure(2.2f, 2.4f, true, new Vector2(driftX, 0.3f), period);
@@ -2225,7 +2249,7 @@ namespace HealingKnight.EditorTools
             Platform(17f, 2.2f, 2f);
 
             // Tutorial del hilo: un hueco de saliva que solo se cruza columpiándose.
-            SetMessage("Hueco de saliva: lanza el HILO DENTAL ({herramienta}) al gancho del diente, columpiate con {mover} y salta ({saltar}) para soltarte.", 21f);
+            Tip(21f, "HILO DENTAL", "Hueco de saliva: lanza el HILO DENTAL ({herramienta}) al gancho del diente, columpiate con {mover} y salta ({saltar}) para soltarte.");
             Hook(27f, 7.2f);
 
             // Placa entre dientes: solo se quita jalándola con el hilo.
@@ -2240,7 +2264,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(64f);
 
             // Muelas que mastican: crúzalas entre mordida y mordida.
-            SetMessage("¡Muelas! Bajan a ritmo y aplastan: pasa cuando suban. Biología: las muelas muelen la comida.", 65f);
+            Tip(65f, "¡MUELAS!", "¡Muelas! Bajan a ritmo y aplastan: pasa cuando suban. Biología: las muelas muelen la comida.", FloorY, Signpost.Kind.Warning);
             Molar(70f, 0f);
             Molar(75.5f, 0.6f);
             Molar(81f, 1.2f);
@@ -2249,7 +2273,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(94f);
 
             // La lengua: un piso que se ondula sobre un charco de saliva (y ganchos por si te caes).
-            SetMessage("La LENGUA se mueve: sus pedazos suben y bajan. Si te resbalas, engánchate a un diente.", 95f);
+            Tip(95f, "LENGUA", "La LENGUA se mueve: sus pedazos suben y bajan. Si te resbalas, engánchate a un diente.");
             Tongue(97f, 119f, 6);
             Hook(103f, 8.4f);
             Hook(113f, 8.4f);
@@ -2310,7 +2334,7 @@ namespace HealingKnight.EditorTools
             Germinal(22f);
 
             // Amígdala izquierda: criptas (túneles) llenas de estreptococos.
-            SetMessage("Amígdala izquierda: sus CRIPTAS (pliegues) atrapan gérmenes. Elimínalos y lleva sus antígenos al centro germinal.", 26f);
+            Tip(26f, "CRIPTAS", "Amígdala izquierda: sus CRIPTAS (pliegues) atrapan gérmenes. Elimínalos y lleva sus antígenos al centro germinal.");
             Platform(31.5f, 2.4f, 1.6f);
             EnemyAt(prefabs.SPyogenes, 35f, FloorY);
             Platform(38f, 3.6f, 3f);
@@ -2375,7 +2399,7 @@ namespace HealingKnight.EditorTools
             Stealth();
 
             // Córnea y humor acuoso: tutorial de esconderse.
-            SetMessage("Ese VIGILANTE es un macrófago del ojo. Si te ve en su cono de luz, sube la inflamación. Agáchate ({abajo}) detrás de los pliegues.", 4f);
+            Tip(4f, "SIGILO", "Ese VIGILANTE es un macrófago del ojo. Si te ve en su cono de luz, sube la inflamación. Agáchate ({abajo}) detrás de los pliegues.");
             Cover(11f);
             WatcherAt(14f, 24f);
             Cover(19f);
@@ -2383,7 +2407,7 @@ namespace HealingKnight.EditorTools
             Platform(30f, 2.4f, 2.4f);
 
             // Cristalino: la lente gigante; luz que entra y barre.
-            SetMessage("El CRISTALINO enfoca la luz. Cuidado con el haz que barre: si te alumbra, te ven.", 32f);
+            Tip(32f, "CRISTALINO", "El CRISTALINO enfoca la luz. Cuidado con el haz que barre: si te alumbra, te ven.");
             Lens(41f);
             Beam(33f, 49f, 5f);
             Cover(35f);
@@ -2392,7 +2416,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(51f);
 
             // Humor vítreo: moscas volantes que se mueven y te tapan.
-            SetMessage("Humor vítreo: esas manchas que flotan son MOSCAS VOLANTES (sí, las que a veces ves). Te tapan aunque estés de pie.", 52f);
+            Tip(52f, "MOSCAS VOLANTES", "Humor vítreo: esas manchas que flotan son MOSCAS VOLANTES (sí, las que a veces ves). Te tapan aunque estés de pie.");
             Floater(56f, 0f, 2f, 7f);
             WatcherAt(54f, 66f);
             Floater(62f, 0f, 2.5f, 8f);
@@ -2403,7 +2427,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(82f);
 
             // Retina: conos y bastones que se encienden al pisarlos + haces de luz. Ve por arriba.
-            SetMessage("RETINA: conos y bastones captan la luz y se encienden si los pisas (te delatan). Ve por las plataformas.", 83f);
+            Tip(83f, "RETINA", "RETINA: conos y bastones captan la luz y se encienden si los pisas (te delatan). Ve por las plataformas.");
             Retina(84f, 111f);
             Platform(87f, 2.2f, 2.2f);
             Platform(91.5f, 3.2f, 2.2f);
@@ -2417,6 +2441,7 @@ namespace HealingKnight.EditorTools
 
             // Punto ciego: zona segura.
             BlindSpotAt(118f, 9f);
+            Sign(Signpost.Kind.Info, 117.6f, FloorY, "PUNTO CIEGO");
             Checkpoint(115f);
 
             // Jefe: Toxoplasma en los quistes de la retina.
@@ -2663,12 +2688,12 @@ namespace HealingKnight.EditorTools
             Platform(21.75f, 2.4f, 1.6f);
             Storm(18f, 30f);
 
-            SetMessage("Recoge los FRAGMENTOS DE MEMORIA antes de que la rabia los borre: al acercarte se empiezan a apagar. Si salvas todos, ganas una bomba.", 17f);
+            Tip(17f, "RECUERDOS", "Recoge los FRAGMENTOS DE MEMORIA antes de que la rabia los borre: al acercarte se empiezan a apagar. Si salvas todos, ganas una bomba.");
             Fragment(25.5f, 2.5f, "el hipocampo convierte lo que vives en recuerdos que duran años.");
             Checkpoint(31f);
 
             // Burbujas de memoria sobre dos huecos.
-            SetMessage("Burbujas de MEMORIA: aguantan mientras te muevas; si te quedas quieto encima se olvidan y revientan (luego se vuelven a formar).", 31f);
+            Tip(31f, "BURBUJAS", "Burbujas de MEMORIA: aguantan mientras te muevas; si te quedas quieto encima se olvidan y revientan (luego se vuelven a formar).");
             MemoryBubble(36.5f, 1.8f, 2.2f);
             MemoryBubble(40f, 2.8f, 2f);
             Fragment(40f, 4.6f, "si se daña, recuerdas tu infancia pero no lo que pasó ayer.");
@@ -2764,7 +2789,7 @@ namespace HealingKnight.EditorTools
             Platform(21f, 2.4f, 2.6f);
 
             // Primera tormenta.
-            SetMessage("Tormenta eléctrica: cuando veas el destello violeta, sal de la columna. El escudo NO protege.", 25f);
+            Tip(25f, "¡TORMENTA!", "Tormenta eléctrica: cuando veas el destello violeta, sal de la columna. El escudo NO protege.", FloorY, Signpost.Kind.Warning);
             Storm(25f, 50f);
             Platform(31.75f, 2.4f, 1.6f);
             Platform(37f, 2.4f, 2.4f);
@@ -2778,14 +2803,14 @@ namespace HealingKnight.EditorTools
             SolidBlock(60f, 64f, FloorY + 5.6f);
 
             // Surfear el impulso nervioso por un axón (hueco largo).
-            SetMessage("Súbete al IMPULSO NERVIOSO: corre por el axón a más de 100 km/h. ¡No te caigas!", 65f);
+            Tip(65f, "IMPULSO", "Súbete al IMPULSO NERVIOSO: corre por el axón a más de 100 km/h. ¡No te caigas!", FloorY, Signpost.Kind.ArrowRight);
             AxonRail(66f, 84f, 1.6f);
             Ride("Impulso", new Vector2(66.8f, FloorY + 2.2f), new Vector2(83.6f, FloorY + 2.2f), 6.5f, 2.2f,
                 MovingPlatform.Style.Impulse, 1.2f, null, PrefabSetup.ArtByWidth($"{NerveArt}/Impulso.png", 2.4f));
             Checkpoint(85f);
 
             // Conducción saltatoria: los nodos de Ranvier se encienden en orden; solo el encendido es sólido.
-            SetMessage("Conducción SALTATORIA: el impulso salta de nodo en nodo (nodos de Ranvier) y por eso es tan rápido. Solo el nodo ENCENDIDO es sólido: síguelo.", 85f);
+            Tip(85f, "SALTATORIA", "Conducción SALTATORIA: el impulso salta de nodo en nodo (nodos de Ranvier) y por eso es tan rápido. Solo el nodo ENCENDIDO es sólido: síguelo.");
             SaltatoryAt(0.9f, new Vector2(89.5f, 1.8f), new Vector2(93f, 2.6f), new Vector2(96.5f, 1.8f), new Vector2(100f, 2.6f), new Vector2(103.5f, 1.8f));
             Checkpoint(107f);
 
@@ -2836,7 +2861,7 @@ namespace HealingKnight.EditorTools
                 new Vector2(36f, 3f), new Vector2(44f, 3.5f), new Vector2(53f, 3f), new Vector2(66f, 22f), new Vector2(118f, 20f));
 
             new GameObject("SaludDelCerebro").AddComponent<BrainHealth>();
-            SetMessage("Tu cápsula regional es el ANTICONVULSIVO: calma neuronas rojas. Su bomba ({bomba}) protege a las neuronas 8 s.", 1f);
+            Tip(1f, "ANTICONVULSIVO", "Tu cápsula regional es el ANTICONVULSIVO: calma neuronas rojas. Su bomba ({bomba}) protege a las neuronas 8 s.");
 
             // Tramo 1
             Arena("Tramo_1_Meningitis", 8f, 20f, "Acaba rápido con los virus: si sus disparos pegan en las neuronas, el cerebro sufre y se infectan.",
@@ -2848,7 +2873,7 @@ namespace HealingKnight.EditorTools
             Platform(17f, 4.2f, 2.4f);
             Platform(22f, 2.4f, 2.4f);
 
-            SetMessage("Neurona ROJA hiperexcitada: suelta descargas y desgasta el cerebro. Cálmala con ANTICONVULSIVO (+5 cerebro).", 25f);
+            Tip(25f, "NEURONA ROJA", "Neurona ROJA hiperexcitada: suelta descargas y desgasta el cerebro. Cálmala con ANTICONVULSIVO (+5 cerebro).");
             RedNeuron(28f, 1.6f);
             Checkpoint(31f);
 
@@ -2861,6 +2886,7 @@ namespace HealingKnight.EditorTools
             // Secreto: el NERVIO ÓPTICO (entrada al Ojo), arriba, sobre el hueco. Se ve con los destellos.
             Platform(52.4f, 2.8f, 1.4f);
             Platform(55.5f, 4.6f, 1.8f);
+            Sign(Signpost.Kind.Secret, 51.2f, FloorY, "?");   // pista: algo hay arriba
             SecretEntrance(55.5f, 5.7f, data.NerviosoOjo, "nervioso_ojo",
                 "¡El NERVIO ÓPTICO! Por aquí la vista llega al cerebro... y se puede entrar al OJO.",
                 "¿Otra vez al ojo? Silencio: que no te vean.", true);
@@ -2868,7 +2894,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(63f);
 
             // LÓBULO TEMPORAL: plataformas al ritmo sobre un hueco largo.
-            SetMessage("Lóbulo TEMPORAL: aquí se procesa el sonido y la música. Las plataformas aparecen AL RITMO: escucha el golpe y salta.", 63f);
+            Tip(63f, "LÓBULO TEMPORAL", "Lóbulo TEMPORAL: aquí se procesa el sonido y la música. Las plataformas aparecen AL RITMO: escucha el golpe y salta.");
             Beat(new[] { new Vector3(67.5f, 1.8f, 2f), new Vector3(73f, 2.6f, 2f), new Vector3(78.5f, 1.8f, 2f), new Vector3(84f, 2.6f, 2f) },
                  new[] { new Vector3(70.2f, 2.6f, 2f), new Vector3(75.7f, 1.8f, 2f), new Vector3(81.2f, 2.6f, 2f), new Vector3(86.6f, 1.8f, 2f) }, 1.25f);
             Checkpoint(89f);
@@ -2888,7 +2914,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(115f);
 
             // CEREBELO: subibajas sobre un hueco.
-            SetMessage("CEREBELO: controla el equilibrio. Las plataformas son SUBIBAJAS: si te vas a la orilla se ladean y te resbalas. Cruza por el centro.", 115f);
+            Tip(115f, "CEREBELO", "CEREBELO: controla el equilibrio. Las plataformas son SUBIBAJAS: si te vas a la orilla se ladean y te resbalas. Cruza por el centro.");
             Tilt(121f, 2.2f, 4f);
             Tilt(127.5f, 3f, 4f);
             Tilt(134f, 2.2f, 4f);
@@ -2971,6 +2997,236 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(breath, "visual", visual);
                 SetupUtils.SetFloat(breath, "phaseOffset", Mathf.Clamp(breathOffset, 0f, 5.5f));
             }
+        }
+
+        // ---------- Letreros e indicaciones ----------
+        //
+        // Cada nivel lleva letreros con el estilo de su sistema:
+        //  - Bienvenida con el nombre del órgano y Salida al final (automáticos).
+        //  - Info donde se enseña algo nuevo: se ve desde lejos y al llegar NODO lo explica (Tip).
+        //  - Peligro antes del primer hueco o lago y de los grandes, y "¡JEFE!" antes de cada jefe (automáticos).
+        //  - Flechas cuando el camino sube o baja, y un "?" chiquito cerca de los pasajes secretos.
+        // Arte: Art/Letreros/{Digestivo|Respiratorio|Nervioso}/Letrero_{Bienvenida|Info|Peligro|FlechaDerecha|
+        // FlechaArriba|FlechaAbajo|Secreto|Salida}.png (tablero en blanco: la palabra la escribe el juego).
+        // Sin dibujo se arman con figuras del color del sistema.
+
+        private struct SignTheme { public string system, title, hazard, exit; }
+
+        private SignTheme signTheme;
+        private Transform signRoot;
+        private readonly List<Vector2> placedSigns = new List<Vector2>();
+        private Vector2 currentSpawn;
+        private float currentExitX;
+        private Font signFont;
+
+        private const string SignArtRoot = "Assets/_Project/Art/Letreros";
+
+        private static SignTheme T(string system, string title, string hazard, string exit) =>
+            new SignTheme { system = system, title = title, hazard = hazard, exit = exit };
+
+        private static SignTheme SignThemeFor(string path)
+        {
+            if (path == EstomagoPath) return T("Digestivo", "ESTÓMAGO", "¡ÁCIDO!", "PÍLORO");
+            if (path == DelgadoPath) return T("Digestivo", "INTESTINO DELGADO", "¡BILIS!", "AL COLON");
+            if (path == GruesoPath) return T("Digestivo", "INTESTINO GRUESO", "¡CUIDADO!", "SALIDA");
+            if (path == BocaPath) return T("Digestivo", "BOCA", "¡SALIVA!", "SALIDA");
+            if (path == NarizPath) return T("Respiratorio", "NARIZ", "¡HUECO!", "A LA TRÁQUEA");
+            if (path == TraqueaPath) return T("Respiratorio", "TRÁQUEA", "¡HUECO!", "A LOS PULMONES");
+            if (path == PulmonesPath) return T("Respiratorio", "PULMONES", "¡HUECO!", "SALIDA");
+            if (path == AmigdalasPath) return T("Respiratorio", "AMÍGDALAS", "¡HUECO!", "SALIDA");
+            if (path == MedulaPath) return T("Nervioso", "MÉDULA ESPINAL", "¡HUECO!", "AL CEREBRO");
+            if (path == CerebroPath) return T("Nervioso", "CEREBRO", "¡HUECO!", "AL HIPOCAMPO");
+            if (path == HipocampoPath) return T("Nervioso", "HIPOCAMPO", "¡HUECO!", "SALIDA");
+            if (path == OjoPath) return T("Nervioso", "OJO", null, "SALIDA");
+            return new SignTheme();
+        }
+
+        private static string SignFile(Signpost.Kind kind)
+        {
+            switch (kind)
+            {
+                case Signpost.Kind.Welcome: return "Bienvenida";
+                case Signpost.Kind.Warning: return "Peligro";
+                case Signpost.Kind.ArrowRight: return "FlechaDerecha";
+                case Signpost.Kind.ArrowUp: return "FlechaArriba";
+                case Signpost.Kind.ArrowDown: return "FlechaAbajo";
+                case Signpost.Kind.Secret: return "Secreto";
+                case Signpost.Kind.Exit: return "Salida";
+                default: return "Info";
+            }
+        }
+
+        /// <summary>Ancho en el mundo de cada letrero y dónde va la palabra (fracción del dibujo: centro y tamaño).</summary>
+        private static void SignLayout(Signpost.Kind kind, out float width, out Rect text)
+        {
+            switch (kind)
+            {
+                case Signpost.Kind.Welcome: width = 4.2f; text = new Rect(0.5f, 0.72f, 0.78f, 0.30f); break;
+                case Signpost.Kind.Warning: width = 2.3f; text = new Rect(0.56f, 0.70f, 0.66f, 0.30f); break;
+                case Signpost.Kind.ArrowRight: width = 2.3f; text = new Rect(0.44f, 0.72f, 0.62f, 0.28f); break;
+                case Signpost.Kind.ArrowUp: width = 1.7f; text = new Rect(0.5f, 0.50f, 0.62f, 0.16f); break;
+                case Signpost.Kind.ArrowDown: width = 1.7f; text = new Rect(0.5f, 0.74f, 0.62f, 0.16f); break;
+                case Signpost.Kind.Secret: width = 1.2f; text = new Rect(0.5f, 0.72f, 0.6f, 0.3f); break;
+                case Signpost.Kind.Exit: width = 2.8f; text = new Rect(0.5f, 0.74f, 0.70f, 0.26f); break;
+                default: width = 2.3f; text = new Rect(0.5f, 0.72f, 0.78f, 0.34f); break;
+            }
+        }
+
+        /// <summary>Colores de los letreros de figuras (mientras no hay dibujo) según el sistema.</summary>
+        private void SignColors(Signpost.Kind kind, out Color post, out Color board, out Color ink)
+        {
+            Color line = new Color(0.18f, 0.05f, 0.1f);
+            switch (signTheme.system)
+            {
+                case "Respiratorio": post = new Color(0.36f, 0.42f, 0.66f); board = new Color(0.9f, 0.96f, 1f); break;
+                case "Nervioso": post = new Color(0.42f, 0.26f, 0.6f); board = new Color(0.95f, 0.9f, 1f); break;
+                default: post = new Color(0.62f, 0.27f, 0.32f); board = new Color(1f, 0.93f, 0.85f); break;
+            }
+            ink = line;
+            if (kind == Signpost.Kind.Warning) { board = new Color(1f, 0.8f, 0.25f); ink = new Color(0.45f, 0.05f, 0.05f); }
+            if (kind == Signpost.Kind.Exit) board = new Color(0.62f, 0.95f, 0.68f);
+            if (kind == Signpost.Kind.Secret) board = new Color(0.85f, 0.75f, 1f);
+        }
+
+        /// <summary>
+        /// Pone un letrero. Si cae dentro de un hueco o lago, se recorre a la orilla de antes.
+        /// 'message' = lo que dice NODO al llegar (opcional). 'flip' voltea la flecha a la izquierda.
+        /// </summary>
+        private Signpost Sign(Signpost.Kind kind, float x, float y, string label, string message = null, bool flip = false)
+        {
+            if (signTheme.system == null) { if (!string.IsNullOrEmpty(message)) SetMessage(message, x); return null; }
+            if (y <= FloorY + 0.1f)
+                foreach (Vector2 cut in currentCuts)
+                    if (x > cut.x - 0.6f && x < cut.x + cut.y + 0.6f) { x = cut.x - 1.2f; break; }
+            // No encimar letreros: si ya hay uno pegado, este se recorre a la derecha.
+            foreach (Vector2 other in placedSigns)
+                if (Mathf.Abs(other.x - x) < 1.6f && Mathf.Abs(other.y - y) < 1.5f) { x = other.x + 1.8f; break; }
+            placedSigns.Add(new Vector2(x, y));
+
+            if (signRoot == null) signRoot = new GameObject("Letreros").transform;
+            var go = new GameObject($"Letrero_{SignFile(kind)}" + (string.IsNullOrEmpty(label) ? "" : $"_{label}"));
+            go.transform.SetParent(signRoot, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            Transform board = SetupUtils.Child(go.transform, "Tablero", Vector3.zero).transform;
+
+            SignLayout(kind, out float width, out Rect layout);
+            Sprite art = PrefabSetup.ArtByWidth($"{SignArtRoot}/{signTheme.system}/Letrero_{SignFile(kind)}.png", width, new Vector2(0.5f, 0.02f));
+            Vector2 center, size;
+            SignColors(kind, out Color post, out Color boardColor, out Color ink);
+            const int order = -30;
+            if (art != null)
+            {
+                SpriteRenderer r = SetupUtils.SpriteChild(board, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, order);
+                r.flipX = flip;
+                Vector2 b = art.bounds.size;
+                float cx = flip ? 1f - layout.x : layout.x;
+                center = new Vector2((cx - 0.5f) * b.x, layout.y * b.y);
+                size = new Vector2(layout.width * b.x, layout.height * b.y);
+                if (kind == Signpost.Kind.Secret) label = null;   // el dibujo ya trae el "?"
+            }
+            else PlaceholderSign(board, kind, flip, post, boardColor, order, out center, out size);
+
+            var sign = go.AddComponent<Signpost>();
+            sign.Configure(kind, label, message, board, center, size, ink, signFont,
+                kind == Signpost.Kind.Secret ? 1.4f : 2.6f, order);
+            return sign;
+        }
+
+        /// <summary>Letrero de figuras: poste y tablero redondeado con contorno (hasta que llegue el dibujo).</summary>
+        private static void PlaceholderSign(Transform board, Signpost.Kind kind, bool flip, Color post, Color fill, int order,
+            out Vector2 center, out Vector2 size)
+        {
+            Color line = new Color(0.18f, 0.05f, 0.1f);
+            float w = 2f, h = 0.9f, y = 1.6f;
+            switch (kind)
+            {
+                case Signpost.Kind.Welcome: w = 3.8f; h = 1.1f; y = 2.3f; break;
+                case Signpost.Kind.Secret: w = 0.8f; h = 0.65f; y = 0.95f; break;
+                case Signpost.Kind.ArrowUp:
+                case Signpost.Kind.ArrowDown: w = 1.5f; h = 0.75f; break;
+                case Signpost.Kind.Exit: w = 2.5f; h = 0.95f; y = 1.8f; break;
+            }
+            // Postes (dos en la bienvenida).
+            float[] posts = kind == Signpost.Kind.Welcome ? new[] { -1.4f, 1.4f } : new[] { 0f };
+            foreach (float px in posts)
+            {
+                SetupUtils.SpriteChild(board, "PosteContorno", PlaceholderArt.Square, line, new Vector3(px, -0.05f, 0f), new Vector2(0.3f, y + 0.05f), order);
+                SetupUtils.SpriteChild(board, "Poste", PlaceholderArt.Square, post, new Vector3(px, 0f, 0f), new Vector2(0.17f, y - 0.05f), order + 1);
+            }
+            // La cápsula mide 1 x 0.5: por eso la altura va al doble.
+            SetupUtils.SpriteChild(board, "TableroContorno", PlaceholderArt.Capsule, line, new Vector3(0f, y, 0f), new Vector2(w + 0.16f, (h + 0.16f) * 2f), order + 2);
+            SetupUtils.SpriteChild(board, "Tablero", PlaceholderArt.Capsule, fill, new Vector3(0f, y, 0f), new Vector2(w, h * 2f), order + 3);
+            SetupUtils.SpriteChild(board, "Brillo", PlaceholderArt.Capsule, new Color(1f, 1f, 1f, 0.35f), new Vector3(0f, y + h * 0.28f, 0f), new Vector2(w * 0.8f, h * 0.36f), order + 4);
+
+            // Puntas de flecha.
+            float dir = flip ? -1f : 1f;
+            if (kind == Signpost.Kind.ArrowRight || kind == Signpost.Kind.Exit)
+                Arrowhead(board, new Vector3(dir * (w * 0.5f + 0.12f), y, 0f), dir > 0 ? 0f : 180f, h, line, fill, order);
+            if (kind == Signpost.Kind.ArrowUp) Arrowhead(board, new Vector3(0f, y + h * 0.5f + 0.12f, 0f), 90f, h, line, fill, order);
+            if (kind == Signpost.Kind.ArrowDown) Arrowhead(board, new Vector3(0f, y - h * 0.5f - 0.12f, 0f), -90f, h, line, fill, order);
+            if (kind == Signpost.Kind.Warning)
+            {
+                // Insignia "!" a la izquierda.
+                SetupUtils.SpriteChild(board, "AlertaContorno", PlaceholderArt.Circle, line, new Vector3(-w * 0.5f, y + 0.05f, 0f), new Vector2(0.7f, 0.7f), order + 4);
+                SetupUtils.SpriteChild(board, "Alerta", PlaceholderArt.Circle, new Color(0.9f, 0.2f, 0.15f), new Vector3(-w * 0.5f, y + 0.05f, 0f), new Vector2(0.56f, 0.56f), order + 5);
+                SetupUtils.SpriteChild(board, "AlertaPalo", PlaceholderArt.SquareCentered, Color.white, new Vector3(-w * 0.5f, y + 0.12f, 0f), new Vector2(0.09f, 0.24f), order + 6);
+                SetupUtils.SpriteChild(board, "AlertaPunto", PlaceholderArt.Circle, Color.white, new Vector3(-w * 0.5f, y - 0.09f, 0f), new Vector2(0.1f, 0.1f), order + 6);
+                center = new Vector2(0.18f, y);
+                size = new Vector2(w - 0.6f, h * 0.7f);
+                return;
+            }
+            center = new Vector2(kind == Signpost.Kind.ArrowRight ? -dir * 0.1f : 0f, y);
+            size = new Vector2(w * 0.86f, h * 0.7f);
+            if (kind == Signpost.Kind.Welcome) size = new Vector2(w * 0.9f, h * 0.75f);
+        }
+
+        private static void Arrowhead(Transform board, Vector3 pos, float angle, float h, Color line, Color fill, int order)
+        {
+            Transform head = SetupUtils.Child(board, "Punta", pos).transform;
+            head.localRotation = Quaternion.Euler(0f, 0f, angle + 45f);
+            float s = h * 0.78f;
+            SetupUtils.SpriteChild(head, "PuntaContorno", PlaceholderArt.SquareCentered, line, Vector3.zero, new Vector2(s + 0.16f, s + 0.16f), order + 2);
+            SetupUtils.SpriteChild(head, "PuntaRelleno", PlaceholderArt.SquareCentered, fill, Vector3.zero, new Vector2(s, s), order + 3);
+        }
+
+        /// <summary>Letrero de información: se ve desde antes y NODO explica la mecánica al llegar.</summary>
+        private Signpost Tip(float x, string label, string message, float y = FloorY, Signpost.Kind kind = Signpost.Kind.Info)
+            => Sign(kind, x, y, label, message);
+
+        /// <summary>Bienvenida, salida y avisos de peligro antes de huecos y lagos (al terminar de armar el nivel).</summary>
+        private void FinishSigns()
+        {
+            if (signTheme.system == null) return;
+            Sign(Signpost.Kind.Welcome, currentSpawn.x + 2.8f, FloorY, signTheme.title);
+            Sign(Signpost.Kind.Exit, currentExitX - 0.8f, FloorY, signTheme.exit);
+            if (string.IsNullOrEmpty(signTheme.hazard)) return;
+
+            float prevEnd = float.MinValue;
+            for (int i = 0; i < currentCuts.Count; i++)
+            {
+                Vector2 cut = currentCuts[i];
+                float x = cut.x - 1.3f;
+                bool wanted = i == 0 || cut.y >= 9f;
+                bool room = x - 0.7f > prevEnd && x > currentSpawn.x + 6f;
+                bool alone = true;
+                foreach (Vector2 other in placedSigns)
+                    if (other.x > cut.x - 4.5f && other.x < cut.x + 0.5f && Mathf.Abs(other.y - FloorY) < 1.5f) { alone = false; break; }
+                if (wanted && room && alone) Sign(Signpost.Kind.Warning, x, FloorY, signTheme.hazard);
+                prevEnd = Mathf.Max(prevEnd, cut.x + cut.y);
+            }
+        }
+
+        /// <summary>"¡JEFE!" antes de una arena con jefe (sus datos se llaman Jefe_...).</summary>
+        private void BossSignIfNeeded(float triggerX, Wave[] waves)
+        {
+            if (signTheme.system == null || waves == null) return;
+            foreach (Wave w in waves)
+                foreach (SpawnEntry e in w.entries)
+                    if (e.data != null && e.data.name.StartsWith("Jefe_") && !e.data.name.Contains("Virion"))
+                    {
+                        Sign(Signpost.Kind.Warning, triggerX - 2.4f, FloorY, "¡JEFE!");
+                        return;
+                    }
         }
 
         /// <summary>Mensaje de NODO que aparece al pasar por una X (tutoriales sin arena).</summary>
