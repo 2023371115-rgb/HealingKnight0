@@ -1,9 +1,9 @@
 {
   "level": "Digestivo_Jefe",
-  "bpm": 142,
+  "bpm": 134,
   "bars": 32,
   "sampleRate": 44100,
-  "samples": 2385127,
+  "samples": 2527522,
   "layers": [
     "Ambiente",
     "Armonia",

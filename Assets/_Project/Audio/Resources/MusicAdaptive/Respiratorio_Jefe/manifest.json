@@ -1,9 +1,9 @@
 {
   "level": "Respiratorio_Jefe",
-  "bpm": 148,
+  "bpm": 145,
   "bars": 32,
   "sampleRate": 44100,
-  "samples": 2288432,
+  "samples": 2335779,
   "layers": [
     "Ambiente",
     "Armonia",

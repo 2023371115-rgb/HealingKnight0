@@ -1,9 +1,9 @@
 {
   "level": "Digestivo_Boca",
-  "bpm": 120,
+  "bpm": 124,
   "bars": 32,
   "sampleRate": 44100,
-  "samples": 2822400,
+  "samples": 2731355,
   "layers": [
     "Ambiente",
     "Armonia",
