@@ -3833,6 +3833,167 @@ namespace HealingKnight.EditorTools
             return gate;
         }
 
+        // ---------- Tramo 3: la arteria FEMORAL enferma (placas de colesterol) ----------
+
+        // Las ilíacas terminan en BranchEndX; un fundido a negro y sigue la femoral (una sola: "la pierna").
+        private const float BranchEndX = 774f, FemoralStart = 806f, FemoralRadius = 3.4f;
+
+        /// <summary>Centro de la arteria femoral (ondula suave).</summary>
+        private static float FemoralCenterY(float x) => 1f + 1.6f * Mathf.Sin((x - FemoralStart) * 0.035f);
+        private static float FemoralTopY(float x) => FemoralCenterY(x) + FemoralRadius;
+        private static float FemoralBottomY(float x) => FemoralCenterY(x) - FemoralRadius;
+
+        /// <summary>
+        /// Domo de colesterol (dibujo + colisionador): mitad de un óvalo de 'width' x 'height' que sale de la pared. El
+        /// dibujo va DETRÁS de las paredes del vaso, así la orilla (endotelio) tapa su base y parece que crece de ella.
+        /// </summary>
+        private void PlaqueDome(GameObject go, float width, float height, int seed)
+        {
+            go.layer = PhysicsLayers.Ground;
+            var pts = new List<Vector2> { new Vector2(width * 0.5f, -0.9f) };
+            for (int i = 0; i <= 14; i++)
+            {
+                float a = Mathf.PI * i / 14f;
+                pts.Add(new Vector2(Mathf.Cos(a) * width * 0.5f, Mathf.Sin(a) * height));
+            }
+            pts.Add(new Vector2(-width * 0.5f, -0.9f));
+            go.AddComponent<PolygonCollider2D>().points = pts.ToArray();
+
+            var art = new GameObject("Dibujo").transform;
+            art.SetParent(go.transform, false);
+            Color outline = new Color(0.5f, 0.3f, 0.06f), fat = new Color(1f, 0.84f, 0.42f), core = new Color(1f, 0.94f, 0.66f);
+            SetupUtils.SpriteChild(art, "Contorno", PlaceholderArt.Circle, outline, Vector3.zero, new Vector2(width + 0.2f, height * 2f + 0.2f), -105);
+            SetupUtils.SpriteChild(art, "Placa", PlaceholderArt.Circle, fat, Vector3.zero, new Vector2(width, height * 2f), -104);
+            // Núcleo de grasa (más claro) y gotitas de colesterol; arriba, la "capa fibrosa" un poco más oscura.
+            SetupUtils.SpriteChild(art, "Nucleo", PlaceholderArt.Circle, core, new Vector3(0f, height * 0.3f, 0f), new Vector2(width * 0.6f, height * 0.9f), -103);
+            var rnd = new System.Random(seed);
+            int drops = Mathf.RoundToInt(width * height * 0.9f);
+            for (int i = 0; i < drops; i++)
+            {
+                float a = (float)rnd.NextDouble() * Mathf.PI, r = (float)rnd.NextDouble() * 0.8f;
+                float size = 0.16f + (float)rnd.NextDouble() * 0.2f;
+                SetupUtils.SpriteChild(art, "Gota", PlaceholderArt.Circle, new Color(1f, 0.72f, 0.2f, 0.85f),
+                    new Vector3(Mathf.Cos(a) * r * width * 0.45f, Mathf.Sin(a) * r * height * 0.85f + 0.15f, 0f), Vector2.one * size, -102);
+            }
+            SetupUtils.SpriteChild(art, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 0.9f, 0.55f),
+                new Vector3(-width * 0.18f, height * 0.72f, 0f), new Vector2(width * 0.3f, height * 0.16f), -101);
+        }
+
+        /// <summary>
+        /// PLACA DE COLESTEROL pegada a la pared de la femoral (abajo, o arriba girada 180°): sólida, estrecha el paso y se
+        /// encoge con cada golpe hasta romperse (PlaqueBump). Donde dos casi se tocan solo pasas ENCOGIDO.
+        /// </summary>
+        private void Plaque(float x, bool top, float width, float height, string message = null)
+        {
+            GameObject go = Node(top ? "PlacaColesterol_Arriba" : "PlacaColesterol", x, top ? FemoralTopY(x) : FemoralBottomY(x));
+            if (top) go.transform.rotation = Quaternion.Euler(0f, 0f, 180f);
+            PlaqueDome(go, width, height, Mathf.RoundToInt(x * 7f));
+            var health = go.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.PlacaColesterol);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            var hurt = go.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
+            SetupUtils.SetVector2(hurt, "offset", new Vector2(0f, (top ? -height : height) * 0.5f));
+            SetupUtils.SetVector2(hurt, "size", new Vector2(width * 0.9f, height));
+            go.AddComponent<PlaqueBump>().Configure(width, height, top, message);
+        }
+
+        /// <summary>Dos placas frente a frente (arriba y abajo) que dejan un hueco de 'gap' en medio.</summary>
+        private void PlaqueNarrow(float x, float width, float gap, string message = null)
+        {
+            float h = (FemoralRadius * 2f - gap) * 0.5f;
+            Plaque(x, false, width, h, message);
+            Plaque(x, true, width, h);
+        }
+
+        /// <summary>
+        /// Coágulo que se va FORMANDO en la femoral: dos mitades crecen desde las paredes hasta cerrarse en 'seconds'.
+        /// Si lo disuelves antes (o pasas por el hueco) sigues; si se cierra, tapa todo y detiene la pantalla.
+        /// </summary>
+        private void FormingClot(float x, float seconds, string message)
+        {
+            float cy = FemoralCenterY(x);
+            var size = new Vector2(2.4f, FemoralRadius * 2f + 1f);
+            GameObject go = Node("CoaguloFormandose", x, cy);
+            go.layer = PhysicsLayers.Ground;
+            var art = new GameObject("Dibujo").transform;
+            art.SetParent(go.transform, false);
+            var rnd = new System.Random(Mathf.RoundToInt(x * 11f));
+            Color outline = new Color(0.32f, 0.12f, 0.36f), platelet = new Color(0.82f, 0.62f, 0.92f), light = new Color(0.95f, 0.82f, 1f);
+            foreach (int side in new[] { 1, -1 })
+            {
+                // Cada mitad tiene su pivote en la pared: al crecer (escala en Y) avanza hacia el centro.
+                var half = new GameObject(side > 0 ? "MitadArriba" : "MitadAbajo").transform;
+                half.SetParent(art, false);
+                half.localPosition = new Vector3(0f, side * size.y * 0.5f, 0f);
+                int count = Mathf.RoundToInt(size.x * size.y * 1.3f);
+                for (int i = 0; i < count; i++)
+                {
+                    float px = ((float)rnd.NextDouble() - 0.5f) * size.x * 0.9f;
+                    float py = -side * (float)rnd.NextDouble() * size.y * 0.48f;
+                    float sz = 0.45f + (float)rnd.NextDouble() * 0.45f;
+                    SetupUtils.SpriteChild(half, "Plaqueta", PlaceholderArt.Circle, outline, new Vector3(px, py, 0f), new Vector2(sz * 1.25f, sz * 1.05f), 3);
+                    SetupUtils.SpriteChild(half, "Plaqueta", PlaceholderArt.Circle, platelet, new Vector3(px, py, 0f), new Vector2(sz, sz * 0.8f), 4);
+                    SetupUtils.SpriteChild(half, "Brillo", PlaceholderArt.Circle, light, new Vector3(px - sz * 0.15f, py + sz * 0.12f, 0f), new Vector2(sz * 0.3f, sz * 0.18f), 5);
+                }
+                for (int i = 0; i < 4; i++)
+                {
+                    float py = -side * (0.4f + i * 0.9f);
+                    SetupUtils.SpriteChild(half, "Fibrina", PlaceholderArt.SquareCentered, new Color(1f, 0.95f, 0.8f, 0.85f),
+                        new Vector3(0f, py, 0f), new Vector2(size.x * 1.1f, 0.07f), 6).transform.localRotation =
+                        Quaternion.Euler(0f, 0f, ((float)rnd.NextDouble() - 0.5f) * 60f);
+                }
+            }
+            var health = go.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.Plaquetas);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            var hurt = go.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
+            SetupUtils.SetVector2(hurt, "offset", Vector2.zero);
+            SetupUtils.SetVector2(hurt, "size", size);
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = size;
+            box.enabled = false;   // se prende cuando se cierra (ClotGate)
+            go.AddComponent<ClotGate>().Configure(false, size, message, seconds);
+        }
+
+        /// <summary>El minijefe: la PLACA DE ATEROMA, pegada a la pared de abajo (casi tapa la arteria).</summary>
+        private void AtheromaBossAt(float x)
+        {
+            const float width = 8f;
+            float height = FemoralRadius * 2f - 0.75f;   // arriba queda un hueco donde no cabes ni encogido
+            GameObject go = Node("Jefe_PlacaDeAteroma", x, FemoralBottomY(x));
+            PlaqueDome(go, width, height, 1104);
+            // Unas células espumosas pegadas a la placa (de adorno) y grietas en la capa fibrosa.
+            Transform art = go.transform.Find("Dibujo");
+            for (int i = 0; i < 4; i++)
+            {
+                var p = new Vector3(-2.2f + i * 1.5f, 1.2f + (i % 2) * 1.4f, 0f);
+                SetupUtils.SpriteChild(art, "Espumosa", PlaceholderArt.Circle, new Color(0.55f, 0.42f, 0.3f), p, Vector2.one * 1.05f, -101);
+                SetupUtils.SpriteChild(art, "Espumosa", PlaceholderArt.Circle, new Color(1f, 0.93f, 0.78f), p, Vector2.one * 0.9f, -100);
+                for (int k = 0; k < 4; k++)
+                    SetupUtils.SpriteChild(art, "Grasa", PlaceholderArt.Circle, new Color(1f, 0.8f, 0.3f), p + new Vector3(-0.2f + (k % 2) * 0.35f, -0.18f + (k / 2) * 0.32f, 0f), Vector2.one * 0.2f, -99);
+            }
+            for (int i = 0; i < 3; i++)
+                SetupUtils.SpriteChild(art, "Grieta", PlaceholderArt.SquareCentered, new Color(0.5f, 0.3f, 0.06f, 0.9f),
+                    new Vector3(-1.6f + i * 1.4f, height * 0.82f - i * 0.25f, 0f), new Vector2(0.9f, 0.08f), -99).transform.localRotation =
+                    Quaternion.Euler(0f, 0f, -30f + i * 25f);
+            // Ojos enojados (es un minijefe de caricatura).
+            foreach (int side in new[] { -1, 1 })
+            {
+                var eye = new Vector3(-0.9f + side * 0.55f, height * 0.6f, 0f);
+                SetupUtils.SpriteChild(art, "Ojo", PlaceholderArt.Circle, Color.white, eye, new Vector2(0.62f, 0.7f), -99);
+                SetupUtils.SpriteChild(art, "Pupila", PlaceholderArt.Circle, new Color(0.15f, 0.05f, 0.05f), eye + new Vector3(-0.1f, -0.05f, 0f), new Vector2(0.3f, 0.36f), -98);
+                SetupUtils.SpriteChild(art, "Ceja", PlaceholderArt.SquareCentered, new Color(0.45f, 0.25f, 0.05f), eye + new Vector3(0f, 0.45f, 0f), new Vector2(0.7f, 0.14f), -98)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
+            }
+            var health = go.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.AteromaJefe);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            var hurt = go.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
+            SetupUtils.SetVector2(hurt, "offset", new Vector2(0f, height * 0.5f));
+            SetupUtils.SetVector2(hurt, "size", new Vector2(width * 0.75f, height));
+            go.AddComponent<AtheromaBoss>().Configure(width, height, prefabs.EnemyProjectile, prefabs.CelulaEspumosa, data.Plaquetas, data.Table);
+        }
+
         private FlightWaveSpec Spec(EnemyHealth prefab, int count, FlightPattern pattern, float entry, float step, float speed)
         {
             return new FlightWaveSpec
@@ -3859,8 +4020,14 @@ namespace HealingKnight.EditorTools
             //      (tronco celíaco, mesentéricas y las RENALES, que jalan fuerte). Llega el meningococo: rapidísimo, con aviso.
             //   6) La aorta se parte en las dos ILÍACAS: escoges por arriba o por abajo de la punta.
             //      Arriba (izquierda): más rápida, más enemigos y suero. Abajo (derecha): más coágulos y glóbulos.
+            //  TRAMO 3 — la arteria FEMORAL enferma (806–1206), después de un fundido a negro (las dos ilíacas no se juntan;
+            //  sigues por "una pierna"):
+            //   7) PLACAS de colesterol pegadas a las paredes (sólidas, se encogen a balazos), bolitas de colesterol LDL y
+            //      células espumosas. Dos placas frente a frente: solo pasas ENCOGIDO (o rompiéndolas).
+            //   8) Coágulos que se van FORMANDO (disuélvelos antes de que se cierren) y una placa rota con coágulo encima.
+            //   9) Minijefe: la PLACA DE ATEROMA (detiene la pantalla; a la mitad se rompe y le sale un coágulo).
             // Todo es relativo a la cámara, que avanza sola por el centro del vaso (FlightRoute).
-            const float length = 790f;
+            const float length = 1220f;
             const float startX = -10f, endX = startX + length;
             LevelManager manager = BuildLevelBase(length, new LevelStyle
             {
@@ -3898,26 +4065,35 @@ namespace HealingKnight.EditorTools
             main.Add(new Vector2(decisionX, AortaCenterY(decisionX)));
             var upper = new List<Vector2>();
             var lower = new List<Vector2>();
-            for (float x = decisionX + 2f; x < endX - 6f; x += 2f)
+            for (float x = decisionX + 2f; x < BranchEndX; x += 2f)
             {
                 float k = Mathf.SmoothStep(0f, 1f, (x - decisionX) / 14f);
                 upper.Add(new Vector2(x, Mathf.Lerp(AortaCenterY(x), IliacUpY(x), k)));
                 lower.Add(new Vector2(x, Mathf.Lerp(AortaCenterY(x), IliacDownY(x), k)));
             }
-            upper.Add(new Vector2(endX - 6f, IliacUpY(endX - 6f)));
-            lower.Add(new Vector2(endX - 6f, IliacDownY(endX - 6f)));
+            upper.Add(new Vector2(BranchEndX, IliacUpY(BranchEndX)));
+            lower.Add(new Vector2(BranchEndX, IliacDownY(BranchEndX)));
             var route = new GameObject("RutaDeVuelo").AddComponent<FlightRoute>();
             route.Configure(main.ToArray(), 2.9f, 2.2f);
             route.ConfigureFork(upper.ToArray(), lower.ToArray(), new Vector2(tipX, AortaCenterY(tipX)), 1.25f,
                 "Ilíaca IZQUIERDA: la sangre corre más rápido aquí. Más enemigos... y suero.",
                 "Ilíaca DERECHA: más coágulos y más glóbulos rojos. Ten listo el ANTICOAGULANTE.");
+            // Al acabar la ilíaca: fundido y sigue la femoral (tramo 3).
+            var femoral = new List<Vector2>();
+            for (float x = FemoralStart; x < endX - 6f; x += 2f) femoral.Add(new Vector2(x, FemoralCenterY(x)));
+            femoral.Add(new Vector2(endX - 6f, FemoralCenterY(endX - 6f)));
+            route.ConfigureContinuation(femoral.ToArray(),
+                "Arteria FEMORAL: la que lleva sangre a la pierna. ¡Pero está ENFERMA!");
 
             // Ramas: (x, medio ancho). Arriba: las del arco (cabeza y brazos), el tronco celíaco y la renal izquierda.
             // Abajo: la mesentérica superior, la renal derecha y la mesentérica inferior.
             var topGaps = new List<Vector2> { new Vector2(121f, 1.4f), new Vector2(134f, 1.4f), new Vector2(147f, 1.4f), new Vector2(398f, 1.2f), new Vector2(452f, 0.9f) };
             var bottomGaps = new List<Vector2> { new Vector2(418f, 1.3f), new Vector2(460f, 1.1f), new Vector2(515f, 0.9f) };
-            WallWithGaps(OuterBottomY, -40f, endX + 25f, true, bottomGaps);
-            WallWithGaps(OuterTopY, -40f, endX + 25f, false, topGaps);
+            const float iliacWallsEnd = BranchEndX + 16f;   // lo que se ve de la ilíaca antes del fundido
+            WallWithGaps(OuterBottomY, -40f, iliacWallsEnd, true, bottomGaps);
+            WallWithGaps(OuterTopY, -40f, iliacWallsEnd, false, topGaps);
+            WallWithGaps(FemoralBottomY, FemoralStart - 12f, endX + 25f, true, new List<Vector2>());
+            WallWithGaps(FemoralTopY, FemoralStart - 12f, endX + 25f, false, new List<Vector2>());
             BranchTube(121f, 1.4f, true, 7f);
             BranchTube(134f, 1.4f, true, 7f);
             BranchTube(147f, 1.4f, true, 7f);
@@ -3926,7 +4102,7 @@ namespace HealingKnight.EditorTools
             BranchTube(418f, 1.3f, false, 7f);
             BranchTube(460f, 1.1f, false, 11f);   // renal derecha
             BranchTube(515f, 0.9f, false, 6f);
-            Divider(tipX, endX + 25f);
+            Divider(tipX, iliacWallsEnd);
 
             // Ventrículo: músculo grueso que se aprieta con cada latido, y la válvula aórtica (dos valvas).
             for (int i = 0; i < 6; i++)
@@ -3955,8 +4131,9 @@ namespace HealingKnight.EditorTools
             // Tráfico de glóbulos rojos: en la aorta, poco en la ilíaca izquierda y mucho en la derecha.
             Sprite cellArt = PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 1f);
             new GameObject("GlobulosRojos").AddComponent<BloodStream>().Configure(14f, tipX + 4f, 7, 2.5f, cellArt);
-            new GameObject("GlobulosRojos_Izquierda").AddComponent<BloodStream>().Configure(ForkWide, endX - 8f, 4, 1.8f, cellArt, 1);
-            new GameObject("GlobulosRojos_Derecha").AddComponent<BloodStream>().Configure(ForkWide, endX - 8f, 11, 2.2f, cellArt, 2);
+            new GameObject("GlobulosRojos_Izquierda").AddComponent<BloodStream>().Configure(ForkWide, BranchEndX + 2f, 4, 1.8f, cellArt, 1);
+            new GameObject("GlobulosRojos_Derecha").AddComponent<BloodStream>().Configure(ForkWide, BranchEndX + 2f, 11, 2.2f, cellArt, 2);
+            new GameObject("GlobulosRojos_Femoral").AddComponent<BloodStream>().Configure(FemoralStart, endX - 8f, 5, 1.6f, cellArt);
 
             // ================= TRAMO 1: la aorta =================
             // ---------- Aorta ascendente ----------
@@ -4122,7 +4299,7 @@ namespace HealingKnight.EditorTools
             var u9 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.4f, -2.8f, 2.5f);
             u9.hoverX = 6f; u9.hoverTime = 4f; u9.fireEveryBeats = 1; u9.shots = 3; u9.spreadDegrees = 30f; u9.interval = 0.2f; u9.branch = 1;
             FlightWaveAt(736f, u9);
-            FlightNote(endX - 22f, "¡Ilíaca izquierda superada! De aquí sigue la arteria FEMORAL, rumbo a la pierna... (fin del tramo 2).", 1);
+            FlightNote(BranchEndX - 16f, "¡Ilíaca izquierda superada! De aquí sale la arteria FEMORAL, rumbo a la pierna...", 1);
 
             // Rama de abajo (2): ilíaca derecha — más obstáculos.
             Clot(616f, IliacDownY(616f) + IliacDownR(616f) - 1f, new Vector2(2.2f, 2.2f), false, "Coágulos en la ilíaca derecha: esquívalos o disuélvelos.").SetBranch(2);
@@ -4153,14 +4330,101 @@ namespace HealingKnight.EditorTools
             var l6 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.4f, -2.8f, 2.5f);
             l6.hoverX = 6f; l6.hoverTime = 4f; l6.fireEveryBeats = 2; l6.shots = 3; l6.spreadDegrees = 26f; l6.interval = 0.2f; l6.branch = 2;
             FlightWaveAt(740f, l6);
-            FlightNote(endX - 22f, "¡Ilíaca derecha superada! De aquí sigue la arteria FEMORAL, rumbo a la pierna... (fin del tramo 2).", 2);
+            FlightNote(BranchEndX - 16f, "¡Ilíaca derecha superada! De aquí sale la arteria FEMORAL, rumbo a la pierna...", 2);
+
+            BuildDiseasedFemoral(endX);
 
             // Inicio dentro del ventrículo.
             var spawn = new Vector2(startX + 4f, AortaCenterY(startX) - 0.6f);
             SetupUtils.SetVector2(manager, "spawnPoint", spawn);
             var player = Object.FindAnyObjectByType<HealingKnight.Gameplay.Player.PlayerController>();
             if (player != null) player.transform.position = spawn;
-            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Aorta e ilíacas desinfectadas! (Fin del tramo 2 de prueba.)");
+            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Aorta, ilíacas y femoral limpias! Le quitaste las placas a la arteria. (Fin del tramo 3 de prueba.)");
+        }
+
+        /// <summary>TRAMO 3: la arteria femoral enferma (placas, LDL, células espumosas, coágulos que se forman y la placa de ateroma).</summary>
+        private void BuildDiseasedFemoral(float endX)
+        {
+            Checkpoint(FemoralStart + 2f);
+            // (Mensajes cortos y espaciados: NODO los pone en fila y el estrecho no debe llegar antes que su aviso.)
+            FlightNote(FemoralStart + 8f, "¡PLACAS de colesterol (aterosclerosis)! Son SÓLIDAS: rómpelas a balazos (el ANTIINFLAMATORIO les hace más) o esquívalas.");
+
+            // ---------- Primeras placas y el colesterol LDL ----------
+            Plaque(828f, false, 4.4f, 2.3f);
+            var c1 = Spec(prefabs.Ldl, 6, FlightPattern.Line, 1.6f, -0.6f, 3.4f);
+            c1.amplitude = 1f; c1.frequency = 0.35f; c1.interval = 0.35f;
+            FlightWaveAt(832f, c1);
+            Plaque(844f, true, 4.6f, 2.5f);
+            var c2 = Spec(prefabs.Ldl, 5, FlightPattern.Swoop, 2.5f, 0.9f, 3.2f);
+            c2.edge = FlightEdge.Bottom; c2.interval = 0.4f;
+            FlightWaveAt(846f, c2);
+            FlightNote(846f, "¡Dos placas casi se tocan! Mantén {fijar} para ENCOGERTE y pasar... o rómpelas.");
+            PlaqueNarrow(870f, 4.4f, 1.3f);
+            var c3 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.2f, -2.4f, 2.5f);
+            c3.hoverX = 6f; c3.hoverTime = 4f; c3.fireEveryBeats = 2; c3.interval = 0.25f; c3.splitPrefab = prefabs.SAureusCoco; c3.splitCount = 2;
+            FlightWaveAt(874f, c3);
+
+            // ---------- Coágulo que se forma ----------
+            FormingClot(896f, 3.6f, "¡Un COÁGULO se está FORMANDO! Disuélvelo con ANTICOAGULANTE antes de que se cierre... o cruza por el hueco.");
+            Checkpoint(904f);
+            var c4 = Spec(prefabs.CelulaEspumosa, 2, FlightPattern.Chase, 1.6f, -3.2f, 2.3f);
+            c4.hoverTime = 6f; c4.interval = 0.6f;
+            c4.message = "CÉLULAS ESPUMOSAS: macrófagos atascados de colesterol. Te persiguen; el ANTIINFLAMATORIO les hace más.";
+            FlightWaveAt(906f, c4);
+
+            // ---------- Zigzag entre placas ----------
+            Plaque(918f, false, 4.2f, 2.9f);
+            Plaque(927f, true, 4.2f, 2.9f);
+            var c5 = Spec(prefabs.Ldl, 4, FlightPattern.Line, 0f, 0f, 3.6f);
+            c5.amplitude = 1.8f; c5.frequency = 0.45f; c5.interval = 0.45f;
+            c5.message = "Las bolitas amarillas son COLESTEROL LDL (el \"malo\") viajando en la sangre. Cualquier cápsula las revienta.";
+            FlightWaveAt(926f, c5);
+            Plaque(936f, false, 4.2f, 3f);
+            Plaque(945f, true, 4.2f, 3f);
+            var c6 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 3f, 1.4f, 3.2f);
+            c6.edge = FlightEdge.Top; c6.interval = 0.5f;
+            FlightWaveAt(946f, c6);
+            Plaque(954f, false, 4.4f, 3.1f);
+            Plaque(963f, true, 4.4f, 3.1f);
+
+            FormingClot(978f, 2.8f, "¡Otro coágulo formándose! Este se cierra más rápido.");
+            Checkpoint(990f);
+
+            // ---------- Células espumosas, meningococos y una placa rota ----------
+            var c7 = Spec(prefabs.CelulaEspumosa, 3, FlightPattern.Chase, 2f, -2f, 2.5f);
+            c7.hoverTime = 5.5f; c7.interval = 0.5f;
+            FlightWaveAt(998f, c7);
+            var c8 = Spec(prefabs.Meningococo, 3, FlightPattern.Line, 1.4f, -1.4f, 10f);
+            c8.warn = true; c8.interval = 0.7f;
+            FlightWaveAt(1008f, c8);
+            Plaque(1022f, false, 4.6f, 2.6f, "Esa placa se ROMPIÓ y las plaquetas le pusieron un COÁGULO encima. Así empiezan muchos infartos.");
+            Clot(1021f, FemoralBottomY(1021f) + 3.4f, new Vector2(2.2f, 1.8f), false, null);
+            Plaque(1031f, true, 4f, 2.2f);
+            var c9 = Spec(prefabs.Ldl, 8, FlightPattern.Line, 2.4f, -0.7f, 3.8f);
+            c9.interval = 0.25f;
+            FlightWaveAt(1036f, c9);
+            IVSerum(1046f, FemoralCenterY(1046f) + 0.5f);
+            Checkpoint(1052f);
+
+            // ---------- Último estrecho antes del minijefe ----------
+            PlaqueNarrow(1062f, 4.8f, 1.25f);   // (el aviso de encogerse ya se dio)
+            var c10 = Spec(prefabs.Ldl, 5, FlightPattern.Line, 0f, 0f, 3.4f);
+            c10.interval = 0.5f;
+            FlightWaveAt(1066f, c10);
+
+            // ---------- Minijefe: la placa de ateroma ----------
+            FlightNote(1082f, "NODO: Algo ENORME tapa la arteria más adelante. Ten listos el ANTIINFLAMATORIO... y el ANTICOAGULANTE.");
+            Checkpoint(1090f);
+            AtheromaBossAt(1104f);
+
+            FlightNote(1124f, "¡La sangre vuelve a pasar! En la vida real las placas se previenen comiendo bien, haciendo ejercicio y sin fumar.");
+            var c11 = Spec(prefabs.Ldl, 6, FlightPattern.Swoop, 3f, 1.2f, 3.4f);
+            c11.edge = FlightEdge.Top; c11.interval = 0.35f;
+            FlightWaveAt(1140f, c11);
+            var c12 = Spec(prefabs.CelulaEspumosa, 2, FlightPattern.Chase, 1.6f, -3.2f, 2.6f);
+            c12.hoverTime = 5f; c12.interval = 0.5f;
+            FlightWaveAt(1156f, c12);
+            FlightNote(endX - 26f, "¡Arteria femoral limpia! Más adelante la sangre llega a los CAPILARES... (fin del tramo 3).");
         }
 
         private void BuildSandbox()

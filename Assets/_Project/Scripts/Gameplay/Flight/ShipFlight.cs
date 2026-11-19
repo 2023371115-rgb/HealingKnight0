@@ -1,4 +1,5 @@
 using HealingKnight.Core.Combat;
+using HealingKnight.Core.Damage;
 using HealingKnight.Gameplay.Audio;
 using HealingKnight.Gameplay.Combat;
 using HealingKnight.Gameplay.Level;
@@ -223,14 +224,51 @@ namespace HealingKnight.Gameplay.Flight
             if (next.x > maxX) v.x = (maxX - p.x) / dt;
             if (next.y < minY) v.y = (minY - p.y) / dt;
             if (next.y > maxY) v.y = (maxY - p.y) / dt;
-            // Si ya quedó afuera (reaparecer, empujón fuerte), se acomoda de golpe.
+            // Si ya quedó afuera (reaparecer, empujón fuerte, o algo sólido no la deja avanzar y la pantalla la
+            // alcanzó), se acomoda de golpe en un lugar LIBRE. Si fue porque quedó APLASTADA contra la orilla, duele.
             if (p.x < minX - 0.5f || p.x > maxX + 0.5f || p.y < minY - 0.5f || p.y > maxY + 0.5f)
             {
-                Vector2 fixedPos = new Vector2(Mathf.Clamp(p.x, minX, maxX), Mathf.Clamp(p.y, minY, maxY));
+                bool squashed = p.x < minX - 0.5f && controller.Health.IsAlive;
+                Vector2 fixedPos = FreeSpot(new Vector2(Mathf.Clamp(p.x, minX, maxX), Mathf.Clamp(p.y, minY, maxY)), minX, maxX, minY, maxY);
                 motor.Body.position = fixedPos;
                 transform.position = fixedPos;
+                velocity = route != null ? route.ScrollVelocity : Vector2.zero;
+                v = velocity;
+                if (squashed && Time.time >= squashedAt + 1f)
+                {
+                    squashedAt = Time.time;
+                    DamageInfo info = DamageInfo.Create(15f, DamageKind.Environment, Team.Neutral, fixedPos);
+                    info.blockable = false;
+                    controller.Health.ApplyDamage(info);
+                    GameplayEvents.RaiseMessage("¡Te aplastó la orilla! Encógete ({fijar}) o rompe lo que te tapa el paso.");
+                }
             }
             return v;
+        }
+
+        private float squashedAt = -10f;
+        private FlightRoute route => FlightRoute.Current;
+
+        /// <summary>
+        /// El lugar libre más cercano para la nave (sin paredes, placas ni coágulos encima): busca hacia arriba y hacia
+        /// abajo, y si no hay, un poco más adelante.
+        /// </summary>
+        private Vector2 FreeSpot(Vector2 wanted, float minX, float maxX, float minY, float maxY)
+        {
+            if (motor.Collider == null) return wanted;
+            Vector2 size = motor.Collider.size * 0.95f, offset = motor.Collider.offset;
+            int mask = 1 << PhysicsLayers.Ground;
+            for (int step = 0; step < 6; step++)
+            {
+                float x = Mathf.Min(maxX, wanted.x + step * 0.8f);
+                for (int k = 0; k < 24; k++)
+                {
+                    float dy = (k / 2 + (k % 2)) * 0.4f * (k % 2 == 0 ? 1f : -1f);
+                    Vector2 c = new Vector2(x, Mathf.Clamp(wanted.y + dy, minY, maxY));
+                    if (Physics2D.OverlapBox(c + offset, size, 0f, mask) == null) return c;
+                }
+            }
+            return wanted;
         }
 
         private void Visuals(float dt, Vector2 scroll)

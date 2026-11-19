@@ -396,8 +396,8 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 ## Sistema circulatorio: modo de VUELO (prueba)
 
 Plan completo del sistema (Bazo → Arterias y venas → Corazón → El gran trombo, y el Riñón secreto) en el proyecto de
-Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo de vuelo** con los dos primeros tramos de
-**Arterias y venas**: la Aorta y la aorta abdominal con las ilíacas. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
+Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo de vuelo** con los tres primeros tramos de
+**Arterias y venas**: la Aorta, la aorta abdominal con las ilíacas y la arteria femoral enferma. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
 (en el mapa todavía no se puede jugar: va después del Bazo, que aún no existe).
 
 **La nave** (`Gameplay/Flight/ShipFlight.cs`): NODO se vuelve una nanocápsula con el caballero sentado adentro.
@@ -413,7 +413,9 @@ rojos medio latido antes. `TachycardiaTrigger` sube el ritmo (taquicardia).
 
 **La pantalla avanza sola** (`FlightRoute.cs`): la cámara sigue una línea de puntos (el centro del vaso) a 2.9 u/s más el
 empujón de cada latido. Al empezar esperas dentro del **ventrículo izquierdo** y el latido te **dispara a la aorta**. Se
-detiene frente a un coágulo que tapa todo y al final. Si mueres, la pantalla regresa al punto de guardado, se borran los
+detiene frente a lo que tapa todo (`FlightBlockers`: un coágulo completo o un minijefe, solo si está ADELANTE de la nave) y
+al final. Si te quedas atorado contra algo sólido y la orilla izquierda te alcanza, te aplasta (−15) y te acomoda en el
+lugar libre más cercano. Si mueres, la pantalla regresa al punto de guardado, se borran los
 enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya se veían salen escalonadas).
 
 **Piezas del nivel:**
@@ -425,7 +427,10 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
   balas**, las tuyas también: sirven de escudo.
 - `ClotGate`: coágulo de plaquetas y fibrina. Solo lo deshace el **ANTICOAGULANTE**, la cápsula regional nueva
   (turquesa, como la heparina; amenaza `Coagulo`). Completo = la pantalla se detiene hasta disolverlo; pegado a la pared =
-  te lastima si lo tocas.
+  te lastima si lo tocas. Con `formTime` se va **formando**: al entrar a la pantalla sus dos mitades crecen desde las
+  paredes; si lo disuelves antes (o cruzas el hueco) pasas, si se cierra se vuelve completo.
+- `PlaqueBump`: **placa de colesterol** pegada a la pared (sólida). Se encoge con cada golpe hasta romperse; el
+  antiinflamatorio le hace más (las demás cápsulas, parcial).
 - `FlowZone`: corriente que te empuja (abajo de las ramas del arco de la aorta te jala hacia arriba).
 - `HeartPulse`: adornos que laten (el músculo del ventrículo se aprieta, la válvula aórtica se abre, las paredes del vaso
   se ensanchan con el pulso).
@@ -452,6 +457,19 @@ tráfico de glóbulos) → arco aórtico (sube; sus tres ramas te jalan y de ell
 `BloodStream` y `FlightMessage` (mensaje de NODO por la X del centro de la pantalla). En `SceneSetup`: `WallWithGaps`
 (paredes con huecos para las ramas), `BranchTube`, `Divider` (la punta y el tejido entre las ilíacas), `FlightNote` e
 `IVSerum`.
+
+**Tramo 3, la arteria femoral enferma** (806–1206, ~2.5 min con el minijefe): las dos ilíacas no se juntan, así que al
+acabar la que escogiste la pantalla se va a **negro** y sigues por "una pierna" (`FlightRoute.ConfigureContinuation`).
+- **Aterosclerosis**: placas de colesterol arriba y abajo (zigzag), y dos estrechos donde dos placas casi se tocan: pasas
+  **encogido** ({fijar}) o rompiéndolas.
+- Enemigos nuevos (figuras por ahora): **colesterol LDL** (bolitas amarillas, cualquier cápsula las revienta) y
+  **células espumosas** (macrófagos llenos de grasa que te persiguen; antiinflamatorio).
+- Dos **coágulos que se forman** y una placa rota con un coágulo encima (así empiezan los infartos). Un suero.
+- **Minijefe: la PLACA DE ATEROMA** (`AtheromaBoss`): casi tapa la arteria y detiene la pantalla. Escupe gotas de grasa
+  al ritmo del latido y suelta células espumosas. A la mitad de su vida **se rompe** y le sale un **coágulo** en la cara de
+  enfrente: mientras exista, tus balas no le hacen nada; disuélvelo con anticoagulante (vuelve a salir a los 9 s).
+- Código en `SceneSetup`: `FemoralCenterY`, `Plaque`, `PlaqueNarrow`, `PlaqueDome`, `FormingClot`, `AtheromaBossAt` y
+  `BuildDiseasedFemoral`. Datos nuevos: `Lipido_LDL`, `Celula_Espumosa`, `Bloqueo_PlacaColesterol`, `Jefe_Ateroma`.
 
 Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
 `Impacto_Anticoagulante`. Falta la música del sistema (synthwave, en el plan).

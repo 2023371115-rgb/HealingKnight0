@@ -29,7 +29,7 @@ namespace HealingKnight.EditorTools
         public LevelData NerviosoMedula, NerviosoCerebro, NerviosoHipocampo;
         public LevelData NerviosoOjo, RespiratorioAmigdalas;
         public EnemyData SarroJefe, SPyogenes, AbscesoJefe, ToxoplasmaJefe;
-        public EnemyData Plaquetas;
+        public EnemyData Plaquetas, Ldl, CelulaEspumosa, PlacaColesterol, AteromaJefe;
         public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
 
         public void Run()
@@ -666,6 +666,75 @@ namespace HealingKnight.EditorTools
                 e.attackDamage = 8f;
                 e.tint = new Color(0.8f, 0.6f, 0.9f);
             });
+
+            // Tramo 3 de Arterias y venas: las ARTERIAS ENFERMAS (aterosclerosis).
+            Ldl = Enemy("Lipido_LDL", e =>
+            {
+                e.displayName = "Colesterol LDL";
+                e.threat = ThreatType.Inflamacion;
+                e.biologia = "El colesterol \"malo\": bolitas de grasa envueltas en proteína que viajan por la sangre. Si hay demasiadas " +
+                    "se meten en la pared de las arterias y forman placas. Cualquier cápsula las revienta.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 2f;
+                e.maxHealth = 6f; e.moveSpeed = 3f;
+                e.attackDamage = 7f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.projectileColor = new Color(1f, 0.85f, 0.3f);
+                e.tint = new Color(1f, 0.82f, 0.28f);
+                e.visualScale = 0.7f;
+                AllMedications(e, Effectiveness.Effective, null);
+            });
+
+            CelulaEspumosa = Enemy("Celula_Espumosa", e =>
+            {
+                e.displayName = "Célula espumosa";
+                e.threat = ThreatType.Inflamacion;
+                e.biologia = "Un macrófago que se comió tanto colesterol que quedó lleno de gotitas de grasa (por eso se ve espumoso). " +
+                    "En vez de limpiar, se queda en la pared e inflama la placa. El antiinflamatorio le hace más.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 2.5f;
+                e.maxHealth = 14f; e.moveSpeed = 2.4f;
+                e.attackDamage = 10f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 1;
+                e.tint = new Color(1f, 0.93f, 0.78f);
+                e.visualScale = 1.15f;
+                AllMedications(e, Effectiveness.Partial, Antiinflamatorio);
+            });
+
+            PlacaColesterol = Enemy("Bloqueo_PlacaColesterol", e =>
+            {
+                e.displayName = "Placa de colesterol";
+                e.threat = ThreatType.Inflamacion;
+                e.biologia = "Aterosclerosis: el colesterol LDL se mete en la pared de la arteria, la inflama y forma una placa que la va " +
+                    "cerrando. Con cada golpe se hace más chica; el antiinflamatorio le hace más.";
+                e.maxHealth = 45f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.attackDamage = 8f;
+                e.tint = new Color(1f, 0.86f, 0.45f);
+                AllMedications(e, Effectiveness.Partial, Antiinflamatorio);
+            });
+
+            // Minijefe del tramo 3: una placa enorme que casi tapa la arteria; a la mitad se rompe y le sale un coágulo.
+            AteromaJefe = Enemy("Jefe_Ateroma", e =>
+            {
+                e.displayName = "Placa de ateroma";
+                e.threat = ThreatType.Inflamacion;
+                e.biologia = "Una placa de ateroma grande: grasa, células espumosas y una capa dura encima. Si se rompe, las plaquetas " +
+                    "forman un coágulo sobre ella y la arteria se tapa: así empiezan muchos infartos.";
+                e.maxHealth = 450f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
+                e.attackDamage = 9f;
+                e.projectileColor = new Color(1f, 0.85f, 0.3f);
+                e.tint = new Color(1f, 0.86f, 0.45f);
+                AllMedications(e, Effectiveness.Partial, Antiinflamatorio);
+            });
+        }
+
+        /// <summary>Que todas las cápsulas le hagan 'result' (menos 'except', que usa la tabla de su amenaza).</summary>
+        private void AllMedications(EnemyData e, Effectiveness result, MedicationData except)
+        {
+            foreach (MedicationData m in new[] { Antibiotico, Antiviral, Antiinflamatorio, Antihistaminico, Antiparasitario, Mucolitico, Anticonvulsivo, Anticoagulante })
+                if (m != null && m != except) e.weaknesses.Add(new EnemyWeakness { medication = m, result = result });
         }
 
         private void CreateNervousEnemies()

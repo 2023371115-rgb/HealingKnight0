@@ -30,6 +30,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth SPyogenes, SarroJefe, AbscesoJefe, ToxoplasmaJefe;
         public EnemyHealth Poliovirus, Meningococo, Herpes, Rabia;
         public EnemyHealth SAureusCoco, OxiuroHuevo;
+        public EnemyHealth Ldl, CelulaEspumosa;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -133,6 +134,10 @@ namespace HealingKnight.EditorTools
             SarroJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Sarro_Boca.prefab", BuildSarro);
             AbscesoJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Absceso_Amigdalas.prefab", BuildAbscess);
             ToxoplasmaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Toxoplasma_Ojo.prefab", BuildToxoplasma);
+
+            // Sistema circulatorio (vuelo): bolitas de colesterol LDL y células espumosas (las suelta la placa de ateroma).
+            Ldl = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Lipido_LDL.prefab", BuildLdl);
+            CelulaEspumosa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Celula_Espumosa.prefab", BuildFoamCell);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -508,6 +513,64 @@ namespace HealingKnight.EditorTools
 
             ApplyEnemyArt(root, name, health);
             return root;
+        }
+
+        // ---------- Circulatorio: colesterol LDL y célula espumosa (dibujados con figuras) ----------
+
+        /// <summary>Quita las espículas de la figura redonda (es la de los virus).</summary>
+        private static Transform RoundWithoutSpikes(GameObject go)
+        {
+            Transform body = go.transform.Find("Visual/Body");
+            var spikes = new System.Collections.Generic.List<GameObject>();
+            if (body != null) foreach (Transform c in body) spikes.Add(c.gameObject);
+            foreach (GameObject spike in spikes) Object.DestroyImmediate(spike);
+            return go.transform.Find("Visual");
+        }
+
+        /// <summary>LDL: bolita de grasa amarilla con su cáscara de proteína (ApoB, las bolitas cafés) y brillo.</summary>
+        private GameObject BuildLdl()
+        {
+            GameObject go = BuildEnemy("Lipido_LDL", data.Ldl, EnemyShape.Round);
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Ldl.visualScale;
+            SetupUtils.SpriteChild(visual, "Cascara", PlaceholderArt.Circle, new Color(0.5f, 0.32f, 0.05f), Vector3.zero, Vector2.one * 1.06f * s, -2);
+            for (int i = 0; i < 7; i++)
+            {
+                float a = (i * 360f / 7f + 15f) * Mathf.Deg2Rad;
+                SetupUtils.SpriteChild(visual, "ApoB" + i, PlaceholderArt.Circle, new Color(0.8f, 0.45f, 0.12f),
+                    new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.47f * s, Vector2.one * 0.2f * s, -1);
+            }
+            SetupUtils.SpriteChild(visual, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 0.85f, 0.75f),
+                new Vector3(-0.17f * s, 0.2f * s, 0f), new Vector2(0.3f * s, 0.17f * s), 2);
+            return go;
+        }
+
+        /// <summary>Célula espumosa: macrófago pálido y abultado, lleno de gotitas de grasa amarillas, con su núcleo.</summary>
+        private GameObject BuildFoamCell()
+        {
+            GameObject go = BuildEnemy("Celula_Espumosa", data.CelulaEspumosa, EnemyShape.Round);
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.CelulaEspumosa.visualScale;
+            Color edge = new Color(0.55f, 0.42f, 0.3f), pale = data.CelulaEspumosa.tint;
+            // Contorno y "patitas" (pseudópodos) para que no sea una bola perfecta.
+            SetupUtils.SpriteChild(visual, "Contorno", PlaceholderArt.Circle, edge, Vector3.zero, Vector2.one * 0.98f * s, -3);
+            for (int i = 0; i < 5; i++)
+            {
+                float a = (i * 72f + 20f) * Mathf.Deg2Rad;
+                Vector3 p = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.42f * s;
+                SetupUtils.SpriteChild(visual, "PataContorno" + i, PlaceholderArt.Circle, edge, p, Vector2.one * 0.42f * s, -3);
+                SetupUtils.SpriteChild(visual, "Pata" + i, PlaceholderArt.Circle, pale, p, Vector2.one * 0.34f * s, -2);
+            }
+            var rnd = new System.Random(7);
+            for (int i = 0; i < 9; i++)
+            {
+                float a = (float)rnd.NextDouble() * Mathf.PI * 2f, r = 0.1f + (float)rnd.NextDouble() * 0.26f;
+                float size = 0.12f + (float)rnd.NextDouble() * 0.1f;
+                SetupUtils.SpriteChild(visual, "Grasa" + i, PlaceholderArt.Circle, new Color(1f, 0.82f, 0.3f, 0.9f),
+                    new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f) * s, Vector2.one * size * s, 1);
+            }
+            SetupUtils.SpriteChild(visual, "Nucleo", PlaceholderArt.Circle, new Color(0.6f, 0.4f, 0.7f), new Vector3(-0.16f, -0.1f, 0f) * s, new Vector2(0.26f, 0.2f) * s, 1);
+            return go;
         }
 
         // ---------- Arte dibujado de enemigos (reemplaza las figuras de colores) ----------

@@ -41,6 +41,12 @@ namespace HealingKnight.Gameplay.Flight
         [SerializeField, TextArea] private string upperMessage;
         [SerializeField, TextArea] private string lowerMessage;
 
+        [Header("Después de la bifurcación (vacío = no hay)")]
+        [Tooltip("Camino que sigue después de CUALQUIERA de las dos ramas (más a la derecha). Se llega con un fundido " +
+                 "a negro: por ejemplo, las dos ilíacas llevan a 'una pierna' (la arteria femoral).")]
+        [SerializeField] private Vector2[] continuation = new Vector2[0];
+        [SerializeField, TextArea] private string continuationMessage;
+
         public static FlightRoute Current { get; private set; }
 
         public Vector2 CameraPosition { get; private set; }
@@ -61,6 +67,10 @@ namespace HealingKnight.Gameplay.Flight
         private float total, mainTotal, distance, clock, launchKick;
         private bool launched;
         private int branch;
+        // Salto (fundido) del final de la rama al principio de la continuación.
+        private float jumpFrom = -1f, jumpTo = -1f, fade;
+        private int fadeState;          // 0 nada, 1 oscureciendo, 2 aclarando
+        private SpriteRenderer fadeRenderer;
         private PlayerController player;
         private ShipFlight ship;
 
@@ -72,6 +82,13 @@ namespace HealingKnight.Gameplay.Flight
             path = points;
             baseSpeed = speed;
             surgeBoost = surge;
+        }
+
+        /// <summary>Camino que sigue después de las dos ramas (se llega con un fundido a negro).</summary>
+        public void ConfigureContinuation(Vector2[] points, string message)
+        {
+            continuation = points;
+            continuationMessage = message;
         }
 
         /// <summary>Agrega una bifurcación al final del camino principal.</summary>
@@ -111,6 +128,11 @@ namespace HealingKnight.Gameplay.Flight
             if (extra != null)
                 foreach (Vector2 p in extra)
                     if (p.x > list[list.Count - 1].x + 0.01f) list.Add(p);
+            int branchEnd = list.Count - 1;
+            bool withContinuation = extra != null && continuation != null && continuation.Length > 1;
+            if (withContinuation)
+                foreach (Vector2 p in continuation)
+                    if (p.x > list[list.Count - 1].x + 0.01f) list.Add(p);
             active = list.ToArray();
             cumulative = new float[active.Length];
             total = 0f;
@@ -121,6 +143,8 @@ namespace HealingKnight.Gameplay.Flight
                 cumulative[i] = total;
                 if (i < path.Length) mainTotal = total;
             }
+            jumpFrom = withContinuation ? cumulative[branchEnd] : -1f;
+            jumpTo = withContinuation && branchEnd + 1 < active.Length ? cumulative[branchEnd + 1] : -1f;
         }
 
         /// <summary>Punto del camino a 'd' unidades del principio.</summary>
@@ -217,7 +241,11 @@ namespace HealingKnight.Gameplay.Flight
                     if (ship != null) ship.Kick(new Vector2(9f, 0f));
                 }
             }
-            else if (alive && !AtEnd && !ClotGate.BlocksAt(CameraPosition.x + HalfWidth * 0.45f, branch))
+            else if (fadeState == 1 || UpdateJump())
+            {
+                // Oscureciendo para el salto: la pantalla espera.
+            }
+            else if (alive && !AtEnd && !FlightBlockers.Blocks(CameraPosition.x + HalfWidth * 0.45f, player.Position.x, branch))
             {
                 launchKick = Mathf.MoveTowards(launchKick, 0f, dt * 0.7f);
                 float branchSpeed = branch == 1 && distance > mainTotal ? upperSpeed : 1f;
@@ -226,9 +254,64 @@ namespace HealingKnight.Gameplay.Flight
 
             Vector2 before = CameraPosition;
             distance = Mathf.Min(total, distance + speed * dt);
+            if (jumpFrom >= 0f && distance > jumpFrom && distance < jumpTo) distance = jumpFrom;   // espera el salto
             CameraPosition = PointAt(distance);
             ScrollVelocity = (CameraPosition - before) / dt;
             UpdateView();
+            UpdateFade(dt);
+        }
+
+        /// <summary>Al llegar al final de la rama: se oscurece la pantalla. Devuelve true si está esperando el salto.</summary>
+        private bool UpdateJump()
+        {
+            if (jumpFrom < 0f || fadeState != 0 || distance < jumpFrom - 0.01f || distance >= jumpTo) return false;
+            fadeState = 1;
+            return true;
+        }
+
+        /// <summary>Fundido a negro y salto a la continuación (la nave conserva su lugar en la pantalla).</summary>
+        private void UpdateFade(float dt)
+        {
+            if (fadeState == 0) return;
+            if (fadeRenderer == null)
+            {
+                Camera cam = Camera.main;
+                if (cam == null) return;
+                fadeRenderer = CodeSprites.Add(cam.transform, CodeSprites.Square, Color.black, 900, Vector2.zero, new Vector2(60f, 40f), "Fundido");
+                fadeRenderer.transform.localPosition = new Vector3(0f, 0f, 2f);
+            }
+            if (fadeState == 1)
+            {
+                fade = Mathf.MoveTowards(fade, 1f, dt / 0.35f);
+                if (fade >= 1f)
+                {
+                    Vector2 from = PointAt(jumpFrom), to = PointAt(jumpTo);
+                    distance = jumpTo;
+                    CameraPosition = to;
+                    ScrollVelocity = Vector2.zero;
+                    UpdateView();
+                    if (player != null) player.Motor.Teleport(player.Position + (to - from));
+                    ClearScreen();
+                    fadeState = 2;
+                    if (!string.IsNullOrEmpty(continuationMessage)) Level.GameplayEvents.RaiseMessage(continuationMessage);
+                }
+            }
+            else
+            {
+                fade = Mathf.MoveTowards(fade, 0f, dt / 0.45f);
+                if (fade <= 0f) fadeState = 0;
+            }
+            fadeRenderer.color = new Color(0f, 0f, 0f, fade);
+            fadeRenderer.enabled = fade > 0.001f;
+        }
+
+        /// <summary>Borra a los enemigos de vuelo y las balas enemigas que hay en la pantalla.</summary>
+        private static void ClearScreen()
+        {
+            foreach (EnemyHealth e in new List<EnemyHealth>(EnemyHealth.Active))
+                if (e != null && e.GetComponent<FlightEnemy>() != null) Destroy(e.gameObject);
+            foreach (Projectile p in new List<Projectile>(Projectile.Flying))
+                if (p != null && p.SourceTeam == Team.Enemy) p.Consume();
         }
 
         /// <summary>
@@ -246,11 +329,11 @@ namespace HealingKnight.Gameplay.Flight
             UpdateView();
             Vector2 safe = new Vector2(CameraPosition.x - HalfWidth * 0.6f, CameraPosition.y - 0.5f);
             player.Motor.Teleport(safe);
+            fadeState = 0;
+            fade = 0f;
+            if (fadeRenderer != null) fadeRenderer.enabled = false;
 
-            foreach (EnemyHealth e in new List<EnemyHealth>(EnemyHealth.Active))
-                if (e != null && e.GetComponent<FlightEnemy>() != null) Destroy(e.gameObject);
-            foreach (Projectile p in new List<Projectile>(Projectile.Flying))
-                if (p != null && p.SourceTeam == Team.Enemy) p.Consume();
+            ClearScreen();
             FlightWave.RearmFrom(View.xMin, View.xMax);
         }
 
@@ -262,6 +345,8 @@ namespace HealingKnight.Gameplay.Flight
             DrawLine(upperPath);
             Gizmos.color = new Color(0.4f, 0.8f, 1f, 0.9f);
             DrawLine(lowerPath);
+            Gizmos.color = new Color(0.6f, 1f, 0.5f, 0.9f);
+            DrawLine(continuation);
         }
 
         private static void DrawLine(Vector2[] points)
