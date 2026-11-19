@@ -7,22 +7,26 @@ using UnityEngine;
 namespace HealingKnight.Gameplay.Level
 {
     /// <summary>
-    /// AMÍGDALAS: cuando muere un enemigo de la lista, suelta un ANTÍGENO (una "muestra" del germen).
-    /// El jugador lo carga (va lento y no dispara) y lo entrega en el CENTRO GERMINAL, donde salen linfocitos B que
-    /// disparan anticuerpos. Si te pegan mientras lo cargas, se te cae.
-    /// Biología: las amígdalas atrapan gérmenes y presentan sus antígenos para que se fabriquen anticuerpos.
+    /// AMÍGDALAS, paso 1: cuando muere un germen de la lista, suelta un ANTÍGENO (una "muestra" del germen).
+    /// Se recoge con solo tocarlo y da vueltas alrededor del jugador (puedes llevar hasta 'maxCarried'), sin frenarte:
+    /// sigues corriendo y disparando. Si te pegan se te cae UNO.
+    /// Paso 2: en el CENTRO GERMINAL se entregan todos: cada antígeno se vuelve un LINFOCITO B que te sigue y dispara
+    /// anticuerpos. Biología: las amígdalas atrapan gérmenes y presentan sus antígenos para que se fabriquen anticuerpos.
     /// </summary>
     public class AntigenSystem : MonoBehaviour
     {
         [SerializeField] private EnemyData[] sources;
-        [SerializeField] private int maxOnGround = 3;
-        [SerializeField, TextArea] private string firstDrop = "¡Un ANTÍGENO! Es una muestra del germen. Llévalo al CENTRO GERMINAL para fabricar anticuerpos (cargándolo no puedes disparar).";
+        [SerializeField] private int maxOnGround = 5;
+        [SerializeField] private int maxCarried = 3;
+        [SerializeField, TextArea] private string firstDrop = "¡Un ANTÍGENO! Es una muestra del germen. Tócalo para recogerlo (puedes llevar 3) y llévalo al CENTRO GERMINAL: cada uno = un linfocito B aliado.";
 
         private readonly List<Antigen> active = new List<Antigen>();
-        private bool told;
+        private readonly List<Antigen> carried = new List<Antigen>();
+        private bool told, toldFull;
 
         public static AntigenSystem Current { get; private set; }
-        public Antigen Carried { get; private set; }
+        public int CarriedCount { get { carried.RemoveAll(a => a == null); return carried.Count; } }
+        public int MaxCarried => maxCarried;
 
         public void Configure(EnemyData[] enemies) => sources = enemies;
 
@@ -62,42 +66,52 @@ namespace HealingKnight.Gameplay.Level
             if (!told && !string.IsNullOrEmpty(firstDrop)) { told = true; GameplayEvents.RaiseMessage(firstDrop); }
         }
 
+        public bool IsCarried(Antigen a) => carried.Contains(a);
+        public int IndexOf(Antigen a) => carried.IndexOf(a);
+
         public bool TryCarry(Antigen a)
         {
-            if (Carried != null) return false;
-            Carried = a;
-            if (PlayerController.Current != null) PlayerController.Current.Carrying = true;
-            Sfx.Effect("Bomba_Ganada", 0.4f);
+            carried.RemoveAll(x => x == null);
+            if (carried.Count >= maxCarried)
+            {
+                if (!toldFull) { toldFull = true; GameplayEvents.RaiseMessage("Ya llevas 3 antígenos: entrégalos en el CENTRO GERMINAL."); }
+                return false;
+            }
+            carried.Add(a);
+            Sfx.Effect("Recoger_Capsula", 0.5f);
             return true;
         }
 
-        /// <summary>Lo entrega el centro germinal: desaparece el antígeno.</summary>
-        public Antigen Deliver()
+        /// <summary>Lo llama el centro germinal: entrega todos los que llevas. Devuelve cuántos eran.</summary>
+        public int Deliver()
         {
-            Antigen a = Carried;
-            Carried = null;
-            if (PlayerController.Current != null) PlayerController.Current.Carrying = false;
-            active.Remove(a);
-            if (a != null) Destroy(a.gameObject);
-            return a;
+            carried.RemoveAll(x => x == null);
+            int n = carried.Count;
+            foreach (Antigen a in carried)
+            {
+                active.Remove(a);
+                if (a != null) Destroy(a.gameObject);
+            }
+            carried.Clear();
+            return n;
         }
 
         private void OnPlayerHurt()
         {
-            if (Carried == null) return;
-            Antigen a = Carried;
-            Carried = null;
-            if (PlayerController.Current != null) PlayerController.Current.Carrying = false;
+            carried.RemoveAll(x => x == null);
+            if (carried.Count == 0) return;
+            Antigen a = carried[carried.Count - 1];
+            carried.RemoveAt(carried.Count - 1);
             a.Drop();
-            GameplayEvents.RaiseMessage("¡Se te cayó el antígeno! Recógelo otra vez.");
+            GameplayEvents.RaiseMessage("¡Se te cayó un antígeno! Recógelo otra vez.");
         }
     }
 
-    /// <summary>El antígeno en el piso o cargado sobre la cabeza del jugador.</summary>
+    /// <summary>El antígeno en el piso o dando vueltas alrededor del jugador.</summary>
     public class Antigen : MonoBehaviour
     {
         private Transform visual;
-        private float vy, cooldown, life = 25f;
+        private float vy, cooldown, life = 40f;
         private bool grounded;
 
         private void Start()
@@ -123,7 +137,7 @@ namespace HealingKnight.Gameplay.Level
             grounded = false;
             vy = 3f;
             cooldown = 0.8f;
-            life = 20f;
+            life = 25f;
         }
 
         private void Update()
@@ -132,11 +146,17 @@ namespace HealingKnight.Gameplay.Level
             AntigenSystem sys = AntigenSystem.Current;
             PlayerController p = PlayerController.Current;
             if (visual != null) visual.Rotate(0f, 0f, 60f * dt);
-            if (sys != null && sys.Carried == this && p != null)
+            if (sys != null && p != null && sys.IsCarried(this))
             {
-                transform.position = Vector3.Lerp(transform.position, p.Position + Vector2.up * 2.6f, 1f - Mathf.Exp(-14f * dt));
+                // Dan vueltas alrededor del jugador, a la altura del pecho (se ven, pero no estorban).
+                int i = sys.IndexOf(this);
+                float a = Time.time * 2.2f + i * Mathf.PI * 2f / Mathf.Max(1, sys.MaxCarried);
+                Vector2 target = p.Position + new Vector2(Mathf.Cos(a) * 1f, 1.2f + Mathf.Sin(a) * 0.45f);
+                transform.position = Vector3.Lerp(transform.position, target, 1f - Mathf.Exp(-12f * dt));
+                transform.localScale = Vector3.one * 0.7f;
                 return;
             }
+            transform.localScale = Vector3.one;
 
             if (!grounded)
             {
@@ -149,7 +169,7 @@ namespace HealingKnight.Gameplay.Level
             life -= dt;
             if (life <= 0f) { Destroy(gameObject); return; }
             if (cooldown > 0f) { cooldown -= dt; return; }
-            if (p != null && p.Health.IsAlive && sys != null && Vector2.Distance(p.Position + Vector2.up * 0.9f, transform.position) < 1f)
+            if (p != null && p.Health.IsAlive && sys != null && Vector2.Distance(p.Position + Vector2.up * 0.9f, transform.position) < 1.1f)
                 sys.TryCarry(this);
         }
     }

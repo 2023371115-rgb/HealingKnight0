@@ -186,8 +186,22 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private float height = 10f;
 
         private Transform beam;
+        private float currentX;
+        private static readonly System.Collections.Generic.List<LightBeam> Active = new System.Collections.Generic.List<LightBeam>();
 
         public void Configure(float from, float to, float cycle) { minX = from; maxX = to; period = cycle; }
+
+        private void OnEnable() => Active.Add(this);
+        private void OnDisable() => Active.Remove(this);
+
+        /// <summary>¿Algún haz de luz alumbra ese punto ahora? (El Toxoplasma se deslumbra con él.)</summary>
+        public static bool Lights(Vector2 point)
+        {
+            foreach (LightBeam b in Active)
+                if (b != null && b.beam != null && Mathf.Abs(point.x - b.currentX) <= b.width * 0.5f
+                    && point.y >= b.transform.position.y - 0.5f && point.y <= b.transform.position.y + b.height) return true;
+            return false;
+        }
 
         private void Start()
         {
@@ -202,6 +216,7 @@ namespace HealingKnight.Gameplay.Level
         {
             float k = 0.5f + 0.5f * Mathf.Sin(Time.time / period * Mathf.PI * 2f);
             float x = Mathf.Lerp(minX, maxX, k);
+            currentX = x;
             beam.position = new Vector3(x, transform.position.y, 0f);
             PlayerController p = PlayerController.Current;
             StealthMeter m = StealthMeter.Current;

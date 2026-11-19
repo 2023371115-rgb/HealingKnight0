@@ -46,6 +46,53 @@ namespace HealingKnight.Gameplay
             }
         }
 
+        private static Sprite glow, ring, beam, vignette;
+
+        /// <summary>Mancha de luz suave (centro opaco que se desvanece hacia la orilla). 1 unidad, centrada.</summary>
+        public static Sprite Glow => glow != null ? glow : (glow = Make(64, 64, new Vector2(0.5f, 0.5f), (u, v) =>
+        {
+            float d = Mathf.Sqrt(u * u + v * v);
+            float k = Mathf.Clamp01(1f - d);
+            return k * k;
+        }));
+
+        /// <summary>Aro delgado y suave (orilla de burbuja, onda de un "plop"). 1 unidad, centrado.</summary>
+        public static Sprite Ring => ring != null ? ring : (ring = Make(64, 64, new Vector2(0.5f, 0.5f), (u, v) =>
+        {
+            float d = Mathf.Sqrt(u * u + v * v);
+            float x = (d - 0.86f) / 0.09f;
+            return d > 1f ? 0f : Mathf.Exp(-x * x);
+        }));
+
+        /// <summary>Rayo de luz: nace arriba (pivote arriba al centro) y se desvanece hacia abajo y a los lados. 1 x 1.</summary>
+        public static Sprite Beam => beam != null ? beam : (beam = Make(64, 64, new Vector2(0.5f, 1f), (u, v) =>
+        {
+            float side = Mathf.Clamp01(1f - Mathf.Abs(u));
+            float along = Mathf.Clamp01((v + 1f) * 0.5f);   // 1 arriba, 0 abajo
+            return side * side * Mathf.Pow(along, 1.4f);
+        }));
+
+        /// <summary>Viñeta: transparente al centro y oscura en las orillas (para dar profundidad al fondo). 1 x 1.</summary>
+        public static Sprite Vignette => vignette != null ? vignette : (vignette = Make(64, 64, new Vector2(0.5f, 0.5f), (u, v) =>
+        {
+            float d = Mathf.Sqrt(u * u * 0.85f + v * v);
+            float k = Mathf.Clamp01((d - 0.55f) / 0.75f);
+            return Mathf.Pow(k, 1.5f);
+        }));
+
+        /// <summary>Crea un sprite cuadrado de 'w' x 'h' píxeles (mide 1 x 1 unidad si w = h) con la transparencia que diga 'alpha'(u, v), u y v de -1 a 1.</summary>
+        private static Sprite Make(int w, int h, Vector2 pivot, System.Func<float, float, float> alpha)
+        {
+            var tex = new Texture2D(w, h) { filterMode = FilterMode.Bilinear, wrapMode = TextureWrapMode.Clamp };
+            var px = new Color[w * h];
+            for (int y = 0; y < h; y++)
+                for (int x = 0; x < w; x++)
+                    px[y * w + x] = new Color(1f, 1f, 1f, Mathf.Clamp01(alpha((x + 0.5f) / w * 2f - 1f, (y + 0.5f) / h * 2f - 1f)));
+            tex.SetPixels(px);
+            tex.Apply();
+            return Sprite.Create(tex, new Rect(0, 0, w, h), pivot, w);
+        }
+
         /// <summary>Capa de color hija de 'parent' (posición y tamaño locales en unidades).</summary>
         public static SpriteRenderer Add(Transform parent, Sprite sprite, Color color, int order, Vector2 pos, Vector2 size, string name = "Capa")
         {

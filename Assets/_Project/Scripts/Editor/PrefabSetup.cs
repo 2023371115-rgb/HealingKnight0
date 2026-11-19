@@ -1109,7 +1109,7 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(boss, "headBite", headBite);
                 SetupUtils.SetRef(boss, "headDefeated", headDead);
                 SetupUtils.SetVector2(boss, "headCenterOffset", headCenter);
-                SetupUtils.SetFloat(boss, "spacing", 0.55f);
+                SetupUtils.SetFloat(boss, "spacing", 0.5f);
             }
             return root;
         }

@@ -19,18 +19,21 @@ namespace HealingKnight.Gameplay.Hazards
         [SerializeField] private float offset;
         [SerializeField] private float damage = 18f;
         [SerializeField] private Sprite art;
+        [Tooltip("Color de la encía de la que cuelga la muela (alfa 0 = sin encía). Sube hasta la encía de arriba.")]
+        [SerializeField] private Color gum = new Color(0f, 0f, 0f, 0f);
 
         private Transform tooth;
         private float time;
         private bool hitThisBite;
 
-        public void Configure(float w, float top, float cycle, float phase, Sprite drawing)
+        public void Configure(float w, float top, float cycle, float phase, Sprite drawing, Color gumColor = default(Color))
         {
             width = w;
             topY = top;
             period = cycle;
             offset = phase;
             art = drawing;
+            gum = gumColor;
         }
 
         private void Start()
@@ -38,6 +41,15 @@ namespace HealingKnight.Gameplay.Hazards
             time = offset;
             tooth = new GameObject("Muela").transform;
             tooth.SetParent(transform, false);
+            if (gum.a > 0f)
+            {
+                // La muela es de la quijada de arriba: un pedazo de encía la sostiene y sube hasta el techo
+                // (lo que pasa arriba de la encía del techo queda tapado por ella).
+                float crown = art != null ? width * 1.1f * art.rect.height / Mathf.Max(1f, art.rect.width) * 0.85f : 2.4f;
+                Color gumLine = new Color(gum.r * 0.45f, gum.g * 0.3f, gum.b * 0.4f);
+                CodeSprites.Add(tooth, CodeSprites.Square, gumLine, 3, new Vector2(0f, crown + 6f), new Vector2(width * 0.92f + 0.14f, 12f), "EnciaContorno");
+                CodeSprites.Add(tooth, CodeSprites.Square, gum, 4, new Vector2(0f, crown + 6f), new Vector2(width * 0.92f, 12f), "Encia");
+            }
             if (art != null) { CodeSprites.Art(tooth, art, width * 1.1f, 5, Vector2.zero); return; }
             Color line = new Color(0.25f, 0.18f, 0.2f), enamel = new Color(0.98f, 0.96f, 0.9f);
             Sprite c = CodeSprites.Circle, sq = CodeSprites.Square;

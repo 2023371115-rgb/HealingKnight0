@@ -580,6 +580,7 @@ namespace HealingKnight.EditorTools
                 e.attackDistance = 1.4f; e.attackWindup = 0.6f; e.attackCooldown = 2.2f; e.attackDamage = 15f; e.attackKnockback = 6f;
                 e.projectileGravity = 12f; e.spreadShots = 3; e.spreadDegrees = 20f;
                 e.projectileColor = new Color(0.85f, 0.75f, 0.6f);
+                e.rangedPoseIdle = true;   // de lejos TOSE (se infla y suelta la nube), no embiste
                 e.specialCooldown = 8f; e.specialDuration = 2.5f;
                 e.knockbackResistance = 0.75f; e.linfocitoCharge = 3;
                 e.tint = new Color(0.75f, 0.55f, 0.45f);
@@ -641,7 +642,7 @@ namespace HealingKnight.EditorTools
                 e.displayName = "Poliovirus";
                 e.threat = ThreatType.Virus;
                 e.behavior = EnemyBehavior.Paralyzer;
-                e.biologia = "Ataca las neuronas motoras de la médula espinal y causa parálisis. Sus disparos te dejan lento un momento.";
+                e.biologia = "Ataca las neuronas motoras de la médula espinal y causa parálisis. Su RAYO te deja lento un momento: apunta (línea delgada) y dispara.";
                 e.movement = EnemyMovement.Flying; e.flyHeight = 2.2f;
                 e.maxHealth = 18f; e.moveSpeed = 3.1f;
                 e.attackType = EnemyAttackType.Ranged;
@@ -678,7 +679,7 @@ namespace HealingKnight.EditorTools
                 e.attackDistance = 5.5f; e.attackWindup = 0.45f; e.attackCooldown = 2.6f; e.attackDamage = 8f;
                 e.burstCount = 3; e.specialCooldown = 6f; e.specialDuration = 2.2f;
                 e.projectileSpeed = 7.5f;
-                e.projectileColor = new Color(1f, 0.55f, 0.9f);
+                e.projectileColor = new Color(0.75f, 0.45f, 1f);   // morado, como las bolitas de su dibujo
                 e.tint = new Color(0.85f, 0.4f, 0.95f);
                 e.visualScale = 1.25f;
             });

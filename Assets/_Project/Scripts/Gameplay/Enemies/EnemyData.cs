@@ -154,6 +154,9 @@ namespace HealingKnight.Gameplay.Enemies
         [Tooltip("Al pegarte te deja lento: multiplicador de velocidad (0 = no frena).")]
         [Range(0f, 1f)] public float slowOnHit = 0f;
         public float slowDuration = 1.5f;
+        [Tooltip("Al atacar de lejos usa el dibujo normal (no el de 'ataca'): para que el dibujo coincida con el ataque " +
+                 "(la tuberculosis tose de lejos; su dibujo de 'ataca' es una embestida).")]
+        public bool rangedPoseIdle;
 
         [Header("Recompensas")]
         [Tooltip("Carga que da a Linfocito al ser derrotado cerca de él (para cuando se implemente).")]

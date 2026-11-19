@@ -55,7 +55,7 @@ namespace HealingKnight.Gameplay.Level
 
             Vector2 anchor;
             PlayerController p = PlayerController.Current;
-            if (followPlayer && p != null) anchor = p.Position + new Vector2(-p.Motor.Facing * 1.2f, 2.4f);
+            if (followPlayer && p != null) anchor = p.Position + new Vector2(-p.Motor.Facing * (1.2f + Mathf.Repeat(seed, 1f) * 1.1f), 2.2f + Mathf.Repeat(seed * 3.7f, 1f) * 0.9f);
             else if (home != null) anchor = (Vector2)home.position + new Vector2(Mathf.Sin(t * 0.7f) * 2.2f, 2.6f + Mathf.Sin(t * 1.3f) * 0.6f);
             else anchor = transform.position;
             anchor += new Vector2(0f, Mathf.Sin(t * 2.4f) * 0.15f);

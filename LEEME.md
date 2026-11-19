@@ -143,7 +143,7 @@ arriba del piso y debajo de cada plataforma; las paredes de huecos y lagos lleva
 
 ## Ácido del Estómago (lago y marea)
 
-El Estómago (rediseño, 160 de largo) tiene cinco partes que suben de dificultad:
+El Estómago (rediseño, 200 de largo) tiene seis partes que suben de dificultad:
 1. **Inicio seco** (tutorial, Arena 1).
 2. **Lagos de ácido con géiseres:** dos lagos hondos (`basins`) que se cruzan sobre comida. Hay chorros de ácido
    (`AcidGeyser`) que burbujean 1 s de aviso y luego saltan: hay que medir el brinco. Primera cápsula de omeprazol.
@@ -151,7 +151,10 @@ El Estómago (rediseño, 160 de largo) tiene cinco partes que suben de dificulta
    **ureasa** (burbuja turquesa: el ácido no quema dentro de ella, biología real: la ureasa hace amoníaco que neutraliza el ácido).
 4. **Gas y marea (Arena 3):** burbujas de gas (`GasBubbleVent`) que suben como elevadores y revientan arriba, y la
    alberca de marea (`tidePool`) con comida que sube con el ácido. Un sushi tiene **anisakis** escondido.
-5. **Contracción y jefe:** una pared de músculo (`PeristalsisWave`) te persigue y te empuja al píloro, que está tapado por
+5. **Pliegues y lago de hamburguesas:** subes por los **pliegues** del estómago (rugas, `SolidBlock`) entre chorros de
+   ácido que salen de las glándulas, y bajas a un lago donde casi todo es hamburguesa que se hunde (no te detengas);
+   la dona te sube a un omeprazol. En la orilla salen H. pylori escondidas.
+6. **Contracción y jefe:** una pared de músculo (`PeristalsisWave`) te persigue y te empuja al píloro, que está tapado por
    el **Bezoar** (bola de comida pegada, Arena 4). Al vencerlo se abre el píloro (`PyloricDoor`) y sigue el intestino.
 
 Comida con comportamiento (`FloatingFood.FoodKind`):
@@ -182,7 +185,7 @@ cambiando los colores.
 
 ## Intestino delgado (rediseño)
 
-190 de largo, en las tres partes reales del intestino delgado:
+247 de largo, en las tres partes reales del intestino delgado:
 1. **Duodeno:** arena de Giardia y un lago de bilis con **gotas de grasa** (`Hazards/FatDroplet.cs`) que sirven de plataforma.
    Los **chorros de bilis** (el mismo `AcidGeyser` del estómago con `SetColors`) las rompen en gotitas, como la bilis de verdad
    (emulsiona la grasa); a los 2.8 s se vuelven a juntar.
@@ -190,17 +193,24 @@ cambiando los colores.
    con **Giardias escondidas** que se te avientan (`Level/AmbushSpawner.cs`). En la arena del rotavirus, el **rotavirus
    aplana las vellosidades** que tiene cerca (se recuperan despacio cuando ya no hay). Luego una **placa de Peyer**
    (`Level/PeyerPatch.cs`: punto de guardado y cura un poco) y **suero oral** (`Level/HealPickup.cs`: cura 35).
-3. **Tenia (minijefe, Arena 3):** `Enemies/TeniaBoss.cs`. La cabeza cuelga arriba a la derecha; el cuerpo son 9 pedazos con
-   su propia vida: si cortas uno se vuelve un **proglótido** que camina (máximo 4). Ataques: latigazo (brinca), mordida
-   y cada 11 s suelta el último pedazo. Conviene pegarle a la cabeza.
-4. **Íleon, río de quimo:** te subes a la salchicha (`FloatingFood`, tipo `Raft`) y avanza sola río abajo, aunque brinques
-   encima; si te caes, se detiene. Hay chorros de bilis que brincar y rotavirus que llegan volando (emboscadas).
+3. **Tenia (minijefe, Arena 3):** `Enemies/TeniaBoss.cs`. Está **anclada al piso** en un pliegue de la pared (la tenia
+   real se agarra con su cabeza; aquí la base es su ancla y la cabeza se asoma arriba) y su cabeza **te mira a ti**.
+   - **Discos:** varios pedazos de su cuerpo brillan y se sueltan como DISCOS que vuelan rectos hacia ti, cada uno a su
+     altura: los de abajo se saltan, los del medio se esquivan agachado y a veces hay un hueco para meterse. Tus balas
+     los rompen.
+   - **Mordida:** se inclina hacia ti y muerde. **Azote:** se echa para atrás y se deja caer encima (tiembla antes);
+     después queda tirada un momento: es cuando más daño le haces.
+   - Cada 11 s suelta un pedazo de la base que camina (**proglótido**) y el cuello le vuelve a crecer (máximo 9).
+     Abajo de la mitad de vida se enoja: telegrafía menos y lanza más rápido.
+4. **Íleon, río de quimo (más largo):** te subes a la salchicha (`FloatingFood`, tipo `Raft`) y avanza sola río abajo,
+   aunque brinques encima; si te caes, se detiene. Son **dos balsas**: la primera te deja en una isla con placa de Peyer y
+   la segunda (la hamburguesa) sigue el río. Hay chorros de bilis que brincar y rotavirus que llegan volando (emboscadas).
 5. **Persecución de la lombriz:** `Enemies/WormChase.cs`. La pantalla se cierra alrededor del punto donde está la lombriz:
    sale del piso una y otra vez (antes tiembla el montículo) y solo le puedes pegar cuando está afuera. Cuando le bajas
    un pedazo de vida, huye al siguiente punto y la pantalla avanza. En la **válvula ileocecal** se escapa al intestino
    grueso (no muere aquí). Si mueres, lo que le bajaste se queda.
-6. **Tenia:** su cabeza está agarrada a una columna de tejido; el cuerpo vuelve a crecer desde el cuello cada 4.5 s
-   (máximo 9 pedazos) y solo suelta pedazos con huevos si tiene más de 5.
+6. **Tenia:** el cuerpo vuelve a crecer desde el cuello cada 4.5 s (máximo 9 pedazos) y solo suelta pedazos con huevos
+   si tiene más de 5.
 
 **Enemigos de suelo:** ahora atacan hasta 3 a la vez; los demás amagan acercándose y alejándose en vez de quedarse quietos.
 Se meten a los lagos (el ácido y la bilis no les hacen nada) y bajan de plataformas bajas para seguirte. Si uno con turno
@@ -225,7 +235,9 @@ Si borras un PNG, ese objeto vuelve a dibujarse con figuras.
    empieza cuando trepas; si sales de la zona o mueres, baja). Oxiuros emboscados y una burbuja de gas.
 3. **Colon transverso (arriba, altura 16):** un bloque de tejido sólido (`SolidBlock`). Aquí vive la **flora buena**
    (`Enemies/FriendlyBacteria.cs`): no ataca; si la matas con **antibiótico** sale **C. difficile** en su lugar. El
-   **probiótico** (`Level/ProbioticPickup.cs`) la pone a atacar a los enemigos 10 s. Arena de C. difficile con flora adentro.
+   **probiótico** (`Level/ProbioticPickup.cs`) es la botella del yogur hundida en un charco en el piso, con sus
+   **lactobacilos** nadando alrededor (nada flota). Al tocarla los lactobacilos se van a reforzar la flora y la ponen a
+   atacar a los enemigos 10 s; luego se reproducen uno por uno y la colonia se vuelve a llenar (20 s). Arena de C. difficile con flora adentro.
 4. **Colon descendente:** bajada con **bolos** que suben y bajan (`Level/MovingPlatform.cs`), **lodo** que te frena y más
    si te quedas parado (`Hazards/MudZone.cs`) y **úlceras** de las que salen amebas (`Enemies/EnemyNest.cs`).
 5. **Sigmoide y recto:** huevos de oxiuro sueltos, arena de nidos y la **pelea final con la lombriz**: abajo del 35 % de
@@ -238,21 +250,25 @@ Dibujos opcionales (si no están, se dibuja con figuras): `Art/Grueso/` → `Hau
 
 ## Respiratorio y Nervioso (rediseño)
 
-Los seis niveles son más largos (150–202 u) y cada uno tiene mecánicas propias. Todo se dibuja por código;
+Los seis niveles son más largos (190–235 u) y cada uno tiene mecánicas propias. Todo se dibuja por código;
 si pones un PNG con el nombre indicado en `Art/Respiratorio/` o `Art/Nervioso/`, se usa ese dibujo.
 
-**Nariz (170):**
+**Nariz (230):**
 - **Glándulas de moco** (`MucusCannon`): lanzan bolas en arco. Si te pegan te frenan. Las que caen se pegan un rato y sirven de plataforma. El Mucolítico (o el Antihistamínico) las disuelve.
   - Arte: `GlandulaMoco.png`, `BolaMoco.png`.
 - **Estornudo** (`WindBlast`): una barra de comezón arriba de la pantalla se llena sola, y más rápido con cada polen vivo. Al llenarse avisa "¡A... a...!" y luego ¡ACHÚ!, y el aire te avienta hacia atrás.
   - Para que no te avienten, ponte entre los **pelos nasales** (`NasalHair`, arte `PeloNasal.png`) o detrás de un cornete.
-- Hay tres arenas; la segunda está dentro del estornudo y lleva mucho polen.
+- Hay cuatro arenas; la segunda está dentro del estornudo y lleva mucho polen.
+- **Seno maxilar (sinusitis):** al final, una subida en zigzag con el **moco que sube** detrás (`RisingFlood` con colores de
+  moco). Arriba, la orilla del seno y una arena con lo que lo tapaba.
 
-**Tráquea (170):**
+**Tráquea (215):**
 - **Epiglotis** (`TimedGate`, arte `Epiglotis.png`): una compuerta que se abre y se cierra.
 - **Escalera de cilios** (`CiliaConveyor`): el piso te empuja hacia atrás y te rueda bolas de moco.
 - **Tos** (`WindBlast` en modo tos): cada 6 s te avienta. Ponte bajo los **anillos de cartílago** (arte `AnilloCartilago.png`).
 - **Corrientes de aire** (`AirVent`): te lanzan a una ruta alta.
+- **La carina (dos rutas):** la tráquea se divide en los dos bronquios. Arriba, una corriente te sube a repisas con
+  influenza volando y O₂; abajo, cilios que te empujan y tos ferina bajo anillos de cartílago. Se juntan antes del jefe.
 - **Jefe: Reina de la tos ferina** (`PertussisQueenBoss`, arte opcional `Art/Jefes/TosFerina/TosFerina_Normal.png`):
   - Se infla antes de toser y tose 3 veces. Cada tos manda ondas por el piso que hay que saltar.
   - Al 60 % de vida llama a bacterias de tos ferina.
@@ -269,11 +285,14 @@ si pones un PNG con el nombre indicado en `Art/Respiratorio/` o `Art/Nervioso/`,
   - La de abajo es fácil, pero está llena de CO₂.
 - Al final hay un **viaje en glóbulo rojo** por un capilar (arte `GloboRojo.png`). El glóbulo espera a que te subas.
 
-**Médula (170):**
+**Médula (235):**
 - Tormentas.
 - **Arco reflejo** (`ReflexPad`): al pisarlo te lanza sobre una pared.
 - **Surfear el impulso nervioso** por un axón (arte `Impulso.png`).
 - **Conducción saltatoria** (`SaltatoryNodes`): los nodos de Ranvier se encienden en orden y solo el encendido es sólido.
+- **Ganglio de la raíz dorsal:** arena de herpes zóster (el virus de la varicela se esconde ahí por años).
+- **Saltatoria rápida:** fibras más gruesas = nodos que se encienden más seguido, sobre un hueco largo; un último arco
+  reflejo te lanza hacia la salida.
 
 **Cerebro (190):** cada lóbulo tiene su regla.
 - **Occipital** (`DarknessZone`): todo está oscuro y solo destellos de neuronas muestran el camino.
@@ -281,8 +300,11 @@ si pones un PNG con el nombre indicado en `Art/Respiratorio/` o `Art/Nervioso/`,
 - **Cerebelo** (`TiltPlatform`): las plataformas son subibajas y te resbalas si te vas a la orilla.
 - **Frontal** (`SequencePuzzle`): las neuronas se encienden en un orden y hay que tocarlas en ese mismo orden para abrir la compuerta.
 
-**Hipocampo (150):**
+**Hipocampo (195):**
 - **Burbujas de memoria** (`FadingPlatform`): se revientan si te quedas quieto encima.
+- **Río de recuerdos:** burbujas en escalera sobre un hueco largo... bajo una tormenta (no te detengas, pero mira dónde cae el rayo).
+- **Recordar el camino** (`SequencePuzzle` con su propio mensaje): los recuerdos se encienden en un orden y hay que
+  tocarlos igual, pero cada uno flota sobre una burbuja de memoria que se olvida si te detienes.
 - **Fragmentos de memoria** (`MemoryFragment`, arte `FragmentoMemoria.png`): se apagan si tardas. Si salvas los 6, ganas una bomba.
 - **Jefe rabia con hidrofobia:** reventar una **burbuja de agua** (`WaterBubble`, arte `BurbujaAgua.png`) cerca de sus cadenas las paraliza 3 s.
 
@@ -307,7 +329,11 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 
 ## Boca y niveles secretos (Amígdalas, Ojo)
 
-**Boca (175, secreto del Estómago: el diente):** su mecánica propia es el **hilo dental** (`FlossGrapple` + `FlossHook`).
+**Boca (215, secreto del Estómago: el diente):** su mecánica propia es el **hilo dental** (`FlossGrapple` + `FlossHook`).
+- **Nada flota:** los dientes de arriba y las muelas salen de la **encía del techo** (`GumCeiling`) y los de abajo salen
+  del piso (`ToothStep`, dientes sólidos que sirven de escalón).
+- **Gingivitis (nuevo):** un hueco largo sin piso que solo se cruza columpiándose de diente en diente (suelta y vuelve a
+  lanzar el hilo en el aire), con un diente-isla a la mitad y una placa que se arranca colgado.
 - Con R (clic central / Select) te enganchas al gancho más cercano, que se marca con un círculo amarillo.
 - Con A/D te columpias; con W/S recoges o sueltas hilo. Saltar o volver a apretar R te suelta con impulso.
 - La **placa entre dientes** (`PlaqueWall`) no se quita con balas: engánchala y jálala.
@@ -323,19 +349,25 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - En `Art/Boca/`: DienteArriba, Muela, Placa, Dulce.
   - En `Art/Jefes/Sarro/`: Sarro_Normal, Sarro_Ataca, Sarro_Expuesto, Sarro_Derrotado y Placa.
 
-**Amígdalas (150, secreto de la Tráquea):**
+**Amígdalas (190, secreto de la Tráquea):**
 - **Entrada:** en la zona de la tos, junto al último anillo de cartílago, hay una corriente de aire escondida que te sube a una repisa con la entrada a la garganta.
 - **Mecánica:**
-  - El estreptococo (`Bacteria_SPyogenes`) suelta un **antígeno** al morir.
-  - Lo cargas (`AntigenSystem`): vas más lento, no disparas y, si te pegan, se te cae.
-  - Lo entregas en el **centro germinal** (`GerminalCenter`) y sale un **linfocito B** (`AllyLymphocyte`) que dispara anticuerpos 30 s.
-- **Jefe: el Absceso** (`AbscessBoss`): solo le hacen daño los anticuerpos. Llama estreptococos y escupe gotas.
+  - Letreros **PASO 1, 2 y 3** explican una cosa a la vez.
+  - El estreptococo (`Bacteria_SPyogenes`) y el rinovirus sueltan un **antígeno** al morir.
+  - Se recoge con solo tocarlo y da vueltas a tu alrededor (`AntigenSystem`): puedes llevar **3** sin frenarte y sin
+    dejar de disparar. Si te pegan se te cae uno.
+  - En el **centro germinal** (`GerminalCenter`, brilla cuando llevas antígenos) se entregan todos: cada uno se vuelve un
+    **linfocito B** (`AllyLymphocyte`) que te sigue y dispara anticuerpos 35 s (máximo 3 a la vez).
+  - **Garganta profunda (nuevo):** olas de saliva al tragar (te curan y arrastran gérmenes), rinovirus que caen de arriba y
+    una cripta infectada (arena) con su propio centro germinal.
+- **Jefe: el Absceso** (`AbscessBoss`): es una bolsa cerrada y tus balas rebotan. Cuando un anticuerpo lo **marca**
+  (brilla amarillo 4 s), **todas** tus balas le hacen daño. Llama estreptococos y escupe gotas.
 - **Premio:** un linfocito B que te sigue en todos los niveles (secreto `premio_linfocito`).
 - Arte opcional:
   - Enemigo: `Art/Enemigos/Respiratorio/SPyogenes_*`.
   - Jefe: `Art/Jefes/Absceso/Absceso_Normal, _Ataca, _Dano, _Derrotado`.
 
-**Ojo (165, secreto del Cerebro):**
+**Ojo (210, secreto del Cerebro):**
 - **Entrada:** en el lóbulo occipital (la oscuridad), sobre el tercer hueco, hay dos repisas con el **nervio óptico**. Se ve bien con los destellos.
 - **Mecánica:** sigilo (`StealthMeter`), con una barra de inflamación arriba.
   - La barra sube si un **vigilante** (`Watcher`, macrófago con cono de visión) te ve.
@@ -343,10 +375,16 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - Si se llena: **uveítis**. Todo se oscurece salvo un círculo, durante 6 s, y llegan herpes.
   - Escóndete agachado tras los pliegues (`HidingSpot`) o dentro de las **moscas volantes**.
   - El **punto ciego** (`BlindSpot`) es zona segura.
+  - **Vasos de la retina (nuevo):** dos huecos de sangre que se cruzan en **glóbulo rojo**, con un islote vigilado en
+    medio. En el glóbulo no te escondes: usa las moscas volantes que pasan.
 - **Jefe: Toxoplasma** (`ToxoplasmaBoss`).
-  - Se esconde en quistes.
-  - Si llegas sin que te detecten, lo sorprendes: se marea y le puedes pegar (antiparasitario).
-  - Si te ve, huye a otro quiste.
+  - Se esconde en quistes; el quiste donde está **late y se le asoman los ojos** (pista).
+  - Si te acercas sin que te vea, lo **sorprendes**: se marea 3.5 s y le puedes pegar (antiparasitario).
+  - Si te ve (o se cansa de esperar), el quiste se hincha y **sale a atacar**: abanico de medias lunas o ráfaga directa.
+    Luego se vuelve a esconder en otro quiste.
+  - **El cristalino:** dispárale a la lente de arriba y enfoca la luz en el quiste más cercano a ti. Si el toxoplasma
+    está ahí, lo **deslumbra** (se marea). El haz de luz que barre la arena también lo deslumbra si lo agarra afuera.
+  - Abajo de la mitad de vida se enoja: se esconde menos, dispara más y salta de quiste en quiste soltando esporas.
 - **El fondo está vivo** (`EyeBackdrop`).
   - El iris (`Art/Fondos/Fondo_Ojo_Iris.png`, recortado del fondo) te sigue con la mirada y tiembla si la inflamación sube.
   - Cada ~10 s el ojo **parpadea**: los párpados cierran la pantalla un momento y mientras están cerrados nadie te ve.
@@ -427,19 +465,26 @@ y cuánto se queda atrás cuando la cámara sube. Si borras el PNG, el nivel vue
 ## Fondos vivos
 
 Cada nivel tiene vida de adorno en el fondo (`AmbientLife`). Es solo decoración: no hace daño ni estorba. Se pone sola según la imagen de fondo.
+- Las partículas tienen **profundidad**: las lejanas son chicas, tenues y casi no se mueven al caminar; las cercanas son
+  más grandes y se deslizan más (parallax). Las que flotan dan la vuelta por los lados, así nunca "se acaban".
+- Una **viñeta** suave oscurece las orillas de la pintura (no el juego) y unas pocas **manchas de luz desenfocadas**
+  pasan por delante, muy tenues, para dar sensación de profundidad (en el Ojo no, para ver todo claro).
+- Las figuras nuevas son `CodeSprites.Glow` (luz suave), `Ring` (aro de burbuja), `Beam` (rayo) y `Vignette`.
 
-| Fondo | Partículas | Movimiento del fondo |
+| Fondo | Partículas y adornos | Movimiento del fondo |
 |---|---|---|
-| Nariz, Tráquea | polvo y polen flotando con el aire | respira despacio |
-| Pulmones | partículas que el aire lleva (al inhalar van hacia adelante, al exhalar hacia atrás) | respira al ritmo del nivel y se ilumina un poco al inhalar; racimos de alvéolos de fondo que se inflan y desinflan |
-| Estómago | burbujas de ácido que suben | peristalsis lenta |
-| Intestino delgado | partículas de nutrientes | peristalsis lenta |
-| Intestino grueso | partículas | peristalsis lenta |
-| Boca | gotas de saliva que caen y burbujitas | — |
-| Médula, Cerebro | chispas eléctricas | destellos de las neuronas |
-| Hipocampo | burbujas de memoria | destellos |
-| Amígdalas | burbujitas de saliva | late como si estuviera inflamado |
-| Ojo | moscas volantes y polvo | el iris te sigue y el ojo parpadea (`EyeBackdrop`) |
+| Nariz | polvo y corrientes de aire que cambian de sentido al respirar; gotas de moco que cuelgan, caen y salpican | respira despacio |
+| Tráquea | corrientes de aire y bolitas de moco que los cilios suben hacia la garganta | respira despacio |
+| Pulmones | glóbulos rojos que se ponen rojo vivo al inhalar (se oxigenan) y partículas que lleva el aire | respira al ritmo del nivel; racimos de alvéolos que se inflan |
+| Estómago | burbujas de ácido con orilla que revientan con un aro | peristalsis y un vaivén (el estómago revuelve) |
+| Intestino delgado | nutrientes dorados que suben hacia las vellosidades (absorción) | peristalsis con apretón |
+| Intestino grueso | bacterias de la flora meneándose, burbujas de gas y gotas de moco | peristalsis con apretón |
+| Boca | gotas de saliva que cuelgan, caen y salpican; burbujas; destellos en los dientes | — |
+| Médula | impulsos que SALTAN de nodo en nodo por los axones de la pintura (conducción saltatoria) | pulso del líquido cefalorraquídeo y destellos |
+| Cerebro | impulsos que viajan con su estela y "sinapsis" que se encienden al llegar | destellos de las neuronas |
+| Hipocampo | burbujas de memoria con orilla tornasol que revientan; impulsos dorados | destellos |
+| Amígdalas | gotas que caen, linfocitos flotando y burbujitas | late y se enrojece como si estuviera inflamado |
+| Ojo | moscas volantes, polvo y **rayos de luz** que salen de la pupila (más fuertes si el ojo está alerta) | el iris te sigue y el ojo parpadea (`EyeBackdrop`) |
 
 ## Easter egg: el diente
 
@@ -466,9 +511,9 @@ Cada enemigo tiene un comportamiento (`behavior` en su EnemyData) basado en su m
 | B. pertussis | Se infla y tose 3 veces; cada tos empuja | Ataques de tos ferina | Antibiótico |
 | Neumococo | Avanza a saltos y te cae encima | Diplococo que llega en gotitas | Antibiótico |
 | Influenza | Se lanza en picada | Espículas con las que se clava | Antiviral (oseltamivir) |
-| Tuberculosis | Lenta y dura; de lejos tose gotitas en arco; se encierra en granuloma | Pared cerosa; granulomas | Solo Antibiótico |
+| Tuberculosis | Lenta y dura; de lejos tose (se ve la nube de la tos) gotitas en arco; se encierra en granuloma | Pared cerosa; granulomas | Solo Antibiótico |
 | Meningococo | Se agazapa y cruza a toda velocidad | Infección rapidísima | Antibiótico |
-| Poliovirus | Sus disparos te paralizan (lento) | Ataca neuronas motoras | Antiviral |
+| Poliovirus | Apunta (línea roja) y lanza un RAYO que te paraliza (lento); el dibujo y el ataque ya coinciden | Ataca neuronas motoras | Antiviral |
 | Herpes | Se vuelve latente (invisible), reaparece y dispara en ráfaga | Latencia en ganglios nerviosos | Antiviral (aciclovir) |
 | Rabia (suelta) | Muerde 3 veces seguidas | Vuelve agresivo al infectado | **Anticonvulsivo** (sedar el cerebro); Antiviral parcial |
 

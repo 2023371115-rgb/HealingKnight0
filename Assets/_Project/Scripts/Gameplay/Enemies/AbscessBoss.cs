@@ -22,7 +22,9 @@ namespace HealingKnight.Gameplay.Enemies
     public class AbscessBoss : MonoBehaviour
     {
         [SerializeField] private string bossName = "EL ABSCESO";
-        [SerializeField, TextArea] private string introMessage = "NODO: ¡Un absceso! Es una bolsa cerrada: tus medicamentos no entran. Solo los ANTICUERPOS le hacen daño. Lleva antígenos al centro germinal.";
+        [SerializeField, TextArea] private string introMessage = "NODO: ¡Un absceso! Es una bolsa cerrada: tus balas rebotan. Cuando un ANTICUERPO lo MARCA (brilla amarillo), ahí sí le entran tus disparos. Trae linfocitos B del centro germinal.";
+        [Tooltip("Segundos que dura marcado (opsonizado) después de cada anticuerpo: mientras tanto tus balas sí le hacen daño.")]
+        [SerializeField] private float markTime = 4f;
         [SerializeField, TextArea] private string defeatMessage = "NODO: Absceso drenado. PREMIO: un linfocito B te acompañará en todos los niveles.";
         [SerializeField] private string rewardSecret = "premio_linfocito";
         [SerializeField] private Transform visual;
@@ -36,8 +38,8 @@ namespace HealingKnight.Gameplay.Enemies
         private EnemyHealth health;
         private ComponentPool<Projectile> pool;
         private readonly List<EnemyHealth> minions = new List<EnemyHealth>();
-        private float spitTimer = 2f, summonTimer = 1.5f, hurtTimer, attackTimer, reminder = 14f, contactCooldown;
-        private bool dead;
+        private float spitTimer = 2f, summonTimer = 1.5f, hurtTimer, attackTimer, reminder = 14f, contactCooldown, marked;
+        private bool dead, explainedMark;
 
         private void Awake() => health = GetComponent<EnemyHealth>();
         private void OnEnable() => health.Died += OnDied;
@@ -52,21 +54,28 @@ namespace HealingKnight.Gameplay.Enemies
 
         private void Start()
         {
-            health.Invulnerable = true;
+            health.Shelled = true;   // sin marcar, las balas rebotan en gris (se nota que no entran)
             if (projectilePrefab != null) pool = new ComponentPool<Projectile>(projectilePrefab, 8, 30);
             GameplayEvents.RaiseBossStarted(bossName, health);
             if (!string.IsNullOrEmpty(introMessage)) GameplayEvents.RaiseMessage(introMessage);
         }
 
-        /// <summary>Un anticuerpo lo alcanzó.</summary>
+        /// <summary>Un anticuerpo lo alcanzó: le hace daño y lo MARCA (opsonización): unos segundos tus balas sí entran.</summary>
         public void AntibodyHit(float amount, Vector2 at)
         {
             if (dead) return;
-            health.Invulnerable = false;
+            health.Shelled = false;
             health.ApplyDamage(DamageInfo.Create(amount, DamageKind.Projectile, Team.Player, at));
-            health.Invulnerable = !dead;
             hurtTimer = 0.25f;
             reminder = 18f;
+            if (dead) return;
+            marked = markTime;
+            health.SetTint(new Color(1f, 0.9f, 0.3f), 0.45f);
+            if (!explainedMark)
+            {
+                explainedMark = true;
+                GameplayEvents.RaiseMessage("¡Lo MARCÓ un anticuerpo! Mientras brille amarillo, ¡DISPÁRALE con todo!");
+            }
         }
 
         private void Update()
@@ -75,6 +84,11 @@ namespace HealingKnight.Gameplay.Enemies
             float dt = Time.deltaTime;
             float rate = health.Health01 < 0.4f ? 1.5f : 1f;
             hurtTimer -= dt; attackTimer -= dt; reminder -= dt;
+            if (marked > 0f)
+            {
+                marked -= dt;
+                if (marked <= 0f) { health.Shelled = true; health.SetTint(Color.white, 0f); }
+            }
             if (contactCooldown > 0f) contactCooldown -= dt;
             PlayerController player = PlayerController.Current;
 
@@ -97,7 +111,7 @@ namespace HealingKnight.Gameplay.Enemies
             if (reminder <= 0f)
             {
                 reminder = 18f;
-                GameplayEvents.RaiseMessage("Recuerda: solo los ANTICUERPOS le hacen daño. Lleva antígenos al centro germinal.");
+                GameplayEvents.RaiseMessage("Recuerda: recoge antígenos de los estreptococos, pásalos por el centro germinal y dispárale cuando un anticuerpo lo marque.");
             }
 
             if (visual != null)

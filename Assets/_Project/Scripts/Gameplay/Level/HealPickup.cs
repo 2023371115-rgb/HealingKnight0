@@ -16,6 +16,8 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private float radius = 0.8f;
         [SerializeField, TextArea] private string message = "NODO: Suero oral. Repone el agua y las sales que se pierden con la diarrea. +Vida";
         [SerializeField] private Transform visual;
+        [Tooltip("Falso = está pegado a algo (el apéndice es parte del colon): no flota, solo late.")]
+        [SerializeField] private bool floats = true;
 
         private Vector3 basePosition;
         private bool taken;
@@ -34,8 +36,16 @@ namespace HealingKnight.Gameplay.Level
         {
             if (taken) return;
             float t = Time.time;
-            transform.position = basePosition + new Vector3(0f, Mathf.Sin(t * 2.2f) * 0.12f, 0f);
-            if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.5f) * 8f);
+            if (floats)
+            {
+                transform.position = basePosition + new Vector3(0f, Mathf.Sin(t * 2.2f) * 0.12f, 0f);
+                if (visual != null) visual.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 1.5f) * 8f);
+            }
+            else if (visual != null)
+            {
+                float beat = Mathf.Max(0f, Mathf.Sin(t * 3f)) * 0.06f;   // late un poco: está vivo
+                visual.localScale = new Vector3(1f + beat, 1f - beat * 0.5f, 1f);
+            }
 
             PlayerController player = PlayerController.Current;
             if (player == null || !player.Health.IsAlive) return;

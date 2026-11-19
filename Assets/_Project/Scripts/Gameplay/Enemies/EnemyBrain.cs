@@ -104,6 +104,8 @@ namespace HealingKnight.Gameplay.Enemies
                     case State.Idle: return Pose.Idle;
                     case State.Windup:
                     case State.Attack:
+                        // La tuberculosis tose de lejos: su dibujo de "ataca" es una embestida, así que usa el normal.
+                        return rangedAttack && data != null && data.rangedPoseIdle ? Pose.Idle : Pose.Attack;
                     case State.Special: return Pose.Attack;
                     case State.Hurt: return Pose.Hurt;
                     case State.Dead: return Pose.Dead;
@@ -149,7 +151,11 @@ namespace HealingKnight.Gameplay.Enemies
             health.SetTelegraph(false);
         }
 
-        private void OnDestroy() => projectilePool?.Clear();
+        private void OnDestroy()
+        {
+            projectilePool?.Clear();
+            if (aimLine != null) Destroy(aimLine.gameObject);
+        }
 
         public void Configure(EnemyData enemyData) => data = enemyData;
 
@@ -700,6 +706,7 @@ namespace HealingKnight.Gameplay.Enemies
         {
             timer -= dt;
             float k = 1f - Mathf.Clamp01(timer / Mathf.Max(0.01f, data.attackWindup));
+            if (rangedAttack && Behavior == EnemyBehavior.Paralyzer) ShowAimLine(k);
 
             switch (Behavior)
             {
@@ -805,7 +812,11 @@ namespace HealingKnight.Gameplay.Enemies
                 burstTimer -= dt;
                 if (burstTimer <= 0f && burstLeft > 0)
                 {
-                    if (player != null) FireVolley(player);
+                    if (player != null)
+                    {
+                        if (Behavior == EnemyBehavior.Paralyzer) FireBeam(player);
+                        else FireVolley(player);
+                    }
                     burstLeft--;
                     burstTimer = 0.16f;
                 }
@@ -1045,6 +1056,7 @@ namespace HealingKnight.Gameplay.Enemies
             else baseDir = IsFlying || Behavior == EnemyBehavior.Lobber ? (targetPoint - origin).normalized : new Vector2(facing, 0f);
 
             Sfx.PlayAt(Sfx.EnemySound(data, "Disparo"), origin, CombatAudio.Enemies);
+            if (Behavior == EnemyBehavior.Tank || Behavior == EnemyBehavior.Cougher) CoughPuff(origin);
             int shots = Mathf.Max(1, data.spreadShots);
             float baseAngle = Mathf.Atan2(baseDir.y, baseDir.x) * Mathf.Rad2Deg;
             for (int i = 0; i < shots; i++)
@@ -1071,6 +1083,74 @@ namespace HealingKnight.Gameplay.Enemies
                     slowDuration = data.slowDuration
                 }, finished => projectilePool.Release(finished));
             }
+        }
+
+        // ================================================================ rayo del poliovirus y nube de tos
+
+        private Transform aimLine;
+
+        private Vector2 BeamOrigin => Position + new Vector2(facing * 0.55f, IsFlying ? 0f : 0.7f);
+
+        /// <summary>Aviso del rayo: una línea delgada que parpadea hacia donde va a disparar (ya no cambia de puntería).</summary>
+        private void ShowAimLine(float k)
+        {
+            if (aimLine == null)
+            {
+                aimLine = new GameObject("MiraRayo").transform;
+                CodeSprites.Add(aimLine, CodeSprites.Square, new Color(0.6f, 0.95f, 1f, 0.6f), 40, new Vector2(0.5f, 0f), new Vector2(1f, 0.06f));
+            }
+            Vector2 from = BeamOrigin;
+            Vector2 dir = (lockedTarget - from).normalized;
+            aimLine.gameObject.SetActive(Mathf.Sin(Time.time * 40f) > -0.3f);
+            aimLine.position = from;
+            aimLine.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
+            aimLine.localScale = new Vector3(7f * Mathf.Clamp01(k * 1.5f), 1f + k, 1f);
+        }
+
+        /// <summary>Poliovirus: un RAYO recto (como en su dibujo) que te deja lento. Va a donde apuntó en el aviso.</summary>
+        private void FireBeam(PlayerController player)
+        {
+            if (aimLine != null) aimLine.gameObject.SetActive(false);
+            Vector2 from = BeamOrigin;
+            Vector2 dir = (lockedTarget - from).normalized;
+            const float length = 7f;
+            Sfx.PlayAt(Sfx.EnemySound(data, "Disparo"), from, CombatAudio.Enemies);
+
+            var beam = new GameObject("RayoPolio").transform;
+            beam.position = from;
+            beam.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg);
+            Color c = data.projectileColor;
+            CodeSprites.Add(beam, CodeSprites.Square, new Color(c.r, c.g, c.b, 0.45f), 40, new Vector2(length * 0.5f, 0f), new Vector2(length, 0.55f));
+            CodeSprites.Add(beam, CodeSprites.Square, new Color(1f, 1f, 1f, 0.9f), 41, new Vector2(length * 0.5f, 0f), new Vector2(length, 0.16f));
+            for (int i = 0; i < 3; i++)   // anillos del rayo
+                CodeSprites.Add(beam, CodeSprites.Circle, new Color(c.r, c.g, c.b, 0.8f), 42, new Vector2(0.8f + i * 1.2f, 0f), new Vector2(0.22f, 0.9f - i * 0.15f));
+            beam.gameObject.AddComponent<FadeAndDie>().Configure(0.35f);
+
+            // Daño: puntos a lo largo del rayo contra la caja del jugador.
+            Hurtbox box = player.GetComponent<Hurtbox>();
+            if (box == null || !box.IsAlive) return;
+            for (float d = 0.3f; d <= length; d += 0.45f)
+            {
+                Vector2 p = from + dir * d;
+                if (!box.OverlapsCircle(p, 0.28f)) continue;
+                DamageInfo info = DamageInfo.Create(data.attackDamage, DamageKind.Projectile, Team.Enemy, p);
+                info.knockback = data.attackKnockback;
+                HitResult r = box.Damageable.ApplyDamage(info);
+                if (r.Landed && data.slowOnHit > 0f) player.ApplySlow(data.slowOnHit, data.slowDuration);
+                return;
+            }
+        }
+
+        /// <summary>Nubecita de tos frente a la boca (tuberculosis, tos ferina): para que se lea que el ataque es TOSER.</summary>
+        private void CoughPuff(Vector2 at)
+        {
+            var puff = new GameObject("NubeTos").transform;
+            puff.position = at + new Vector2(facing * 0.2f, 0f);
+            for (int i = 0; i < 4; i++)
+                CodeSprites.Add(puff, CodeSprites.Circle, new Color(0.92f, 0.9f, 0.85f, 0.75f), 40,
+                    new Vector2(facing * (0.2f + i * 0.28f), Random.Range(-0.15f, 0.2f)), Vector2.one * (0.45f + i * 0.12f));
+            puff.gameObject.AddComponent<FadeAndDie>().Configure(0.45f, facing * 2.2f);
+            shape = new Vector2(1.15f, 0.9f);   // se le escapa el aire: se aplasta
         }
 
         // ================================================================ Giardia: pegarse

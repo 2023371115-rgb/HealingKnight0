@@ -393,13 +393,15 @@ namespace HealingKnight.EditorTools
             int count = 30;
             switch (backdropName)
             {
-                case "Fondo_Nariz": case "Fondo_Traquea": theme = AmbientLife.Theme.Air; count = 40; break;
+                case "Fondo_Nariz": theme = AmbientLife.Theme.Air; count = 40; break;
+                case "Fondo_Traquea": theme = AmbientLife.Theme.Trachea; count = 40; break;
                 case "Fondo_Pulmones": theme = AmbientLife.Theme.Lungs; count = 36; break;
                 case "Fondo_Estomago": theme = AmbientLife.Theme.Acid; break;
                 case "Fondo_Delgado": theme = AmbientLife.Theme.Gut; break;
                 case "Fondo_Grueso": theme = AmbientLife.Theme.Colon; count = 24; break;
                 case "Fondo_Boca": theme = AmbientLife.Theme.Mouth; break;
-                case "Fondo_Medula": case "Fondo_Cerebro": theme = AmbientLife.Theme.Nerve; count = 34; break;
+                case "Fondo_Medula": theme = AmbientLife.Theme.Spine; count = 30; break;
+                case "Fondo_Cerebro": theme = AmbientLife.Theme.Nerve; count = 34; break;
                 case "Fondo_Hipocampo": theme = AmbientLife.Theme.Memory; break;
                 case "Fondo_Amigdalas": theme = AmbientLife.Theme.Throat; break;
                 case "Fondo_Ojo": theme = AmbientLife.Theme.Eye; count = 24; break;
@@ -469,6 +471,7 @@ namespace HealingKnight.EditorTools
         {
             CreateCamera(style.background, true);
             currentStyle = style;
+            mouthCeiling = 0f;   // solo la Boca tiene techo de encía
 
             float startX = -10f;
             float endX = startX + length;
@@ -1337,7 +1340,7 @@ namespace HealingKnight.EditorTools
 
         private void BuildEstomago()
         {
-            BuildLevelBase(160f, new LevelStyle
+            BuildLevelBase(200f, new LevelStyle
             {
                 // Estómago: tejido carmesí, plataformas de carne rosada que escurren ácido verde brillante.
                 background = new Color(0.1f, 0.02f, 0.04f),
@@ -1355,8 +1358,9 @@ namespace HealingKnight.EditorTools
                     new Vector2(39f, 12f),    //    lago B: con omeprazol se cruza caminando por el fondo
                     new Vector2(57f, 10f),    // 3) lago de la arena de la colonia (ureasa = burbuja segura)
                     new Vector2(72f, 12f),    // 4) lago de las burbujas de gas
-                    new Vector2(112f, 2.5f),  // 6) charcos de la huida (se brincan)
-                    new Vector2(118f, 2.5f)
+                    new Vector2(126f, 14f),   // 6) lago de las hamburguesas (al bajar de los pliegues)
+                    new Vector2(152f, 2.5f),  // 7) charcos de la huida (se brincan)
+                    new Vector2(158f, 2.5f)
                 },
                 // 5) Alberca de marea de 86 a 106, siempre con ácido; sube hasta 1.5 sobre el piso.
                 tidePool = new Vector4(86f, 20f, 1.2f, 1.5f),
@@ -1372,9 +1376,10 @@ namespace HealingKnight.EditorTools
             //  3) Arena de la colonia madre y la H. pylori con ureasa.
             //  4) Subida con burbujas de gas y el sushi con anisakis.
             //  5) Alberca de marea.
-            //  6) Huida de la contracción.
-            //  7) Jefe Bezoar tapando el píloro.
-            MucusLayer(19f, 150f);
+            //  6) Pliegues gástricos con chorros y el lago de las hamburguesas que se hunden.
+            //  7) Huida de la contracción.
+            //  8) Jefe Bezoar tapando el píloro.
+            MucusLayer(19f, 190f);
 
             // ----- 1) Entrada seca -----
             Platform(0f, 2.2f, 3f);
@@ -1430,27 +1435,50 @@ namespace HealingKnight.EditorTools
             Food("Sushi", 98.6f, 0.92f, FloatingFood.FoodKind.Normal, true);
             Food("Salchicha", 102.4f, 0.79f, FloatingFood.FoodKind.Rolling);
 
-            // ----- 6) Huida: la contracción te persigue hasta la arena del jefe -----
-            Sign(Signpost.Kind.Warning, 107.6f, FloorY, "¡CORRE!");
-            Peristalsis(109f, 125f);
-            Geyser(115.5f, FloorY, 3.5f, 2.2f, 0f);
-            Geyser(121.5f, FloorY, 3.5f, 2.2f, 1.1f);
-            Platform(115.5f, 2.6f, 2f);
+            // ----- 6) Pliegues gástricos (rugas) y el lago de las hamburguesas -----
+            // Subes por los pliegues entre chorros de ácido (cruza cuando el chorro baja) y desde arriba bajas al lago:
+            // solo hay hamburguesas que se hunden, así que hay que seguir brincando. La dona te sube a un premio.
+            Checkpoint(107.5f);
+            Tip(109f, "PLIEGUES", "Los PLIEGUES del estómago (rugas) se estiran cuando comes mucho. Súbelos: las glándulas escupen ÁCIDO, cruza cuando el chorro baje.", FloorY, Signpost.Kind.Warning);
+            SolidBlock(111f, 114f, 1.3f);
+            Geyser(115f, FloorY, 4.2f, 2.6f, 0f);
+            SolidBlock(116f, 119.5f, 2.6f);
+            Geyser(120.5f, FloorY, 5.4f, 2.6f, 1.3f);
+            SolidBlock(121.5f, 125f, 3.6f);
+            EnemyAt(prefabs.HPyloriUreasa, 117.8f, 2.6f);
+            EnemyAt(prefabs.HPylori, 123.5f, 3.6f);
+            Food("Hamburguesa", 128.4f, 0.95f, FloatingFood.FoodKind.Sinking);
+            Food("Hamburguesa", 131.6f, 0.95f, FloatingFood.FoodKind.Sinking);
+            Food("Dona", 134.8f, 0.95f, FloatingFood.FoodKind.Bouncy);
+            Food("Hamburguesa", 138f, 0.95f, FloatingFood.FoodKind.Sinking);
+            Geyser(133.2f, FloorY - BasinDepth, 4.5f, 3.2f, 0.8f);
+            Platform(134.8f, 5.6f, 2.4f);                                       // arriba de la dona: premio
+            Omeprazol(134.8f, 6.8f);
+            Ambush(143.5f, FloorY - 0.5f, prefabs.HPylori, data.HPylori, 2, 1.6f, 0f, new Vector2(1.5f, 8f), false,
+                "¡H. pylori escondidas en el moco de la orilla!");
 
-            // ----- 7) Jefe: el Bezoar tapa el píloro -----
-            ArenaZone boss = Arena("Arena_4_Bezoar", 129f, 18f,
+            // ----- 7) Huida: la contracción te persigue hasta la arena del jefe -----
+            Sign(Signpost.Kind.Warning, 147.6f, FloorY, "¡CORRE!");
+            Peristalsis(149f, 165f);
+            Geyser(155.5f, FloorY, 3.5f, 2.2f, 0f);
+            Geyser(161.5f, FloorY, 3.5f, 2.2f, 1.1f);
+            Platform(155.5f, 2.6f, 2f);
+
+            // ----- 8) Jefe: el Bezoar tapa el píloro -----
+            ArenaZone boss = Arena("Arena_4_Bezoar", 169f, 18f,
                 "NODO: Algo enorme tapa la salida del estómago...",
                 W(1.2f, E(prefabs.Bezoar, data.Bezoar, 1)));
-            Platform(131.5f, 2.8f, 2.4f);
-            Platform(138.5f, 2.8f, 2.4f);
-            Pylorus(147f, boss);
+            Platform(171.5f, 2.8f, 2.4f);
+            Platform(178.5f, 2.8f, 2.4f);
+            Pylorus(187f, boss);
         }
 
         private void BuildDelgado()
         {
-            // Rediseño (205 de largo): 1) duodeno (bilis y grasa) · 2) yeyuno (vellosidades y rotavirus) ·
-            // 3) tenia · 4) íleon (río de quimo en balsa) · 5) persecución de la lombriz hasta la válvula ileocecal.
-            BuildLevelBase(205f, new LevelStyle
+            // Rediseño (247 de largo): 1) duodeno (bilis y grasa) · 2) yeyuno (vellosidades y rotavirus) ·
+            // 3) tenia · 4) íleon: río de quimo largo en DOS balsas (salchicha y hamburguesa) · 5) persecución de la
+            // lombriz hasta la válvula ileocecal.
+            BuildLevelBase(247f, new LevelStyle
             {
                 // Intestino delgado: tejido rosa coral con vellosidades y bilis amarilla verdosa.
                 background = new Color(0.11f, 0.03f, 0.05f),
@@ -1475,7 +1503,8 @@ namespace HealingKnight.EditorTools
                 {
                     new Vector2(28f, 19f),    // 1) duodeno: gotas de grasa y chorros de bilis
                     new Vector2(52f, 17f),    // 2) yeyuno: bosque de vellosidades sobre la bilis
-                    new Vector2(128f, 34f)    // 4) íleon: el río de quimo (balsa)
+                    new Vector2(128f, 38f),   // 4) íleon: el río de quimo, primera balsa (salchicha)
+                    new Vector2(170f, 34f)    //    segunda balsa (hamburguesa), después de la islita
                 }
             }, "NODO: Intestino delgado. Aquí se absorbe la comida... y viven los parásitos. Usa la cápsula Antiparasitario.");
 
@@ -1527,25 +1556,40 @@ namespace HealingKnight.EditorTools
             Platform(115f, 3.6f, 2.6f);
             Arena("Arena_3_Tenia", 106f, 20f, null,
                 W(1.2f, E(prefabs.Tenia, data.Tenia, 1)));
-            TissueColumn(123.6f, 8f, 3f);   // pared de intestino donde se agarra la cabeza de la tenia
 
-            // ---------- 4) Íleon: el río de quimo ----------
+            // ---------- 4) Íleon: el río de quimo (largo, en dos balsas) ----------
             Peyer(124.5f);
-            Tip(126f, "ÍLEON", "NODO: Íleon. Súbete a la salchicha: el quimo te lleva río abajo. Brinca los chorros de bilis.");
+            Tip(126f, "ÍLEON", "NODO: Íleon. Súbete a la salchicha: el quimo te lleva río abajo. Brinca los chorros de bilis y dispara a lo que salga.");
             Food("Salchicha", 130f, 0.79f, FloatingFood.FoodKind.Raft);
-            BileGeyser(138f, bottom, 3.2f, 3.6f, 0f);
-            BileGeyser(146.5f, bottom, 3.2f, 3.6f, 1.2f);
-            BileGeyser(155f, bottom, 3.2f, 3.6f, 2.4f);
+            BileGeyser(137f, bottom, 3.2f, 3.6f, 0f);
+            BileGeyser(144.5f, bottom, 3.2f, 3.6f, 1.2f);
+            BileGeyser(152f, bottom, 3.2f, 3.6f, 2.4f);
+            BileGeyser(159.5f, bottom, 3.4f, 3.2f, 0.6f);
+            FatDrop(148.5f, 2.6f, 1.6f);   // gotitas de grasa: plataformas para esquivar un chorro
+            FatDrop(156f, 2.8f, 1.6f);
             Ambush(134f, 4.2f, prefabs.Rotavirus, data.Rotavirus, 2, 0.5f, 9f, Vector2.zero, false);
             Ambush(142f, 4.6f, prefabs.Rotavirus, data.Rotavirus, 1, 0.5f, 9f, Vector2.zero, false);
             Ambush(150f, 4.2f, prefabs.Rotavirus, data.Rotavirus, 2, 0.5f, 9f, Vector2.zero, false);
+            Ambush(160f, FloorY - 0.5f, prefabs.Giardia, data.Giardia, 1, 1.8f, 0f, new Vector2(-2f, 11f), false);
+
+            // Islita a mitad del río: la salchicha se atora aquí; sigue en la hamburguesa.
+            Peyer(167.5f);
+            Tip(166.6f, "¡CAMBIA!", "La salchicha se atoró. ¡Brinca a la hamburguesa para seguir río abajo!", FloorY, Signpost.Kind.ArrowRight);
+            Food("Hamburguesa", 172.5f, 0.95f, FloatingFood.FoodKind.Raft);
+            BileGeyser(179f, bottom, 3.4f, 3f, 0.3f);
+            BileGeyser(186f, bottom, 3.6f, 3f, 1.3f);
+            BileGeyser(193f, bottom, 3.8f, 2.8f, 2.1f);
+            Ambush(176f, FloorY - 0.5f, prefabs.Giardia, data.Giardia, 1, 1.8f, 0f, new Vector2(-2f, 11f), false);
+            Ambush(183f, 4.4f, prefabs.Rotavirus, data.Rotavirus, 2, 0.5f, 9f, Vector2.zero, false);
+            Ambush(190f, FloorY - 0.5f, prefabs.Giardia, data.Giardia, 2, 1.8f, 0f, new Vector2(-2f, 11f), false);
+            Ambush(196f, 4.6f, prefabs.Rotavirus, data.Rotavirus, 1, 0.5f, 9f, Vector2.zero, false);
 
             // ---------- 5) Persecución de la lombriz ----------
-            Peyer(163.5f);
+            Peyer(205.5f);
             // Zona de pelea más larga: sale en 4 puntos separados y la pantalla se cierra alrededor de cada uno.
-            Sign(Signpost.Kind.Warning, 163f, FloorY, "¡CORRE!");
-            WormChaseAt(164f, 170f, 178f, 186f, 194f);
-            IleocecalValve(199f);
+            Sign(Signpost.Kind.Warning, 205f, FloorY, "¡CORRE!");
+            WormChaseAt(206f, 212f, 220f, 228f, 236f);
+            IleocecalValve(241f);
         }
 
         private void BuildGrueso()
@@ -1588,7 +1632,7 @@ namespace HealingKnight.EditorTools
             Haustra(35f, 1.8f);
             // Apéndice secreto: arriba, se llega con la bolsa de en medio + doble salto.
             Platform(31.5f, 5.6f, 3.2f);
-            AppendixReward(31.5f, 6.8f);
+            AppendixReward(31.5f, 5.6f);
 
             // ---------- 2) Colon ascendente: la subida ----------
             Tip(40f, "¡SUBE!", "NODO: Colon ascendente. Sube... ¡y no dejes que te alcance lo que viene de abajo!", FloorY, Signpost.Kind.ArrowUp);
@@ -1608,7 +1652,7 @@ namespace HealingKnight.EditorTools
             SolidBlock(57f, 122f, top);
             Tip(58.6f, "MICROBIOTA", "NODO: Microbiota. Las bacterias verdes son BUENAS: no les dispares antibiótico o crecerá C. difficile.", top);
             foreach (float fx in new[] { 60.5f, 64f, 67.5f, 71f, 74.5f }) FloraAt(fx, top);
-            Probiotic(66f, top + 1.6f);
+            Probiotic(66f, top);
             ArenaZone cdiff = Arena("Arena_2_CDifficile", 80f, 22f, "C. difficile: herida se vuelve espora y todo le rebota. Solo el antibiótico... ¡y cuidado con la flora buena!",
                 W(0.6f, E(prefabs.CDifficile, data.CDifficile, 2), E(prefabs.Oxiuro, data.Oxiuro, 1, SpawnSide.Left)),
                 W(1.0f, E(prefabs.CDifficile, data.CDifficile, 2), E(prefabs.Entamoeba, data.Entamoeba, 1, SpawnSide.Left)));
@@ -1618,7 +1662,7 @@ namespace HealingKnight.EditorTools
             Platform(86f, top + 2.6f, 3f);
             Platform(93f, top + 2.6f, 3f);
             foreach (float fx in new[] { 103.5f, 107.5f, 111.5f }) FloraAt(fx, top);
-            Probiotic(108.5f, top + 1.6f);
+            Probiotic(108.5f, top);
             Ambush(110f, top + 3f, prefabs.CDifficile, data.CDifficile, 2, 0.5f, 7f, new Vector2(0f, 2f), false);
             Ambush(116f, top + 3f, prefabs.Oxiuro, data.Oxiuro, 3, 0.5f, 7f, new Vector2(0f, 2f), false);
 
@@ -1681,12 +1725,14 @@ namespace HealingKnight.EditorTools
             go.AddComponent<HaustraPouch>().Configure(2.6f, 2.8f, offset, PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Haustra.png", 2.9f, new Vector2(0.5f, 0.05f)), 1.2f);
         }
 
-        private void Flood(float fromX, float toX, float topY, float speed)
+        private RisingFlood Flood(float fromX, float toX, float topY, float speed)
         {
             var go = new GameObject("LiquidoQueSube");
             go.transform.SetParent(environment, false);
             go.transform.position = new Vector3((fromX + toX) * 0.5f, FloorY - 0.3f, 0f);
-            go.AddComponent<RisingFlood>().Configure(fromX, toX, topY, speed);
+            RisingFlood flood = go.AddComponent<RisingFlood>();
+            flood.Configure(fromX, toX, topY, speed);
+            return flood;
         }
 
         private void Mud(float fromX, float toX)
@@ -1724,43 +1770,45 @@ namespace HealingKnight.EditorTools
             go.transform.position = new Vector3(x, groundY, 0f);
         }
 
-        private void Probiotic(float x, float y)
+        /// <summary>Probióticos: la botella de yogur hundida en el moco del PISO (groundY) con sus lactobacilos alrededor.</summary>
+        private void Probiotic(float x, float groundY)
         {
             var go = new GameObject("Probiotico");
             go.transform.SetParent(environment, false);
-            go.transform.position = new Vector3(x, y, 0f);
-            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
-            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Probiotico.png", 0.7f);
+            go.transform.position = new Vector3(x, groundY, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", new Vector3(0f, -0.12f, 0f));   // un poco hundida
+            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Probiotico.png", 0.75f, new Vector2(0.5f, 0.02f));
             if (pic != null) SetupUtils.SpriteChild(art.transform, "Frasco", pic, Color.white, Vector3.zero, Vector2.one, 21);
             else
             {
-                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.1f, 0.2f, 0.1f), Vector3.zero, new Vector2(0.62f, 0.86f), 20);
-                SetupUtils.SpriteChild(art.transform, "Frasco", PlaceholderArt.SquareCentered, new Color(0.95f, 0.97f, 1f), Vector3.zero, new Vector2(0.52f, 0.76f), 21);
-                SetupUtils.SpriteChild(art.transform, "Etiqueta", PlaceholderArt.SquareCentered, new Color(0.45f, 0.85f, 0.5f), new Vector3(0f, -0.05f, 0f), new Vector2(0.52f, 0.3f), 22);
-                SetupUtils.SpriteChild(art.transform, "Tapa", PlaceholderArt.SquareCentered, new Color(0.3f, 0.65f, 0.35f), new Vector3(0f, 0.42f, 0f), new Vector2(0.56f, 0.14f), 22);
+                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.1f, 0.2f, 0.1f), new Vector3(0f, 0.43f, 0f), new Vector2(0.62f, 0.86f), 20);
+                SetupUtils.SpriteChild(art.transform, "Frasco", PlaceholderArt.SquareCentered, new Color(0.95f, 0.97f, 1f), new Vector3(0f, 0.43f, 0f), new Vector2(0.52f, 0.76f), 21);
+                SetupUtils.SpriteChild(art.transform, "Etiqueta", PlaceholderArt.SquareCentered, new Color(0.45f, 0.85f, 0.5f), new Vector3(0f, 0.38f, 0f), new Vector2(0.52f, 0.3f), 22);
+                SetupUtils.SpriteChild(art.transform, "Tapa", PlaceholderArt.SquareCentered, new Color(0.3f, 0.65f, 0.35f), new Vector3(0f, 0.85f, 0f), new Vector2(0.56f, 0.14f), 22);
             }
-            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.5f, 1f, 0.55f, 0.25f), Vector3.zero, new Vector2(1.5f, 1.5f), 19);
             go.AddComponent<ProbioticPickup>().Configure(art.transform);
         }
 
         /// <summary>Premio del apéndice secreto: vida y bombas (el apéndice tiene tejido de defensa).</summary>
-        private void AppendixReward(float x, float y)
+        /// <summary>El apéndice: un saquito pegado al tejido, ENCIMA de la plataforma (groundY), que late. No flota.</summary>
+        private void AppendixReward(float x, float groundY)
         {
             var go = new GameObject("Apendice");
             go.transform.SetParent(environment, false);
-            go.transform.position = new Vector3(x, y, 0f);
-            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
-            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Apendice.png", 1.1f);
+            go.transform.position = new Vector3(x, groundY, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", new Vector3(0f, -0.1f, 0f));
+            Sprite pic = PrefabSetup.ArtByWidth($"{LargeIntestineArt}/Apendice.png", 1.2f, new Vector2(0.5f, 0.05f));
             if (pic != null) SetupUtils.SpriteChild(art.transform, "Ganglio", pic, Color.white, Vector3.zero, Vector2.one, 21);
             else
             {
-                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Circle, new Color(0.2f, 0.08f, 0.25f), Vector3.zero, new Vector2(0.9f, 0.9f), 20);
-                SetupUtils.SpriteChild(art.transform, "Ganglio", PlaceholderArt.Circle, new Color(0.8f, 0.65f, 1f), Vector3.zero, new Vector2(0.78f, 0.78f), 21);
-                SetupUtils.SpriteChild(art.transform, "Brillo", PlaceholderArt.Circle, Color.white, new Vector3(-0.15f, 0.15f, 0f), new Vector2(0.2f, 0.12f), 22);
+                SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.Circle, new Color(0.2f, 0.08f, 0.25f), new Vector3(0f, 0.45f, 0f), new Vector2(0.9f, 0.9f), 20);
+                SetupUtils.SpriteChild(art.transform, "Ganglio", PlaceholderArt.Circle, new Color(0.8f, 0.65f, 1f), new Vector3(0f, 0.45f, 0f), new Vector2(0.78f, 0.78f), 21);
+                SetupUtils.SpriteChild(art.transform, "Brillo", PlaceholderArt.Circle, Color.white, new Vector3(-0.15f, 0.6f, 0f), new Vector2(0.2f, 0.12f), 22);
             }
-            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.8f, 0.6f, 1f, 0.3f), Vector3.zero, new Vector2(1.6f, 1.6f), 19);
-            go.AddComponent<HealPickup>().Configure(art.transform, 25f, 3,
+            var pickup = go.AddComponent<HealPickup>();
+            pickup.Configure(art.transform, 25f, 3,
                 "NODO: ¡Encontraste el APÉNDICE! Tiene tejido de defensa (linfocitos). +Vida y +3 bombas.");
+            SetupUtils.SetBool(pickup, "floats", false);
         }
 
         private void MassWaveIn(float fromX, float toX)
@@ -1807,9 +1855,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildNariz()
         {
-            // Rediseño (170 u): cañones de moco de la mucosa, el ESTORNUDO (barra de comezón + pelos nasales)
+            // Rediseño (230 u): cañones de moco de la mucosa, el ESTORNUDO (barra de comezón + pelos nasales)
             // y dos arenas. Ver LEEME "Nariz".
-            BuildLevelBase(170f, new LevelStyle
+            BuildLevelBase(230f, new LevelStyle
             {
                 background = new Color(0.09f, 0.03f, 0.11f),
                 wall = new Color(0.36f, 0.14f, 0.34f),
@@ -1899,13 +1947,43 @@ namespace HealingKnight.EditorTools
             NasalHairAt(157f);
             EnemyAt(prefabs.Polen, 160f, FloorY + 3f);
             NasalHairAt(162.5f);
+            Checkpoint(167f);
+
+            // SENO MAXILAR (sinusitis): la cueva de aire junto a la nariz se tapa y se llena de moco que SUBE.
+            // Trepa en zigzag hasta la orilla de arriba antes de que te alcance.
+            Tip(168f, "SINUSITIS", "Seno MAXILAR: una cueva de aire junto a la nariz. Si se tapa, se llena de MOCO (sinusitis). ¡Trepa antes de que te alcance!", FloorY, Signpost.Kind.ArrowUp);
+            const float sinusTop = 13f;
+            RisingFlood mucus = Flood(170f, 184f, sinusTop - 0.5f, 0.55f);
+            SetupUtils.SetString(mucus, "message", "¡El moco llena el seno! Trepa rápido.");
+            SetupUtils.SetColor(mucus, "deep", new Color(0.42f, 0.5f, 0.12f, 0.92f));
+            SetupUtils.SetColor(mucus, "surface", new Color(0.78f, 0.86f, 0.34f, 0.9f));
+            SetupUtils.SetColor(mucus, "outline", new Color(0.22f, 0.26f, 0.06f, 1f));
+            Platform(173f, 2.4f, 2.8f);
+            Platform(177.5f, 4.7f, 2.8f);
+            Platform(173.5f, 7f, 2.8f);
+            Platform(178f, 9.3f, 2.8f);
+            Platform(174f, 11.6f, 2.8f);
+            Platform(180f, 13f, 2.4f);
+            Ambush(177.5f, 5f, prefabs.Rinovirus, data.Rinovirus, 1, 1.2f, 0f, new Vector2(0f, 3f), false);
+            SolidBlock(184f, 200f, sinusTop);
+            O2(187.5f, sinusTop + 2.2f);
+            EnemyAt(prefabs.SAureus, 191f, sinusTop);
+            EnemyAt(prefabs.Polen, 195f, sinusTop + 2.5f);
+            Checkpoint(201f);
+
+            // Arena final: el seno destapado suelta lo que tenía adentro.
+            Arena("Arena_4_Senos", 203f, 14f, "¡Lo que tapaba el seno! S. aureus: Antibiótico. Polen: Antihistamínico.",
+                W(0.6f, E(prefabs.SAureus, data.SAureus, 2), E(prefabs.Rinovirus, data.Rinovirus, 1, SpawnSide.Left)),
+                W(1.0f, E(prefabs.Polen, data.Polen, 3, SpawnSide.Both), E(prefabs.SAureus, data.SAureus, 1)));
+            Platform(206f, 2.4f, 2.4f);
+            Platform(211f, 3.6f, 2.4f);
         }
 
         private void BuildTraquea()
         {
-            // Rediseño (170 u): epiglotis, escalera de cilios, la TOS (anillos de cartílago), corrientes de aire
+            // Rediseño (215 u): epiglotis, escalera de cilios, la TOS (anillos de cartílago), corrientes de aire
             // y el jefe: la reina de la tos ferina. Ver LEEME "Tráquea".
-            BuildLevelBase(170f, new LevelStyle
+            BuildLevelBase(215f, new LevelStyle
             {
                 background = new Color(0.06f, 0.04f, 0.13f),
                 wall = new Color(0.28f, 0.2f, 0.46f),
@@ -1984,12 +2062,32 @@ namespace HealingKnight.EditorTools
             Platform(128f, 2.4f, 2.6f);
             Checkpoint(135f);
 
+            // La CARINA: la tráquea se divide en los dos bronquios. Dos rutas que se juntan al final:
+            //  - arriba (bronquio derecho): una corriente te sube a una fila de repisas con influenza volando y O2;
+            //  - abajo (bronquio izquierdo): cilios que te empujan atrás y te ruedan moco, tos ferina y anillos.
+            Tip(136.5f, "CARINA", "La CARINA: aquí la tráquea se divide en dos BRONQUIOS, uno para cada pulmón. Arriba: corrientes de aire. Abajo: cilios. ¡Escoge!");
+            Vent(139.5f, 7f, 3f, 0f);
+            foreach (float px in new[] { 143f, 147.5f, 152f, 156.5f, 161f, 165.5f, 170f, 174.5f })
+                Platform(px, px % 9f < 4.5f ? 6.6f : 7.4f, 2.4f);
+            EnemyAt(prefabs.Influenza, 150f, FloorY + 9.5f);
+            EnemyAt(prefabs.Influenza, 163f, FloorY + 9.5f);
+            O2(156.5f, 8.8f);
+            O2(170f, 8.8f);
+            Cilia(141f, 176f, 3.2f, 2.4f);
+            CartilageRing(146f);
+            EnemyAt(prefabs.Pertussis, 151f, FloorY);
+            CartilageRing(157f);
+            EnemyAt(prefabs.Pertussis, 163f, FloorY);
+            Platform(167.5f, 2.2f, 2.2f);
+            CartilageRing(171f);
+            Checkpoint(179f);
+
             // Jefe: la reina de la tos ferina. Sus toses mandan ondas por el piso: salta.
-            Arena("Arena_Reina", 140f, 26f, null,
+            Arena("Arena_Reina", 185f, 26f, null,
                 W(1.2f, E(prefabs.TosFerinaReina, data.TosFerinaReina, 1)));
-            Platform(143f, 2.4f, 2.6f);
-            Platform(150f, 3.8f, 2.6f);
-            Platform(157f, 2.4f, 2.6f);
+            Platform(188f, 2.4f, 2.6f);
+            Platform(195f, 3.8f, 2.6f);
+            Platform(202f, 2.4f, 2.6f);
         }
 
         private void BuildPulmones()
@@ -2119,6 +2217,17 @@ namespace HealingKnight.EditorTools
             go.AddComponent<FlossHook>().Configure(0f, true, 3.8f);
             go.AddComponent<ButtonPrompt>().Configure("herramienta", "Hilo dental", new Vector2(0f, -1.1f), 4.6f, ButtonPrompt.HideWhen.Swinging, signFont);
             Sprite tooth = PrefabSetup.ArtByWidth($"{MouthArt}/DienteArriba.png", 1.6f, new Vector2(0.5f, 0.05f));
+            // El diente está plantado en la encía de arriba (no flota): un pedazo de encía baja del techo hasta su raíz.
+            float toothTop = tooth != null ? -0.2f + tooth.bounds.size.y * 0.92f : 2.9f;
+            if (mouthCeiling > 0f)
+            {
+                float from = toothTop - 0.45f, to = mouthCeiling - (FloorY + y) + 0.5f;
+                if (to > from)
+                {
+                    VCapsule(go.transform, "EnciaContorno", GumLine, new Vector3(0f, (from + to) * 0.5f, 0f), 1.42f, to - from + 0.12f, -10);
+                    VCapsule(go.transform, "Encia", GumColor, new Vector3(0f, (from + to) * 0.5f, 0f), 1.3f, to - from, -9);
+                }
+            }
             if (tooth != null) { SetupUtils.SpriteChild(go.transform, "Diente", tooth, Color.white, new Vector3(0f, -0.2f, 0f), Vector2.one, -8); return; }   // el aro del dibujo queda en el gancho
             Color line = new Color(0.3f, 0.2f, 0.22f), enamel = new Color(0.98f, 0.96f, 0.9f);
             SetupUtils.SpriteChild(go.transform, "Contorno", PlaceholderArt.SquareCentered, line, new Vector3(0f, 1.6f, 0f), new Vector2(1.5f, 2.6f), -9);
@@ -2129,7 +2238,72 @@ namespace HealingKnight.EditorTools
 
         private void Molar(float x, float phase) =>
             Node("MuelaQueMastica", x, FloorY).AddComponent<ChewingMolar>().Configure(3f, 8f, 2.6f, phase,
-                PrefabSetup.ArtByWidth($"{MouthArt}/Muela.png", 3.3f, new Vector2(0.5f, 0.02f)));
+                PrefabSetup.ArtByWidth($"{MouthArt}/Muela.png", 3.3f, new Vector2(0.5f, 0.02f)), GumColor);
+
+        // ---------- Encía: el techo de la Boca (los dientes de arriba salen de ahí) ----------
+
+        private static readonly Color GumColor = new Color(0.93f, 0.47f, 0.56f);
+        private static readonly Color GumLine = new Color(0.45f, 0.14f, 0.22f);
+        private float mouthCeiling;   // altura de la orilla de la encía de arriba (0 = no hay)
+
+        /// <summary>Encía de arriba (techo sólido) de 'fromX' a 'toX', con su orilla en 'bottomY'.</summary>
+        private void GumCeiling(float fromX, float toX, float bottomY)
+        {
+            mouthCeiling = bottomY;
+            float width = toX - fromX;
+            const float height = 8f;
+            var go = new GameObject("EnciaDeArriba");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(fromX + width * 0.5f, bottomY, 0f);
+            go.layer = PhysicsLayers.Ground;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(width, height);
+            box.offset = new Vector2(0f, height * 0.5f);
+            Color tint = new Color(1f, 0.82f, 0.86f);
+            if (tissueFloor != null && tissueFill != null)
+            {
+                // El piso de tejido volteado: la orilla con poros queda hacia abajo.
+                float strip = tissueFloor.bounds.size.y;
+                SpriteRenderer edge = TiledChild(go.transform, "Orilla", tissueFloor, Vector3.zero, new Vector2(width, strip), 7, tint);
+                edge.transform.localScale = new Vector3(1f, -1f, 1f);
+                SpriteRenderer fill = TiledChild(go.transform, "Relleno", tissueFill, new Vector3(0f, strip - 0.01f, 0f), new Vector2(width, height - strip), 6, tint);
+                fill.transform.localScale = new Vector3(1f, -1f, 1f);
+            }
+            else
+            {
+                SetupUtils.SpriteChild(go.transform, "Relleno", PlaceholderArt.SquareCentered, GumColor, new Vector3(0f, height * 0.5f, 0f), new Vector2(width, height), 6);
+                SetupUtils.SpriteChild(go.transform, "Orilla", PlaceholderArt.SquareCentered, GumLine, new Vector3(0f, 0.08f, 0f), new Vector2(width, 0.16f), 7);
+            }
+        }
+
+        /// <summary>Cápsula de relleno PARADA (la de PlaceholderArt es acostada y mide 1 × 0.5): redonda arriba y abajo.</summary>
+        private static SpriteRenderer VCapsule(Transform parent, string name, Color color, Vector3 center, float width, float height, int order)
+        {
+            SpriteRenderer r = SetupUtils.SpriteChild(parent, name, PlaceholderArt.Capsule, color, center, new Vector2(height, width * 2f), order);
+            r.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+            return r;
+        }
+
+        /// <summary>Diente de abajo: sale de la encía del piso (o del charco de saliva) y se puede pisar. Sólido.</summary>
+        private void ToothStep(float x, float topY, float width, float bottomY = FloorY)
+        {
+            float h = topY - bottomY + 0.6f;
+            GameObject go = Node("DienteAbajo", x, bottomY - 0.6f);
+            go.layer = PhysicsLayers.Ground;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(width - 0.1f, h - 0.1f);
+            box.offset = new Vector2(0f, h * 0.5f - 0.05f);
+            Color line = new Color(0.3f, 0.2f, 0.22f), enamel = new Color(0.98f, 0.96f, 0.9f);
+            VCapsule(go.transform, "Contorno", line, new Vector3(0f, h * 0.5f + 0.04f, 0f), width + 0.14f, h + 0.3f, -12);
+            VCapsule(go.transform, "Esmalte", enamel, new Vector3(0f, h * 0.5f, 0f), width, h + 0.16f, -11);
+            // Cúspides de la corona y brillo.
+            for (int side = -1; side <= 1; side += 2)
+                SetupUtils.SpriteChild(go.transform, "Cuspide", PlaceholderArt.Circle, new Color(0.92f, 0.89f, 0.82f), new Vector3(side * width * 0.22f, h - 0.12f, 0f), new Vector2(width * 0.34f, 0.22f), -10);
+            VCapsule(go.transform, "Brillo", new Color(1f, 1f, 1f, 0.8f), new Vector3(-width * 0.28f, h * 0.55f, 0f), 0.18f, h * 0.45f, -10);
+            // Encía en la base.
+            SetupUtils.SpriteChild(go.transform, "EnciaContorno", PlaceholderArt.Circle, GumLine, new Vector3(0f, 0.62f, 0f), new Vector2(width + 1.1f, 1f), -9);
+            SetupUtils.SpriteChild(go.transform, "Encia", PlaceholderArt.Circle, GumColor, new Vector3(0f, 0.6f, 0f), new Vector2(width + 0.95f, 0.86f), -8);
+        }
 
         private void Tongue(float fromX, float toX, int segments)
         {
@@ -2220,9 +2394,11 @@ namespace HealingKnight.EditorTools
 
         private void BuildBoca()
         {
-            // Rediseño (175 u): mecánica propia, el HILO DENTAL (columpiarse de ganchos y arrancar placa),
-            // muelas que mastican, lengua que se ondula, lluvia de azúcar, olas de saliva y el jefe Sarro. Ver LEEME "Boca".
-            LevelManager manager = BuildLevelBase(175f, new LevelStyle
+            // Rediseño (215 u): mecánica propia, el HILO DENTAL (columpiarse de diente en diente y arrancar placa),
+            // muelas que mastican, lengua que se ondula, encías inflamadas que se cruzan colgado, lluvia de azúcar,
+            // olas de saliva y el jefe Sarro. Los dientes de arriba salen de la ENCÍA del techo y los de abajo
+            // salen del piso: nada flota. Ver LEEME "Boca".
+            LevelManager manager = BuildLevelBase(215f, new LevelStyle
             {
                 background = new Color(0.14f, 0.03f, 0.06f),
                 wall = new Color(0.45f, 0.12f, 0.2f),
@@ -2240,15 +2416,16 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.2f, 0.28f, 0.42f, 1f),
                 liquidCrest = new Color(1f, 1f, 1f, 0.95f)
             }, "NIVEL SECRETO · BOCA. NODO: Placa bacteriana detectada. Te traje HILO DENTAL: botón {herramienta}.",
-                new Vector2(24f, 6f), new Vector2(40f, 8f), new Vector2(54f, 9f), new Vector2(97f, 22f));
+                new Vector2(24f, 6f), new Vector2(40f, 8f), new Vector2(54f, 9f), new Vector2(97f, 22f), new Vector2(122f, 36f));
 
+            GumCeiling(-4f, 219f, FloorY + 10f);   // la encía de arriba: de ahí cuelgan los dientes y las muelas
             Floss();
 
-            Arena("Arena_1_Caries", 8f, 16f, "S. mutans (caries): te lanza ácido en arco desde lejos. Antibiótico.",
+            Arena("Arena_1_Caries", 8f, 16f, "S. mutans (caries): te lanza ácido en arco desde lejos. Escóndete detrás de los dientes. Antibiótico.",
                 W(0.6f, E(prefabs.SMutans, data.SMutans, 2)),
                 W(1.0f, E(prefabs.SMutans, data.SMutans, 2, SpawnSide.Left)));
-            Platform(12f, 2.2f, 2f);
-            Platform(17f, 2.2f, 2f);
+            ToothStep(12f, 1.6f, 1.8f);
+            ToothStep(17.5f, 2.4f, 1.8f);
 
             // Tutorial del hilo: un hueco de saliva que solo se cruza columpiándose.
             Tip(21f, "HILO DENTAL", "Hueco de saliva: lanza el HILO DENTAL ({herramienta}) al gancho del diente, columpiate con {mover} y salta ({saltar}) para soltarte.");
@@ -2281,24 +2458,41 @@ namespace HealingKnight.EditorTools
             Hook(113f, 8.4f);
             Checkpoint(120f);
 
+            // NUEVO: encías inflamadas (gingivitis). Un hueco largo que se cruza SOLO con el hilo, de diente en diente,
+            // con un diente-isla a la mitad y una placa al final que se arranca colgado.
+            Tip(121f, "GINGIVITIS", "Encías inflamadas por la placa (gingivitis): no hay piso. Columpiate de diente en diente: suelta y vuelve a lanzar el hilo en el aire.", FloorY, Signpost.Kind.Warning);
+            Hook(125.5f, 7.6f);
+            Hook(130.5f, 8.4f);
+            Hook(135.5f, 7.4f);
+            Hook(140.5f, 8.2f);
+            ToothStep(146f, 1.8f, 3f, FloorY - 3.5f);      // diente-isla para descansar
+            Checkpoint(146f);
+            EnemyAt(prefabs.SMutans, 146.8f, FloorY + 1.8f);
+            Hook(150.5f, 7.8f);
+            Hook(155f, 8.6f);
+            Plaque(160.5f);                                // al bajar: arráncala para seguir
+            Checkpoint(162f);
+
             // Arena de placa bajo la lluvia de azúcar, con olas de saliva que ayudan.
-            Sugar(121f, 143f);
-            Saliva(119f, 146f, 12f);
-            Arena("Arena_2_Placa", 124f, 22f, "¡La placa! Rompe los DULCES antes de que el S. mutans se los coma y crezca. La SALIVA te ayuda.",
+            Sugar(163f, 185f);
+            Saliva(161f, 188f, 12f);
+            Arena("Arena_2_Placa", 164f, 22f, "¡La placa! Rompe los DULCES antes de que el S. mutans se los coma y crezca. La SALIVA te ayuda.",
                 W(0.6f, E(prefabs.SMutans, data.SMutans, 3, SpawnSide.Both)),
                 W(1.0f, E(prefabs.SMutans, data.SMutans, 3, SpawnSide.Both)),
                 W(1.0f, E(prefabs.SMutans, data.SMutans, 4, SpawnSide.Both)));
-            Platform(128f, 2.4f, 2.4f);
-            Platform(134f, 3.8f, 2.4f);
-            Platform(140f, 2.4f, 2.4f);
-            Checkpoint(146f);
+            ToothStep(169f, 1.8f, 2f);
+            ToothStep(175f, 2.8f, 2f);
+            ToothStep(181f, 1.8f, 2f);
+            Hook(172f, 8.4f);
+            Hook(178f, 8.4f);
+            Checkpoint(188f);
 
             // Jefe: el Sarro. Ganchos en el techo para esquivar las ondas columpiándote.
-            Arena("Arena_Sarro", 150f, 22f, null,
+            Arena("Arena_Sarro", 190f, 22f, null,
                 W(1.2f, E(prefabs.SarroJefe, data.SarroJefe, 1)));
-            Hook(152f, 8f);
-            Hook(160f, 8.4f);
-            Hook(167f, 8f);
+            Hook(192f, 8f);
+            Hook(200f, 8.4f);
+            Hook(207f, 8f);
 
             SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Boca limpia! Recuerda: cepillo, hilo dental y poca azúcar.");
             SetupUtils.SetFloat(manager, "completeDelay", 4f);
@@ -2306,9 +2500,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildAmigdalas()
         {
-            // Nivel secreto (150 u): CARGAR ANTÍGENOS al centro germinal para fabricar linfocitos B aliados que disparan
+            // Nivel secreto (190 u): CARGAR ANTÍGENOS al centro germinal para fabricar linfocitos B aliados que disparan
             // anticuerpos. Jefe: el Absceso (solo le dañan los anticuerpos). Premio: linfocito aliado en todos los niveles.
-            LevelManager manager = BuildLevelBase(150f, new LevelStyle
+            LevelManager manager = BuildLevelBase(190f, new LevelStyle
             {
                 background = new Color(0.16f, 0.03f, 0.07f),
                 wall = new Color(0.5f, 0.12f, 0.22f),
@@ -2326,13 +2520,17 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.25f, 0.15f, 0.3f, 1f),
                 liquidCrest = new Color(1f, 1f, 1f, 0.95f)
             }, "NIVEL SECRETO · AMÍGDALAS. NODO: Estreptococos en la garganta. Aquí no basta con disparar: hay que fabricar anticuerpos.",
-                new Vector2(30f, 3f), new Vector2(52f, 3.5f));
+                new Vector2(30f, 3f), new Vector2(52f, 3.5f), new Vector2(112f, 4f), new Vector2(144f, 3f));
 
-            Antigens(data.SPyogenes);
+            Antigens(data.SPyogenes, data.Rinovirus);
 
-            Arena("Arena_1_Garganta", 6f, 14f, "S. pyogenes (faringitis): al morir suelta un ANTÍGENO. Recógelo.",
-                W(0.6f, E(prefabs.SPyogenes, data.SPyogenes, 2)));
+            // Paso a paso (cada letrero explica UNA cosa): 1) los gérmenes sueltan antígenos, 2) el centro germinal los
+            // vuelve linfocitos B que te siguen, 3) el absceso solo se daña cuando un anticuerpo lo marca.
+            Arena("Arena_1_Garganta", 6f, 14f, "PASO 1: el S. pyogenes (faringitis) al morir suelta un ANTÍGENO. Tócalo para recogerlo: puedes llevar 3 sin dejar de disparar.",
+                W(0.6f, E(prefabs.SPyogenes, data.SPyogenes, 2)),
+                W(1.0f, E(prefabs.SPyogenes, data.SPyogenes, 2, SpawnSide.Left)));
             Platform(10f, 2.4f, 2.4f);
+            Tip(20.5f, "PASO 2", "PASO 2: pasa por el CENTRO GERMINAL con tus antígenos. Cada uno se vuelve un LINFOCITO B que te sigue y dispara ANTICUERPOS.");
             Germinal(22f);
 
             // Amígdala izquierda: criptas (túneles) llenas de estreptococos.
@@ -2358,17 +2556,37 @@ namespace HealingKnight.EditorTools
             Platform(84f, 2.6f, 2.4f);
             Checkpoint(93f);
 
+            // Garganta profunda: al TRAGAR baja una ola de saliva (te cura y arrastra gérmenes) y los rinovirus caen
+            // desde arriba. Una cripta infectada (arena) con su propio centro germinal en medio.
+            Tip(95f, "SALIVA", "Cuando tragas, una OLA DE SALIVA baja por la garganta: te cura y arrastra a los gérmenes. ¡Aprovéchala!");
+            Saliva(94f, 150f, 11f);
             EnemyAt(prefabs.SPyogenes, 100f, FloorY);
             Platform(104f, 2.4f, 2.4f);
             EnemyAt(prefabs.SPyogenes, 108f, FloorY);
-            Checkpoint(111f);
+            Platform(114f, 2.2f, 1.8f);                       // sobre la cripta (hueco)
+            Ambush(118f, 4f, prefabs.Rinovirus, data.Rinovirus, 2, 0.5f, 8f, Vector2.zero, false,
+                "Rinovirus (el del resfriado): también sueltan antígenos.");
+            Germinal(119.5f);
+            Checkpoint(121f);
 
-            // Jefe: el Absceso. Solo le hacen daño los anticuerpos.
-            Arena("Arena_Absceso", 116f, 26f, null,
+            Arena("Arena_3_Cripta", 125f, 20f, "Cripta infectada: elimina a los gérmenes y entrega sus antígenos ahí mismo, en el CENTRO GERMINAL.",
+                W(0.6f, E(prefabs.SPyogenes, data.SPyogenes, 3, SpawnSide.Both)),
+                W(1.0f, E(prefabs.Rinovirus, data.Rinovirus, 2), E(prefabs.SPyogenes, data.SPyogenes, 2, SpawnSide.Left)),
+                W(1.0f, E(prefabs.SPyogenes, data.SPyogenes, 2, SpawnSide.Both), E(prefabs.Rinovirus, data.Rinovirus, 1)));
+            Germinal(134f);
+            Platform(129f, 2.6f, 2.4f);
+            Platform(139f, 2.6f, 2.4f);
+            Platform(145.5f, 2.2f, 1.6f);                     // sobre el segundo hueco
+            EnemyAt(prefabs.SPyogenes, 148.5f, FloorY);
+            Checkpoint(150f);
+
+            // Jefe: el Absceso. Tus balas rebotan... hasta que un anticuerpo lo MARCA.
+            Tip(153.5f, "PASO 3", "PASO 3: el ABSCESO es una bolsa cerrada: tus balas rebotan. Cuando un anticuerpo lo MARCA (brilla amarillo), ¡dispárale con todo!", FloorY, Signpost.Kind.Warning);
+            Arena("Arena_Absceso", 156f, 26f, null,
                 W(1.2f, E(prefabs.AbscesoJefe, data.AbscesoJefe, 1)));
-            Germinal(118f);
-            Platform(123f, 2.6f, 2.4f);
-            Platform(129f, 3.8f, 2.4f);
+            Germinal(158f);
+            Platform(163f, 2.6f, 2.4f);
+            Platform(169f, 3.8f, 2.4f);
 
             SetupUtils.SetString(manager, "completeMessage", "NODO: Garganta sana. Tu linfocito B te acompañará en todos los niveles.");
             SetupUtils.SetFloat(manager, "completeDelay", 4f);
@@ -2376,10 +2594,10 @@ namespace HealingKnight.EditorTools
 
         private void BuildOjo()
         {
-            // Nivel secreto (165 u): SIGILO. Que el cuerpo no te vea: vigilantes con cono de visión, barra de inflamación
+            // Nivel secreto (210 u): SIGILO. Que el cuerpo no te vea: vigilantes con cono de visión, barra de inflamación
             // (uveítis), escondites, moscas volantes, retina que se enciende y haces de luz. Jefe: Toxoplasma en quistes.
             // Premio: el escáner de NODO (ves la debilidad de cada enemigo en todos los niveles).
-            LevelManager manager = BuildLevelBase(165f, new LevelStyle
+            LevelManager manager = BuildLevelBase(210f, new LevelStyle
             {
                 background = new Color(0.03f, 0.05f, 0.12f),
                 wall = new Color(0.1f, 0.14f, 0.3f),
@@ -2391,12 +2609,14 @@ namespace HealingKnight.EditorTools
                 glow = new Color(0.7f, 0.85f, 1f, 1f),
                 backdrop = "Fondo_Ojo",
                 tissue = "Cerebro",
-                pitLiquid = new Color(0.7f, 0.85f, 1f, 1f),
-                liquidDeep = new Color(0.25f, 0.35f, 0.6f, 0.9f),
-                liquidSurface = new Color(0.6f, 0.75f, 1f, 0.75f),
-                liquidOutline = new Color(0.1f, 0.15f, 0.35f, 1f),
-                liquidCrest = new Color(1f, 1f, 1f, 0.95f)
-            }, "NIVEL SECRETO · OJO. NODO: Entramos por el nervio óptico. Aquí las defensas casi no entran... y si nos ven, el ojo se inflama.");
+                // Los únicos huecos son los VASOS de la retina: sangre.
+                pitLiquid = new Color(0.9f, 0.2f, 0.25f, 1f),
+                liquidDeep = new Color(0.42f, 0.03f, 0.08f, 0.95f),
+                liquidSurface = new Color(0.9f, 0.2f, 0.25f, 0.85f),
+                liquidOutline = new Color(0.2f, 0.02f, 0.05f, 1f),
+                liquidCrest = new Color(1f, 0.6f, 0.6f, 0.95f)
+            }, "NIVEL SECRETO · OJO. NODO: Entramos por el nervio óptico. Aquí las defensas casi no entran... y si nos ven, el ojo se inflama.",
+                new Vector2(115f, 13f), new Vector2(134.5f, 13f));
 
             Stealth();
 
@@ -2441,21 +2661,45 @@ namespace HealingKnight.EditorTools
             Beam(98f, 111f, 5.5f);
             WatcherAt(90f, 106f);
 
+            // Vasos de la retina (la red roja de la pintura): dos tramos de sangre que se cruzan en GLÓBULO ROJO,
+            // con un islote vigilado en medio. El glóbulo no te esconde: agáchate tras las moscas volantes o pásale
+            // por detrás al vigilante.
+            Checkpoint(112.5f);
+            Tip(113.2f, "VASOS", "VASOS de la retina: no caigas en la sangre. Cruza en un GLÓBULO ROJO... pero ahí no te escondes: usa las moscas volantes.", FloorY, Signpost.Kind.Warning);
+            Ride("GloboRojo", new Vector2(114.2f, FloorY + 0.5f), new Vector2(127.6f, FloorY + 0.5f), 2.4f, 2.4f,
+                MovingPlatform.Style.BloodCell, 0.6f,
+                "Un GLÓBULO ROJO: lleva oxígeno a la retina, que es de lo que más oxígeno gasta en el cuerpo.",
+                PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 2.6f));
+            Beam(115f, 128f, 5f);
+            Floater(121f, 0f, 2.2f, 7f);
+            Cover(130f);
+            WatcherAt(128.6f, 134f);
+            Ride("GloboRojo", new Vector2(133.7f, FloorY + 0.5f), new Vector2(147.1f, FloorY + 0.5f), 2.4f, 2.4f,
+                MovingPlatform.Style.BloodCell, 0.6f, null, PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 2.6f));
+            Floater(139f, 0f, 2.5f, 7.5f);
+            Floater(145f, 0f, 2f, 6f);
+            WatcherAt(148.5f, 156f);
+            Cover(151.5f);
+            EnemyAt(prefabs.Herpes, 154f, FloorY + 3f);
+
             // Punto ciego: zona segura.
-            BlindSpotAt(118f, 9f);
-            Sign(Signpost.Kind.Info, 117.6f, FloorY, "PUNTO CIEGO");
-            Checkpoint(115f);
+            BlindSpotAt(163f, 9f);
+            Sign(Signpost.Kind.Info, 162.6f, FloorY, "PUNTO CIEGO");
+            Checkpoint(160f);
 
             // Jefe: Toxoplasma en los quistes de la retina.
             var layout = Node("Quistes", 0f, FloorY).AddComponent<CystLayout>();
-            layout.Configure(new[] { new Vector2(133f, FloorY + 1.4f), new Vector2(140f, FloorY + 4.4f), new Vector2(147f, FloorY + 1.4f), new Vector2(152f, FloorY + 4.6f) });
-            Arena("Arena_Toxoplasma", 130f, 28f, null,
+            // Quistes + el cristalino que se le dispara para alumbrarlos (ver ToxoplasmaBoss).
+            layout.Configure(new[] { new Vector2(178f, FloorY + 1.4f), new Vector2(185f, FloorY + 4.4f), new Vector2(192f, FloorY + 1.4f), new Vector2(197f, FloorY + 4.6f) },
+                new Vector2(188f, FloorY + 6.4f), PrefabSetup.ArtByWidth($"{EyeArt}/Cristalino.png", 2f));
+            Beam(176f, 202f, 7f);   // haz que barre la arena: te delata... y deslumbra al Toxoplasma si lo agarra afuera
+            Arena("Arena_Toxoplasma", 175f, 28f, null,
                 W(1.2f, E(prefabs.ToxoplasmaJefe, data.ToxoplasmaJefe, 1)));
-            Platform(140f, 3.2f, 2.6f);
-            Platform(152f, 3.4f, 2.6f);
-            Cover(136f);
-            Cover(144f);
-            Cover(149f);
+            Platform(185f, 3.2f, 2.6f);
+            Platform(197f, 3.4f, 2.6f);
+            Cover(181f);
+            Cover(189f);
+            Cover(194f);
 
             SetupUtils.SetString(manager, "completeMessage", "NODO: Ojo a salvo sin inflamarlo. El escáner queda activo en todos los niveles.");
             SetupUtils.SetFloat(manager, "completeDelay", 4f);
@@ -2604,11 +2848,13 @@ namespace HealingKnight.EditorTools
         private void Tilt(float x, float y, float width) =>
             Node("Subibaja", x, FloorY + y).AddComponent<TiltPlatform>().Configure(width, 14f);
 
-        private void FrontalPuzzle(float gateX, int[] order, params Vector2[] neurons)
+        private SequencePuzzle FrontalPuzzle(float gateX, int[] order, params Vector2[] neurons)
         {
             var world = new Vector2[neurons.Length];
             for (int i = 0; i < neurons.Length; i++) world[i] = new Vector2(neurons[i].x, FloorY + neurons[i].y);
-            Node("LobuloFrontal", gateX, FloorY).AddComponent<SequencePuzzle>().Configure(world, order, gateX);
+            SequencePuzzle puzzle = Node("LobuloFrontal", gateX, FloorY).AddComponent<SequencePuzzle>();
+            puzzle.Configure(world, order, gateX);
+            return puzzle;
         }
 
         private void MemoryBubble(float x, float y, float width) =>
@@ -2657,9 +2903,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildHipocampo()
         {
-            // Rediseño (150 u): burbujas de memoria que se desvanecen si te quedas quieto, fragmentos de memoria que la
+            // Rediseño (195 u): burbujas de memoria que se desvanecen si te quedas quieto, fragmentos de memoria que la
             // rabia borra si tardas, y el jefe rabia con HIDROFOBIA (burbujas de agua que lo paralizan). Ver LEEME "Hipocampo".
-            LevelManager manager = BuildLevelBase(150f, new LevelStyle
+            LevelManager manager = BuildLevelBase(195f, new LevelStyle
             {
                 background = new Color(0.05f, 0.02f, 0.1f),
                 wall = new Color(0.22f, 0.07f, 0.3f),
@@ -2678,7 +2924,7 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.22f, 0.06f, 0.12f, 1f),
                 liquidCrest = new Color(1f, 0.92f, 0.65f, 0.95f)
             }, "NODO: Hipocampo, el centro de la memoria. Algo viene corriendo por los nervios...",
-                new Vector2(20f, 3.5f), new Vector2(34f, 12f), new Vector2(52f, 14f));
+                new Vector2(20f, 3.5f), new Vector2(34f, 12f), new Vector2(52f, 14f), new Vector2(104f, 16f));
 
             new GameObject("SaludDelCerebro").AddComponent<BrainHealth>();
 
@@ -2723,8 +2969,33 @@ namespace HealingKnight.EditorTools
             Fragment(95f, 5.3f, "dormir bien y hacer ejercicio le ayudan a formar neuronas nuevas.");
             Checkpoint(100f);
 
+            // Río de recuerdos bajo la tormenta: burbujas en escalera sobre un hueco largo. Si te quedas quieto se
+            // olvidan; si corres a ciegas te cae el rayo.
+            Tip(101.5f, "TORMENTA", "Rayos sobre las burbujas de memoria: no te quedes quieto (se olvidan), pero mira dónde va a caer el rayo antes de brincar.", FloorY, Signpost.Kind.Warning);
+            Storm(103f, 121f);
+            MemoryBubble(106.5f, 1.8f, 2f);
+            MemoryBubble(109.5f, 3f, 1.8f);
+            MemoryBubble(112.5f, 4.2f, 1.8f);
+            Fragment(112.5f, 6f, "mientras duermes, repasa lo que viviste en el día y lo guarda.");
+            MemoryBubble(115.5f, 3f, 1.8f);
+            MemoryBubble(118.5f, 1.8f, 2f);
+            RedNeuron(123f, 1.5f);
+            EnemyAt(prefabs.Rabia, 122f, FloorY);
+            Checkpoint(122.5f);
+
+            // Recordar el CAMINO (memoria espacial): los recuerdos se encienden en un orden y hay que repetirlo...
+            // pero cada recuerdo flota sobre una burbuja de memoria que se olvida si te detienes.
+            SequencePuzzle path = FrontalPuzzle(140f, new[] { 1, 3, 0, 2 },
+                new Vector2(126f, 3.4f), new Vector2(129.5f, 4.6f), new Vector2(133f, 3.4f), new Vector2(136.5f, 4.6f));
+            SetupUtils.SetString(path, "message", "NODO: el hipocampo es tu GPS: recuerda CAMINOS. Mira en qué orden se encienden los recuerdos y tócalos igual... sin quedarte quieto en las burbujas.");
+            MemoryBubble(126f, 2.2f, 1.8f);
+            MemoryBubble(129.5f, 3.4f, 1.8f);
+            MemoryBubble(133f, 2.2f, 1.8f);
+            MemoryBubble(136.5f, 3.4f, 1.8f);
+            Checkpoint(141.5f);
+
             // Arena del jefe: rieles de axones, neuronas sanas y BURBUJAS DE AGUA (hidrofobia).
-            const float arenaX = 104f, arenaW = 34f;
+            const float arenaX = 149f, arenaW = 34f;
             float left = arenaX - 3f, right = arenaX - 3f + arenaW;
             AxonRail(left, right, 6.2f);
             AxonRail(left, right, 4.4f);
@@ -2759,9 +3030,9 @@ namespace HealingKnight.EditorTools
 
         private void BuildMedula()
         {
-            // Rediseño (170 u): tormentas, ARCO REFLEJO (te lanza), surfear el IMPULSO NERVIOSO por un axón y la
+            // Rediseño (235 u): tormentas, ARCO REFLEJO (te lanza), surfear el IMPULSO NERVIOSO por un axón y la
             // CONDUCCIÓN SALTATORIA (nodos de Ranvier que se encienden en orden). Ver LEEME "Médula".
-            BuildLevelBase(170f, new LevelStyle
+            BuildLevelBase(235f, new LevelStyle
             {
                 background = new Color(0.05f, 0.02f, 0.12f),
                 wall = new Color(0.2f, 0.08f, 0.32f),
@@ -2779,7 +3050,7 @@ namespace HealingKnight.EditorTools
                 liquidOutline = new Color(0.03f, 0.08f, 0.2f, 1f),
                 liquidCrest = new Color(0.75f, 1f, 1f, 0.95f)
             }, "NODO: Sistema nervioso. Entraste por la médula espinal: la infección sube hacia el cerebro.",
-                new Vector2(30f, 3.5f), new Vector2(44f, 4f), new Vector2(68f, 14f), new Vector2(88f, 18f), new Vector2(146f, 4f));
+                new Vector2(30f, 3.5f), new Vector2(44f, 4f), new Vector2(68f, 14f), new Vector2(88f, 18f), new Vector2(146f, 4f), new Vector2(190f, 16f));
 
             Platform(2f, 2.4f, 3f);
 
@@ -2830,11 +3101,30 @@ namespace HealingKnight.EditorTools
             SolidBlock(140f, 143.5f, FloorY + 5.8f);
             Platform(148f, 2.4f, 1.6f);
 
-            // Recta final bajo la tormenta.
+            // Recta bajo la tormenta.
             Storm(152f, 165f);
             Platform(155f, 2.4f, 2.4f);
             Platform(159f, 3.8f, 2.4f);
             Platform(163f, 2.4f, 2.4f);
+            Checkpoint(167f);
+
+            // Ganglio de la raíz dorsal: donde se esconde el virus de la varicela y regresa como herpes zóster.
+            Tip(167.5f, "GANGLIO", "GANGLIO de la raíz dorsal: aquí se esconde el virus de la VARICELA por años y puede volver como HERPES ZÓSTER (culebrilla). Antiviral.");
+            Arena("Arena_3_Ganglio", 171f, 18f, "¡Herpes zóster despertó en el ganglio! Antiviral. El meningococo cruza rápido: Antibiótico.",
+                W(0.6f, E(prefabs.Herpes, data.Herpes, 2), E(prefabs.Meningococo, data.Meningococo, 1, SpawnSide.Left)),
+                W(1.0f, E(prefabs.Herpes, data.Herpes, 1), E(prefabs.Poliovirus, data.Poliovirus, 2), E(prefabs.Rabia, data.Rabia, 1, SpawnSide.Left)));
+            Platform(174f, 2.4f, 2.6f);
+            Platform(180f, 3.8f, 2.6f);
+            Checkpoint(187f);
+
+            // Saltatoria rápida: el impulso ya va con prisa (nodos más seguidos) sobre un hueco largo.
+            Tip(187.5f, "MÁS RÁPIDO", "Fibras más gruesas = impulso más rápido: ahora los nodos se encienden más seguido. ¡No te quedes atrás!", FloorY, Signpost.Kind.Warning);
+            SaltatoryAt(0.7f, new Vector2(192f, 1.8f), new Vector2(195.5f, 2.6f), new Vector2(199f, 1.8f), new Vector2(202.5f, 2.6f), new Vector2(205.5f, 1.8f));
+            Checkpoint(208f);
+
+            // Último arco reflejo: te lanza hacia la salida, rumbo al cerebro.
+            Reflex(210f, 0f, 7f);
+            SolidBlock(213f, 217f, FloorY + 5.8f);
         }
 
         private void BuildCerebro()

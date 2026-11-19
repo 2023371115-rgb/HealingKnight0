@@ -6,17 +6,18 @@ using UnityEngine;
 namespace HealingKnight.Gameplay.Level
 {
     /// <summary>
-    /// CENTRO GERMINAL (amígdalas): aquí los linfocitos B aprenden a reconocer al germen. Entrega un antígeno y
-    /// sale un LINFOCITO B aliado que dispara anticuerpos un rato. Máximo 'maxAllies' a la vez.
+    /// CENTRO GERMINAL (amígdalas): aquí los linfocitos B aprenden a reconocer al germen. Pasa por él con antígenos y
+    /// se entregan todos: cada uno se vuelve un LINFOCITO B aliado que TE SIGUE y dispara anticuerpos un rato.
+    /// Máximo 'maxAllies' a la vez (todos los centros comparten la cuenta).
     /// </summary>
     public class GerminalCenter : MonoBehaviour
     {
-        [SerializeField] private float radius = 1.8f;
-        [SerializeField] private int maxAllies = 4;
-        [SerializeField] private float allyLife = 30f;
-        [SerializeField, TextArea] private string message = "Centro germinal: aquí se fabrican los anticuerpos. Trae antígenos.";
+        [SerializeField] private float radius = 2f;
+        [SerializeField] private int maxAllies = 3;
+        [SerializeField] private float allyLife = 35f;
+        [SerializeField, TextArea] private string message = "CENTRO GERMINAL: aquí se fabrican anticuerpos. Mata gérmenes, recoge sus ANTÍGENOS y pasa por aquí: cada antígeno = un linfocito B que te sigue.";
 
-        private readonly List<AllyLymphocyte> allies = new List<AllyLymphocyte>();
+        private static readonly List<AllyLymphocyte> allies = new List<AllyLymphocyte>();
         private Transform visual;
         private bool said;
         private float pulse;
@@ -49,18 +50,24 @@ namespace HealingKnight.Gameplay.Level
             Vector2 center = (Vector2)transform.position + Vector2.up * 1.6f;
             float d = Vector2.Distance(p.Position + Vector2.up * 0.9f, center);
             if (!said && d < 8f && !string.IsNullOrEmpty(message)) { said = true; GameplayEvents.RaiseMessage(message); }
-            if (sys.Carried == null || d > radius + 0.6f) return;
+            // Brilla más cuando llegas con antígenos (para que se note que ahí se entregan).
+            if (sys.CarriedCount > 0) visual.localScale *= 1f + 0.08f * Mathf.Abs(Mathf.Sin(Time.time * 6f));
+            if (sys.CarriedCount == 0 || d > radius + 0.6f) return;
 
-            sys.Deliver();
+            int n = sys.Deliver();
             pulse = 1f;
             Sfx.EffectAt("Inmune_Activa", center, 0.9f);
-            if (allies.Count >= maxAllies && allies.Count > 0) { Destroy(allies[0].gameObject); allies.RemoveAt(0); }
-            var go = new GameObject("LinfocitoB");
-            go.transform.position = center + Random.insideUnitCircle * 0.8f;
-            AllyLymphocyte ally = go.AddComponent<AllyLymphocyte>();
-            ally.Configure(transform, allyLife, 1.4f, 9f, false);
-            allies.Add(ally);
-            GameplayEvents.RaiseMessage("¡Linfocito B listo! Dispara ANTICUERPOS a los gérmenes.");
+            for (int i = 0; i < n; i++)
+            {
+                if (allies.Count >= maxAllies && allies.Count > 0) { if (allies[0] != null) Destroy(allies[0].gameObject); allies.RemoveAt(0); }
+                var go = new GameObject("LinfocitoB");
+                go.transform.position = center + Random.insideUnitCircle * 0.8f;
+                AllyLymphocyte ally = go.AddComponent<AllyLymphocyte>();
+                ally.Configure(transform, allyLife, 1.2f, 9f, true);
+                allies.Add(ally);
+            }
+            GameplayEvents.RaiseMessage(n == 1 ? "¡Un LINFOCITO B! Te sigue y dispara ANTICUERPOS a los gérmenes."
+                                               : $"¡{n} LINFOCITOS B! Te siguen y disparan ANTICUERPOS a los gérmenes.");
         }
     }
 }
