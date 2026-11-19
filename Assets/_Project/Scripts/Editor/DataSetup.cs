@@ -1222,7 +1222,8 @@ namespace HealingKnight.EditorTools
             Bestiary = SetupUtils.LoadOrCreate<Bestiary>($"{DataFolder}/Resources/{Bestiary.ResourcePath}.asset", null);
             Bestiary.table = Table;
             Bestiary.medications = new List<MedicationData> { Antibiotico, Antiviral, Antiparasitario, Antiinflamatorio, Antihistaminico, Mucolitico, Anticonvulsivo, Anticoagulante };
-            const string D = "Digestivo", R = "Respiratorio", N = "Nervioso";
+            const string D = "Digestivo", R = "Respiratorio", N = "Nervioso", C = "Circulatorio";
+            const string CircArt = EnemyArt + "/Circulatorio";
             var list = new List<BestiaryEntry>
             {
                 // ===== DIGESTIVO =====
@@ -1392,6 +1393,68 @@ namespace HealingKnight.EditorTools
                     "Cuando hace falta, una combinación de antiparasitarios recetada por el médico.",
                     "Cocinar bien la carne, lavar frutas y verduras y lavarse las manos después de limpiar la arena del gato.",
                     ToxoplasmaJefe),
+
+                // ===== CIRCULATORIO =====
+                Ficha(C, "Aorta y arterias", "Coágulo (plaquetas)", "Trombo de plaquetas", "Coágulo · no es un germen", $"{CircArt}/Plaquetas_Normal.png",
+                    "Trombosis: un coágulo que se forma DENTRO de un vaso y tapa el paso de la sangre.",
+                    "Las plaquetas son pedacitos de células que tapan las heridas: sin ellas sangraríamos sin parar. El problema es cuando se juntan donde no hay herida.",
+                    "Anticoagulantes o antiagregantes que receta el médico: hacen que la sangre no forme coágulos tan fácil.",
+                    "Moverse: caminar y no pasar muchas horas sentado sin pararse, tomar agua y no fumar.",
+                    Plaquetas),
+                Ficha(C, "Arteria femoral", "Colesterol LDL", "Lipoproteína de baja densidad", "Grasa · no es un germen", $"{CircArt}/LDL_Normal.png",
+                    "Aterosclerosis: el colesterol LDL se mete en la pared de las arterias y forma placas que las endurecen y las hacen angostas.",
+                    "Le dicen 'colesterol malo'. El cuerpo sí necesita colesterol, pero el exceso de LDL se acumula. El 'bueno' (HDL) lo lleva de regreso al hígado.",
+                    "Comer mejor y hacer ejercicio; si el médico lo indica, medicinas que bajan el colesterol.",
+                    "Frutas, verduras y fibra; menos frituras y comida chatarra; ejercicio y no fumar.",
+                    Ldl, PlacaColesterol),
+                Ficha(C, "Arteria femoral (minijefe)", "Placa de ateroma", "Ateroma", "Jefe · placa de grasa", $"{BossArt}/Ateroma/Ateroma_Normal.png",
+                    "La placa hace angosta la arteria y la sangre pasa poco. Si se rompe, encima se forma un coágulo que puede taparla toda (infarto).",
+                    "Se forma con colesterol, células espumosas (macrófagos que se tragaron demasiada grasa), calcio y fibras. Crece en silencio durante años.",
+                    "Medicinas y, si hace falta, el médico abre la arteria con un globito y una mallita (stent) o con cirugía.",
+                    "Lo mismo que contra el LDL: comer bien, moverse, no fumar y cuidar la presión.",
+                    AteromaJefe, CelulaEspumosa),
+                Ficha(C, "Capilares y venas (y su jefe)", "Plasmodium (malaria)", "Plasmodium falciparum", "Parásito (protozoo)", $"{BossArt}/Plasmodium/Plasmodium_Normal.png",
+                    "Paludismo o malaria: fiebre muy alta que va y viene, escalofríos y anemia. Puede ser grave, sobre todo en niños.",
+                    "Lo pasa la picadura del mosquito Anopheles hembra. Primero se esconde en el hígado (esporozoíto) y luego se mete a los glóbulos rojos (merozoíto), se multiplica y los revienta: por eso la fiebre llega en oleadas.",
+                    "Antipalúdicos (antiparasitarios) que receta el médico, lo antes posible.",
+                    "Mosquiteros, repelente y manga larga; no dejar agua estancada. En zonas con malaria ya hay vacunas para niños, y al viajar el médico puede dar medicina preventiva.",
+                    PlasmodiumJefe, Esporozoito, Merozoito),
+                Ficha(C, "Bazo (jefe)", "Epstein-Barr", "Virus de Epstein-Barr (herpesvirus humano 4)", "Virus", $"{BossArt}/EpsteinBarr/EpsteinBarr_Normal.png",
+                    "Mononucleosis ('la enfermedad del beso'): fiebre, garganta muy inflamada, ganglios grandes, mucho cansancio y a veces el bazo crece.",
+                    "Infecta a los linfocitos B (unas defensas) y se queda dormido en ellos de por vida. Más de 9 de cada 10 adultos del mundo lo tienen. Con el bazo grande hay que evitar golpes y deportes de contacto unas semanas.",
+                    "No hay un antiviral de rutina: reposo, líquidos y lo que indique el médico para la fiebre y el dolor.",
+                    "No compartir vasos, cubiertos ni besos con alguien enfermo.",
+                    EpsteinBarrJefe, LinfocitoInfectado),
+                Ficha(C, "Corazón", "Estreptococo viridans", "Streptococcus del grupo viridans", "Bacteria", $"{CircArt}/SViridans_Normal.png",
+                    "Endocarditis: infección de las válvulas del corazón. Forma 'vegetaciones' (grumos de bacterias, plaquetas y fibrina) que dañan la válvula y pueden soltar pedazos.",
+                    "Vive normalmente en la boca. Si las encías sangran y hay una válvula dañada, puede entrar a la sangre y pegarse al corazón.",
+                    "Antibióticos por la vena durante varias semanas en el hospital; a veces cirugía para cambiar la válvula.",
+                    "Cuidar los dientes: cepillarse, usar hilo dental e ir al dentista.",
+                    SViridans, Vegetacion),
+                Ficha(C, "Corazón (jefe)", "Trypanosoma cruzi", "Trypanosoma cruzi", "Parásito (protozoo)", $"{BossArt}/TCruzi/TCruzi_Normal.png",
+                    "Enfermedad de Chagas: al principio casi no da síntomas; años después puede agrandar y debilitar el corazón y causar arritmias.",
+                    "Lo pasa la chinche besucona (triatomino): pica de noche y deja el parásito en su popó, que entra al rascarse. También pasa de mamá a bebé o por transfusiones. Es común en zonas rurales de América Latina.",
+                    "Antiparasitarios que receta el médico; funcionan mejor si se dan pronto.",
+                    "Enjarrar paredes y sellar las grietas de la casa, usar pabellón y revisar camas y rincones.",
+                    TCruziJefe),
+                Ficha(C, "Carótida (jefe del sistema)", "El gran trombo", "Trombo y émbolos", "Jefe · coágulo que viaja", $"{BossArt}/GranTrombo/GranTrombo_Normal.png",
+                    "Embolia: un coágulo (o un pedazo de él) viaja por la sangre y tapa un vaso lejos de donde se formó. En el cerebro causa un infarto cerebral (EVC).",
+                    "Señales de un EVC: la cara se ve chueca, un brazo no tiene fuerza, la persona habla raro. Si las ves, ¡pide ayuda y llama a emergencias de inmediato! Cada minuto cuenta.",
+                    "En el hospital, lo antes posible: medicinas que disuelven el coágulo o sacarlo con un tubito (catéter).",
+                    "Moverse, no fumar, cuidar la presión y el colesterol, y tomar los anticoagulantes si el médico los indicó.",
+                    GranTromboJefe, Embolo),
+                Ficha(C, "Riñón (secreto)", "E. coli", "Escherichia coli", "Bacteria", $"{CircArt}/EColi_Normal.png",
+                    "Infección de vías urinarias: ardor al orinar y ganas de ir a cada rato. Si sube al riñón (pielonefritis) da fiebre y dolor de espalda.",
+                    "Vive normalmente en el intestino y casi siempre es inofensiva. Es la causa más común de infección urinaria: llega a la uretra desde la piel de alrededor.",
+                    "Antibióticos que receta el médico, tomando el tratamiento completo.",
+                    "Tomar agua, no aguantarse las ganas de orinar y limpiarse de adelante hacia atrás.",
+                    EColi),
+                Ficha(C, "Riñón (secreto, jefe)", "Cálculo renal", "Litiasis renal", "Jefe · piedra de sales", $"{BossArt}/Calculo/Calculo_Normal.png",
+                    "Piedras en el riñón: se forman con sales de la orina (casi siempre calcio). Si bajan por el uréter dan un dolor muy fuerte en la espalda.",
+                    "Muchas salen solas tomando agua. Las grandes se rompen con ondas de choque desde afuera (litotricia) o se sacan con un tubito.",
+                    "El médico quita el dolor y decide si hace falta romperla o sacarla.",
+                    "Tomar suficiente AGUA todos los días y no comer demasiada sal.",
+                    CalculoJefe),
             };
             foreach (BestiaryEntry e in list)
             {
@@ -1407,6 +1470,7 @@ namespace HealingKnight.EditorTools
         public void AssignBestiaryPortraits(bool allowImport = true)
         {
             if (Bestiary == null) return;
+            var missing = new List<string>();
             foreach (BestiaryEntry e in Bestiary.entries)
             {
                 if (string.IsNullOrEmpty(e.portraitPath)) continue;
@@ -1420,8 +1484,14 @@ namespace HealingKnight.EditorTools
                     s = AssetDatabase.LoadAssetAtPath<Sprite>(e.portraitPath);
                 }
                 if (s != null) e.portrait = s;
-                else if (allowImport) Debug.LogWarning($"[Bestiario] No se encontró el dibujo de '{e.name}': {e.portraitPath}");
+                else if (allowImport)
+                {
+                    if (System.IO.File.Exists(e.portraitPath)) Debug.LogWarning($"[Bestiario] No se pudo cargar el dibujo de '{e.name}': {e.portraitPath}");
+                    else missing.Add(e.name);
+                }
             }
+            if (missing.Count > 0)
+                Debug.Log($"[Bestiario] {missing.Count} fichas todavía sin dibujo (se ven con silueta): {string.Join(", ", missing)}");
             EditorUtility.SetDirty(Bestiary);
         }
     }

@@ -1,0 +1,15 @@
+{
+  "level": "Circulatorio_ArteriasVenas",
+  "bpm": 118,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2870237,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

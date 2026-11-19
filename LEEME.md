@@ -393,12 +393,13 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - En `Art/Ojo/`: Macrofago, Cristalino.
   - En `Art/Jefes/Toxoplasma/`: Toxoplasma_Normal, _Mareado, _Ataca, _Derrotado.
 
-## Sistema circulatorio: modo de VUELO (prueba)
+## Sistema circulatorio (completo)
 
-Plan completo del sistema (Bazo → Arterias y venas → Corazón → El gran trombo, y el Riñón secreto) en el proyecto de
-Claude: `claude/plan-sistema-circulatorio.md`. **Arterias y venas** está completo (6 tramos, en vuelo): la aorta, la aorta
-abdominal con las ilíacas, la femoral enferma, los capilares, las venas de la pierna y la vena cava. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
-(en el mapa todavía no se puede jugar: va después del Bazo, que aún no existe).
+El cuarto sistema ya se juega completo desde el mapa del cuerpo: **Bazo** (a pie) → **Arterias y venas** (en vuelo, 6
+tramos) → **Corazón** (a pie, al ritmo del latido) → **El gran trombo** (jefe del sistema, en vuelo hacia arriba), más el
+**Riñón** secreto. Plan y biología en el proyecto de Claude: `claude/plan-sistema-circulatorio.md`. Cada nivel también se
+abre con *Healing Knight → Abrir escena → Circulatorio · ...*. Al desinfectar los cuatro sistemas sale el **final del
+juego** (abajo).
 
 **La nave** (`Gameplay/Flight/ShipFlight.cs`): NODO se vuelve una nanocápsula con el caballero sentado adentro.
 - {mover} vuela en 8 direcciones, sin gravedad. Disparas siempre hacia adelante y las cápsulas llegan más lejos (×1.7).
@@ -505,7 +506,51 @@ queda al descubierto 5.5 s (antiparasitario). Después se mete a otro. Al vencer
 Datos nuevos: `Plasmodium_Esporozoito`, `Plasmodium_Merozoito`, `Jefe_Plasmodium`.
 
 Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
-`Impacto_Anticoagulante`. Falta la música del sistema (synthwave, en el plan).
+`Impacto_Anticoagulante`. Música: **synthwave** (ver "Música adaptativa").
+
+### Bazo (a pie, 220 u)
+- **Pulpa roja:** el piso es un río lento de glóbulos (`BloodConveyor`: banda transportadora; a favor vas rapidísimo).
+  **Cordones** del bazo (`SplenicSlit`): ranuras que se abren un momentito (antes brillan): cruza con {dash}. Un
+  **macrófago** gigante te persigue (`MacrophageChase`): se come a lo que se queda atorado.
+- **Reserva de plaquetas:** montones de plaquetas tapan el paso; tutorial a pie del **anticoagulante**.
+- **Pulpa blanca:** linfocitos que te ayudan con anticuerpos.
+- **Jefe: EPSTEIN-BARR** (`EpsteinBarrBoss`, mononucleosis): casi no le hacen las balas; te ayudan 4 **linfocitos B**
+  que le disparan. Cada rato infecta a uno (rayo morado): se vuelve morado y te ataca. Cúralo a balazos (el antiviral le
+  hace más) y sus **linfocitos T** le pegan un golpazo al virus.
+
+### Corazón (a pie, 230 u)
+Todo va al ritmo del **latido** (68 por minuto): aurícula → **válvulas** que se abren justo después de cada latido
+(`BeatValve`; si se cierran contigo en medio te avientan) → ventrículo con el **techo que se aprieta** en la sístole
+(`SqueezingChamber`: quédate abajo en el latido) → **cuerdas tendinosas** que son trampolines (`ChordaeTrampoline`) →
+el **sistema eléctrico** (`ElectricPath`: párate en la tira y **surfea** el impulso) → una **vegetación** de
+endocarditis (S. viridans) → mitral → ventrículo izquierdo → aórtica → miocardio con el jefe.
+- **Jefe: TRYPANOSOMA CRUZI** (`TrypanosomaBoss`, Chagas): nada en ocho, parpadea y se lanza, escupe parásitos. Desde el
+  65 % causa **ARRITMIA**: se esconde en el músculo, el latido se vuelve desordenado (`Heartbeat.Irregular`) y el piso da
+  **toque** en cada latido (brilla antes: ¡salta!). Antiparasitario.
+
+### El gran trombo (jefe del sistema, vuelo hacia arriba, 720 u)
+Sales del ventrículo izquierdo y subes por la aorta y la **carótida** persiguiendo un coágulo enorme que va al cerebro
+(`GreatThrombusBoss`). Suelta **émbolos**, a media vida **redes de fibrina** (una fila con un solo hueco) y al final
+**taquicardia**. Solo el **anticoagulante** lo deshace. La barra de la derecha dice cuánto le falta para llegar al
+cerebro: si llega, **EMBOLIA** y regresas al último punto de guardado (el coágulo no se cura).
+
+### Riñón (secreto, a pie, 232 u)
+**Entrada:** en el tramo 2 de Arterias y venas, la arteria **renal izquierda** (la rama angosta de arriba, x≈452) jala
+muy fuerte. Métete **encogida** ({fijar}) y déjate jalar: hay un riñoncito brillante adentro (NODO da una pista).
+- **Glomérulo:** un colador tapa el paso. Dispárale a las dos **arteriolas** (botones `ShootSwitch`, 6 s prendidos cada
+  uno): con las dos prendidas sube la **presión**, el colador se abre 4 s y te empuja (`GlomerulusFilter`).
+- **Asa de Henle:** se **nada** (`BuoyancyZone`): {saltar} da una brazada (cerca de la superficie, un salto fuera del
+  agua), mantener abajo te hunde. Entre más hondo está más **salada** y **flotas más**. Pasa por debajo de la pared.
+- **Túbulo colector:** el botón **ADH** (la hormona) sube el agua y tú con ella para llegar a la orilla de arriba
+  (`SwitchToWater`).
+- **Uréter:** una **piedra** rueda detrás de ti (`RollingStoneChase`): ¡corre!
+- **Jefe secreto: CÁLCULO GIGANTE** (`KidneyStoneBoss`): las balas **rebotan**; solo le hace daño pegarle en la
+  **grieta que brilla** (litotricia). Tres grietas en orden; al romperse una suelta piedritas que ruedan, y da saltos con
+  ondas por el piso. **Premio: DEPURACIÓN** (lo que te alenta te dura la mitad, en todo el juego). E. coli en el camino.
+
+### Final del juego
+Al desinfectar los cuatro sistemas, en el mapa del cuerpo sale una vez la pantalla **"¡PACIENTE 001: SANO!"**
+(`BodyMapScreen.BuildEnding`, se guarda `endingSeen`).
 
 **Controles guardados:** los cambios de teclas se guardan por acción y posición (`hk.controles2` en PlayerPrefs:
 "acción|posición|tecla"). Antes se guardaba el JSON de Unity, que busca por un id que cambia cada vez que le das Play,
@@ -527,7 +572,9 @@ inflan y rebotan (`UI/CartoonButton.cs`) y microbios de los niveles flotando de 
 
 ## Bestiario (tipo Pokédex)
 
-Una ficha por cada patógeno del juego (27: 13 del Digestivo, 9 del Respiratorio y 5 del Nervioso, jefes incluidos).
+Una ficha por cada patógeno del juego (37: 13 del Digestivo, 9 del Respiratorio, 5 del Nervioso y 10 del Circulatorio,
+jefes incluidos). Las del Circulatorio todavía no tienen dibujo: se ven con silueta hasta que haya
+`Art/Enemigos/Circulatorio/<Nombre>_Normal.png` o `Art/Jefes/<Jefe>/<Jefe>_Normal.png` (las rutas ya están puestas).
 Se abre con el botón **Bestiario** en el menú principal, en el mapa del cuerpo (arriba a la derecha) y en la **pausa**.
 - **Silueta:** mientras no lo encuentras sale su dibujo en negro con "???" y una pista de dónde buscarlo. La primera vez
   que el patógeno aparece **en pantalla** se desbloquea su ficha y sale un aviso arriba a la derecha
@@ -721,6 +768,12 @@ La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
 | Hipocampo | Neurofunk | 174 | Memoria: campanas de vidrio con mucho eco y recuerdos al revés |
 | Ojo (secreto) | Liquid drum & bass | 160 | Sigilo: rhodes, sub tibio, batería suave |
 | Jefe nervioso | Neurofunk pesado | 176 | Batería partida, reese y growl más duros |
+| Arterias y venas | Synthwave (outrun) | 118 | Bajo en corcheas que salta de octava, caja con reverb cortada, arpegio de neón |
+| Bazo | Synthwave (noche) | 100 | Más lento: pad de 4 notas, bajo en negras |
+| Corazón | Synthwave (latido) | 136 | Dos tiempos por latido (68): un lub-dub grave en el ambiente, bajo en dieciseisavos |
+| Riñón (secreto) | Chillwave (agua) | 104 | Lidio, campanitas, gotas de agua |
+| El gran trombo | Darksynth | 128 | Frigio, retumbo grave y stabs oscuros |
+| Jefe circulatorio | Darksynth pesado | 140 | Acordes picados rápidos y lead oscuro (Plasmodium y otros jefes del sistema) |
 
 - Producción v5: arreglo de 32 compases (A, A', B, B') con la melodía que cambia, redobles al final de cada 8,
   subidas de ruido y platillo antes de cada parte nueva, reverb y eco que dan la vuelta al loop (no se nota el corte),

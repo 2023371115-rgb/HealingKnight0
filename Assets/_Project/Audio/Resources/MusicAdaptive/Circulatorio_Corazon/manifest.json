@@ -1,0 +1,15 @@
+{
+  "level": "Circulatorio_Corazon",
+  "bpm": 136,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 2490353,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

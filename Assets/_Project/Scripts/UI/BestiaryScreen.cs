@@ -24,10 +24,10 @@ namespace HealingKnight.UI
     {
         public static bool IsOpen { get; private set; }
 
-        private static readonly string[] Systems = { "Digestivo", "Respiratorio", "Nervioso" };
+        private static readonly string[] Systems = { "Digestivo", "Respiratorio", "Nervioso", "Circulatorio" };
         private static readonly Color[] SystemColors =
         {
-            new Color(0.95f, 0.55f, 0.3f), new Color(0.4f, 0.75f, 1f), new Color(0.7f, 0.5f, 1f)
+            new Color(0.95f, 0.55f, 0.3f), new Color(0.4f, 0.75f, 1f), new Color(0.7f, 0.5f, 1f), new Color(1f, 0.35f, 0.4f)
         };
         private static readonly Color Panel = new Color(0.27f, 0.12f, 0.22f, 1f);
         private static readonly Color Dim = new Color(1f, 0.9f, 0.92f, 0.65f);
@@ -131,11 +131,11 @@ namespace HealingKnight.UI
             var tabRow = new GameObject("Sistemas", typeof(RectTransform));
             tabRow.transform.SetParent(canvas.transform, false);
             UIFactory.Place(UIFactory.Rect(tabRow), new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(60f, -150f), new Vector2(1000f, 80f));
-            UIFactory.HorizontalLayout(tabRow, 18f, TextAnchor.MiddleLeft);
+            UIFactory.HorizontalLayout(tabRow, 14f, TextAnchor.MiddleLeft);
             for (int i = 0; i < Systems.Length; i++)
             {
                 int captured = i;
-                tabs.Add(CartoonUI.Button(tabRow.transform, Systems[i], () => ShowTab(captured), new Vector2(300f, 72f), SystemColors[i] * 0.75f, 30f));
+                tabs.Add(CartoonUI.Button(tabRow.transform, Systems[i], () => ShowTab(captured), new Vector2(238f, 72f), SystemColors[i] * 0.75f, 27f));
             }
 
             // Cuadrícula de fichas.

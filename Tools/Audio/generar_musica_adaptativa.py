@@ -10,6 +10,10 @@ Versión 5: cada sistema con SU género (el que quedó en el LEEME) y una produc
     Nervioso      -> NEUROFUNK (drum & bass): breakbeat, bajo reese que se mueve, campanas eléctricas.
                      Médula 172 (rodante), Cerebro 174, Hipocampo 174 (memoria), Jefe 176;
                      Ojo (secreto, sigilo) 160 en LIQUID drum & bass.
+    Circulatorio  -> SYNTHWAVE (outrun de los 80): bajo en corcheas que salta de octava, caja con reverb
+                     "cortada", arpegios y pads anchos = la sangre que corre por las autopistas del cuerpo.
+                     Arterias y venas 118 (outrun), Bazo 100 (noche), Corazón 136 (latido: 2 tiempos por
+                     latido a 68), Riñón 104 (agua, secreto), Gran trombo 128 y Jefe 140 en DARKSYNTH.
 
 Cada nivel tiene su canción, separada en 6 CAPAS que duran exactamente lo mismo y se tocan a la vez.
 El juego (Scripts/Gameplay/Audio/AdaptiveMusic.cs) sube y baja cada capa según lo que pasa:
@@ -91,7 +95,7 @@ class Nivel:
     acordes: list        # grados de la escala para los acordes (cambian cada 2 compases)
     motivo: list         # grados de la melodía (sobre el acorde que suena)
     ritmo: list          # en qué dieciseisavos del compás cae cada nota del motivo
-    genero: str          # acid, trance, psy, neuro, liquid
+    genero: str          # acid, trance, psy, neuro, liquid, synth
     sabor: str = ""      # variante dentro del género (ver NIVELES)
     swing: float = 0.0   # cuánto se atrasan los dieciseisavos impares (0 recto, 0.2 = shuffle de house)
 
@@ -117,6 +121,13 @@ NIVELES = {
     "Nervioso_Hipocampo":         Nivel(174, 46, MENOR,            [0, 2, 5, 3], [4, 7, 6, 2, 3, 1], [0, 4, 6, 10, 12, 15], "neuro", "memoria"),
     "Nervioso_Ojo":               Nivel(160, 42, MENOR_ARMONICA,   [0, 5, 3, 4], [4, 2, 1, 0, 1, 2], [0, 6, 8, 12, 14, 15], "liquid", "sigilo", 0.08),
     "Nervioso_Jefe":              Nivel(176, 40, LOCRIO_TENSO,     [0, 1, 4, 6], [0, 4, 6, 1, 5, 0], [0, 1, 5, 8, 12, 14], "neuro", "jefe"),
+    # ---- Circulatorio: SYNTHWAVE (Gran trombo y jefe en DARKSYNTH)
+    "Circulatorio_ArteriasVenas": Nivel(118, 45, MENOR,            [0, 5, 2, 6], [0, 2, 4, 7, 4, 2], [0, 3, 6, 8, 10, 14], "synth", "outrun"),
+    "Circulatorio_Bazo":          Nivel(100, 40, DORICO,           [0, 3, 5, 4], [4, 2, 0, 2, 4, 5], [0, 4, 6, 8, 12, 14], "synth", "noche"),
+    "Circulatorio_Corazon":       Nivel(136, 43, MENOR,            [0, 6, 5, 4], [0, 4, 2, 4, 5, 4], [0, 2, 6, 8, 10, 14], "synth", "latido"),
+    "Circulatorio_Rinon":         Nivel(104, 48, LIDIO,            [0, 4, 1, 5], [4, 6, 7, 4, 2, 1], [0, 4, 7, 8, 11, 14], "synth", "agua"),
+    "Circulatorio_GranTrombo":    Nivel(128, 38, FRIGIO,           [0, 1, 5, 6], [0, 1, 4, 3, 1, 0], [0, 3, 6, 8, 11, 14], "synth", "oscuro"),
+    "Circulatorio_Jefe":          Nivel(140, 40, FRIGIO_DOMINANTE, [0, 1, 0, 5], [0, 4, 1, 6, 4, 1], [0, 2, 6, 8, 10, 14], "synth", "jefe"),
 }
 
 
@@ -285,6 +296,18 @@ def pluck(midi, dur):
     return ((claro * 0.6 + oscuro * 0.5) * env(n, 0.002, 0.03)).astype(np.float32)
 
 
+@lru_cache(maxsize=512)
+def lead_synth(midi, dur, oscuro=False):
+    """Lead de synthwave: dos sierras y una cuadrada un poco desafinadas, con vibrato que entra despacio."""
+    n = max(2, int(dur * SR))
+    t = np.arange(n) / SR
+    vib = 1 + 0.006 * np.sin(2 * np.pi * 5.5 * t) * np.clip((t - 0.15) / 0.25, 0, 1)
+    f = float(hz(midi)) * vib
+    x = sierra(f * 0.997) * 0.45 + sierra(f * 1.003) * 0.45 + cuadrada(f * 0.5) * 0.3
+    x = filtro(x, 1800.0 if oscuro else 3200.0, orden=2)
+    return (satura(x, 1.4) * env(n, 0.01, 0.12, 0.3, 0.75)).astype(np.float32)
+
+
 @lru_cache(maxsize=1024)
 def burbuja(midi, dur):
     """Pluck que "burbujea": la nota arranca un poco más aguda y cae (melodía del digestivo)."""
@@ -374,7 +397,8 @@ def bombo(tipo="house"):
     dur, f0, salto, rapidez, caida, click = {
         "house": (0.42, 52, 125, 36, 7.5, 0.35), "techno": (0.6, 46, 110, 30, 4.5, 0.3),
         "trance": (0.38, 50, 150, 42, 8.5, 0.4), "psy": (0.3, 54, 260, 55, 12, 0.5),
-        "dnb": (0.34, 55, 170, 45, 10, 0.45), "liquid": (0.3, 52, 120, 40, 11, 0.2)}[tipo]
+        "dnb": (0.34, 55, 170, 45, 10, 0.45), "liquid": (0.3, 52, 120, 40, 11, 0.2),
+        "synth": (0.5, 49, 115, 32, 6.5, 0.32)}[tipo]
     n = int(dur * SR)
     t = np.arange(n) / SR
     f = f0 + salto * np.exp(-t * rapidez)
@@ -404,12 +428,25 @@ def caja(tipo="dnb", variante=0):
     n = int(0.3 * SR)
     t = np.arange(n) / SR
     tono, caida, caida_ruido, brillo, dureza = {"dnb": (185, 28, 15, 1600, 1.8), "house": (200, 30, 22, 2200, 1.3),
-                                                "liquid": (210, 32, 20, 2500, 1.2)}[tipo]
+                                                "liquid": (210, 32, 20, 2500, 1.2), "synth": (180, 20, 9, 1400, 1.5)}[tipo]
     f = tono + 70 * np.exp(-t * 70)
     cuerpo = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * caida)
     cuerpo = cuerpo + 0.4 * np.sin(2 * np.pi * tono * 1.75 * t) * np.exp(-t * caida * 1.5)
     ruido = filtro(np.random.default_rng(30 + variante).normal(0, 1, n), float(brillo), "highpass") * np.exp(-t * caida_ruido)
     return (satura(cuerpo * 0.9 + ruido * 0.8, dureza) * env(n, 0.0005, 0.03)).astype(np.float32)
+
+
+@lru_cache(maxsize=4)
+def caja_cortada(variante=0):
+    """La caja de los 80: reverb enorme que se CORTA de golpe ("gated reverb"). Estéreo."""
+    seca = caja("synth", variante).astype(np.float64)
+    m = int(0.42 * SR)
+    x = np.zeros((m, 2))
+    x[:len(seca)] = estereo(seca, 0.0)[:m]
+    cola = reverb(x, 1.6, 6500, semilla=11 + variante, lineal=True)
+    puerta = np.clip((0.3 - np.arange(m) / SR) / 0.04, 0, 1)
+    y = x + cola * 1.6 * puerta[:, None]
+    return (y / max(np.max(np.abs(y)), 1e-9) * 0.9).astype(np.float32)
 
 
 _METAL = (205.3, 304.4, 369.6, 522.7, 540.0, 800.0)   # frecuencias de los platillos de la caja de ritmos 808
@@ -797,6 +834,36 @@ def ambiente(p, c):
             ret = en_bucle(lambda m: satura(filtro(rng.normal(0, 1, m), 120.0) * 12, 2) * (0.4 + 0.6 * lfo_loop(p, 8, 0, m)), n)
             p.continua("Ambiente", ret, 0.35, rev=0.2)
 
+    elif c.g == "synth":
+        # El torrente: ruido filtrado que se abre con cada latido (la sangre empujada por el corazón).
+        latidos = c.compases * 2   # dos "empujones" por compás
+        def torrente(m):
+            pulso = lfo_loop(p, latidos, 0.0, m) ** 3
+            return filtro_movil(rng.normal(0, 1, m), 260 + 900 * pulso, 1.2) * (0.35 + 0.65 * pulso)
+        for lado in (-0.5, 0.5):
+            p.continua("Ambiente", en_bucle(torrente, n), 0.45, pan=lado, rev=0.3)
+        # Brillo de neón: senos agudos que titilan muy despacio.
+        for k, grado in enumerate((0, 4, 9)):
+            f = f_bucle(p, float(hz(c.raiz + 48 + c.grado(grado))))
+            p.continua("Ambiente", np.sin(2 * np.pi * f * t) * lfo_loop(p, 2 + k, k * 0.3), 0.04, pan=(k - 1) * 0.7, rev=0.8)
+        if c.s == "agua":   # Riñón: gotas y agua que corre
+            for _ in range(c.compases * 2):
+                m = int(0.12 * SR)
+                tt = np.arange(m) / SR
+                gota = np.sin(2 * np.pi * np.cumsum(rng.uniform(900, 1600) * np.exp(-tt * 14) + 380) / SR) * np.exp(-tt * 25)
+                p.poner("Ambiente", gota, rng.uniform(0, c.compases * 16), rng.uniform(0.08, 0.18), rng.uniform(-0.8, 0.8), rev=0.8, recto=True)
+        if c.s == "latido":   # Corazón: un "lub-dub" grave muy bajito en cada latido (cada 2 tiempos)
+            for compas in range(c.compases):
+                for s in (0, 8):
+                    for k, (d, g) in enumerate(((0, 1.0), (1.6, 0.6))):
+                        m = int(0.18 * SR)
+                        tt = np.arange(m) / SR
+                        golpe = np.sin(2 * np.pi * (50 * tt + 30 * (1 - np.exp(-tt * 25)) / 25)) * np.exp(-tt * 18) * g
+                        p.poner("Ambiente", golpe, compas * 16 + s + d, 0.5, 0.0, rev=0.2)
+        if c.s in ("oscuro", "jefe"):   # retumbo grave que amenaza
+            ret = en_bucle(lambda m: satura(filtro(rng.normal(0, 1, m), 110.0) * 12, 2) * (0.4 + 0.6 * lfo_loop(p, 8, 0, m)), n)
+            p.continua("Ambiente", ret, 0.3, rev=0.2)
+
     else:   # liquid (Ojo): gotas que caen en un lugar húmedo y silencioso
         for _ in range(c.compases * 2):
             m = int(0.12 * SR)
@@ -888,6 +955,21 @@ def armonia(p, c):
                     p.poner("Armonia", supersaw(pad_base + 12 + c.grado(ac + j), pa * 32 + 0.4, 5, 0.1, 4500.0, 0.8, 0.6, 2),
                             ini, 0.08, (j - 5) * 0.4, rev=0.6)
 
+        elif c.g == "synth":
+            if nuevo:   # pad ancho y cálido (como un Juno de los 80), con ataque lento
+                brillo = {"oscuro": 1400.0, "jefe": 1700.0, "noche": 1900.0}.get(c.s, 2600.0)
+                for j in (0, 2, 4, 6) if c.s in ("agua", "noche") else (0, 2, 4):
+                    p.poner("Armonia", supersaw(pad_base + c.grado(ac + j), pa * 32 + 0.6, 6, 0.16, brillo, 0.45, 0.6, c.semilla),
+                            ini, 0.17, (j - 2) * 0.3, rev=0.45, bombeo=True)
+            if sec >= 1 and c.s in ("outrun", "latido", "jefe"):   # acordes picados en corcheas (el "brass" del outrun)
+                m = int(pa * 16 * SR)
+                patron = [1, 0] * 8 if c.s != "jefe" else [1, 0, 1, 1] * 4
+                for j in (0, 2, 4):
+                    x = supersaw(pad_base + 12 + c.grado(ac + j), pa * 16, 4, 0.12, 4200.0, 0.004, 0.04, 6)
+                    p.poner("Armonia", x * compuerta_ritmica(p, m, patron, 0.55)[:, None], ini, 0.08, (j - 2) * 0.35, rev=0.3, eco=0.2)
+            if c.s == "oscuro" and compas % 2 == 1:   # golpe de sintetizador oscuro con eco
+                p.poner("Armonia", stab(pad_base + 12 + c.grado(ac), pa * 3, True), ini + 6, 0.25, -0.3, rev=0.3, eco=0.5)
+
         else:   # liquid: rhodes con acordes de 4 notas y un pad suave
             for s, largo in ((0, 10), (10, 6)) if sec >= 1 else ((0, 16),):
                 for j in (0, 2, 4, 6):
@@ -918,6 +1000,7 @@ def armonia(p, c):
 
 ARPEGIO = [0, 2, 4, 7, 4, 2, 4, 7, 0, 2, 4, 9, 7, 4, 2, 4]          # grados sobre el acorde (trance)
 ARPEGIO_PSY = [0, 0, 1, 0, 4, 0, 1, 7, 0, 0, 1, 0, 4, 7, 1, 0]      # psy: tónica insistente con la 2a menor
+ARPEGIO_SYNTH = [0, 4, 7, 9, 7, 4, 2, 4, 0, 4, 7, 11, 9, 7, 4, 2]   # synthwave: sube y baja como luces de neón
 
 
 def melodia(p, c):
@@ -942,6 +1025,17 @@ def melodia(p, c):
                 else:
                     x = pluck_trance(nota, largo + 0.1, 1.3 if c.s == "aire" else 1.0)
                 p.poner("Melodia", x, ini + s, 0.22 * fuerza, (0.35 if s % 4 == 2 else -0.15), rev=0.25, eco=0.35, bombeo=True)
+            continue
+        if c.g == "synth":
+            lento = c.s in ("noche", "agua")
+            for s in range(16):
+                if (sec == 0 or lento) and s % 2:
+                    continue
+                g = ARPEGIO_SYNTH[s] + (7 if sec == 3 and s >= 8 else 0)
+                nota = base + c.grado(ac + g)
+                largo = pa * (2.4 if lento else 1.2)
+                x = campana(nota + 12, largo + 0.4, 2.0, 1.2, 2.6) if c.s == "agua" else pluck(nota, largo + 0.15)
+                p.poner("Melodia", x, ini + s, (0.24 if s % 4 == 0 else 0.17), 0.4 * np.sin(s * 0.7), rev=0.3, eco=0.45, bombeo=True)
             continue
         if c.g == "psy":
             for s in range(16):
@@ -1128,6 +1222,21 @@ def bajo(p, c):
                 x = bajo_pluck(c.raiz + c.grado(g), pa * 0.75, 1.1, 24.0)
                 p.poner("Bajo", x, compas * 16 + s, 0.45)
 
+    elif c.g == "synth":
+        # Corcheas que saltan de octava (el bajo del outrun); el oscuro y el jefe en dieciseisavos.
+        rapido = c.s in ("oscuro", "jefe", "latido")
+        for compas in range(c.compases):
+            ac, sec = c.acorde(compas), c.seccion(compas)
+            for s in range(0, 16, 1 if rapido else 2):
+                octv = 12 if (s // (1 if rapido else 2)) % 2 else 0
+                if c.s == "noche" and octv:
+                    continue
+                if c.s == "agua" and s % 4:
+                    continue
+                largo = pa * (0.9 if rapido else 1.7 if c.s != "agua" else 3.6)
+                x = bajo_pluck(c.raiz + c.grado(ac) + octv, largo, 0.8 if c.s != "jefe" else 1.1, 7.0 if c.s != "agua" else 3.0)
+                p.poner("Bajo", x, compas * 16 + s, 0.42 if not octv else 0.34, bombeo=True)
+
     else:   # neuro y liquid: sub limpio + reese que se mueve
         notas = notas_reese(c)
         sub = render_linea(p, notas, sint_sub, puerta=0.92, suavizar=60.0)
@@ -1223,6 +1332,29 @@ def percusion(p, c):
             if fin8:   # redoble de caja que sube
                 for s in (12, 13, 14, 15):
                     p.poner("Percusion", caja("dnb", 3), ini + s + 0.5, 0.1 + 0.04 * (s - 12), rev=0.2)
+
+        elif c.g == "synth":
+            # Caja de ritmos de los 80: bombo, caja con reverb cortada en 2 y 4, hi-hats en corcheas.
+            bombos = (0, 4, 8, 12) if c.s in ("outrun", "oscuro", "jefe", "latido") else (0, 8) if c.s == "noche" else (0, 7, 8)
+            for s in bombos:
+                if fin8 and s == 12 and c.s != "jefe":
+                    continue
+                p.bombo("Percusion", bombo("synth"), ini + s, 0.55)
+            for s in (4, 12):
+                p.poner("Percusion", caja_cortada(compas % 2), ini + s, 0.4 if c.s != "agua" else 0.28)
+            for s in range(0, 16, 2):
+                p.poner("Percusion", platos("cerrado"), ini + s, 0.08 if s % 4 == 2 else 0.05, 0.3)
+            if sec >= 1:
+                for s in (2, 6, 10, 14):
+                    p.poner("Percusion", platos("abierto"), ini + s, 0.07, -0.3)
+            if sec >= 2 and c.s in ("outrun", "jefe", "latido"):
+                for s in range(1, 16, 2):
+                    p.poner("Percusion", platos("shaker"), ini + s, 0.04, -0.4)
+            if compas % 8 == 0:
+                p.poner("Percusion", platos("crash"), ini, 0.12, rev=0.3)
+            if fin8:   # redoble de toms que baja (marca de los 80)
+                for k, s in enumerate((12, 13, 14, 15)):
+                    p.poner("Percusion", tom(-k * 3), ini + s, 0.22, (k - 1.5) * 0.5, rev=0.35)
 
         else:   # liquid: más suave y con shaker
             for s in ([0, 10] if compas % 4 != 3 else [0, 10, 13]):
@@ -1344,6 +1476,24 @@ def combate(p, c):
                 p.bombo("Combate", bombo("dnb"), ini + 13, 0.25)
         subidas(p, c, "Combate")
 
+    elif c.g == "synth":
+        # El lead de los 80 cantando la melodía (una octava arriba en la parte B), y dieciseisavos de hi-hat.
+        oscuro = c.s in ("oscuro", "jefe")
+        for compas in range(c.compases):
+            ac, sec, ini = c.acorde(compas), c.seccion(compas), compas * 16
+            for s, g, largo, fuerza in frase(c, compas):
+                nota = c.raiz + 36 + c.grado(ac + g) + (12 if sec >= 2 else 0)
+                p.poner("Combate", lead_synth(nota, pa * min(largo, 4) + 0.1, oscuro), ini + s, 0.24 * fuerza, 0.0,
+                        rev=0.35, eco=0.35, bombeo=True)
+            for s in range(1, 16, 2):
+                p.poner("Combate", platos("cerrado"), ini + s, 0.05, 0.45)
+            if oscuro and compas % 2:
+                p.poner("Combate", stab(c.raiz + 24 + c.grado(ac), pa * 1.5, True), ini + 14, 0.18, -0.4, rev=0.2, eco=0.4)
+            if compas % 8 == 7:
+                for s in range(8, 16):
+                    p.poner("Combate", caja("synth", 5), ini + s, 0.05 + 0.025 * (s - 8), rev=0.3)
+        subidas(p, c, "Combate", 0.25)
+
     else:   # liquid
         notas = notas_reese(c)
         x = render_linea(p, notas, sint_reese(p, 300, 900, 2.0, 1.8), puerta=0.9, suavizar=40.0)
@@ -1357,8 +1507,9 @@ def combate(p, c):
         subidas(p, c, "Combate", 0.18)
 
 
-BOMBEO = {"acid": (0.32, 0.12), "trance": (0.55, 0.16), "psy": (0.3, 0.1), "neuro": (0.25, 0.1), "liquid": (0.18, 0.12)}
-ECO = {"acid": 3, "trance": 3, "psy": 3, "neuro": 3, "liquid": 6}   # en dieciseisavos (3 = corchea con puntillo)
+BOMBEO = {"acid": (0.32, 0.12), "trance": (0.55, 0.16), "psy": (0.3, 0.1), "neuro": (0.25, 0.1), "liquid": (0.18, 0.12),
+          "synth": (0.35, 0.15)}
+ECO = {"acid": 3, "trance": 3, "psy": 3, "neuro": 3, "liquid": 6, "synth": 3}   # en dieciseisavos (3 = corchea con puntillo)
 
 
 def componer(nombre, nivel, compases):
@@ -1435,12 +1586,14 @@ def remate_victoria(c, nivel):
             sig = pluck_trance(nota, paso * 3, 1.2)
         elif c.g == "psy":
             sig = bajo_pluck(nota, paso * 2, 2.5, 18.0)
+        elif c.g == "synth":
+            sig = pluck(nota, paso * 3)
         else:
             sig = campana(nota + 12, paso * 6, 2.0 if c.g == "liquid" else 3.5, 2.0, 2.0)
         ev.append((k * 2 * paso, sig, 0.5, (k % 2 - 0.5) * 0.6, 0.3))
     golpe = 14 * paso
     for j in (0, 4, 7):
-        if c.g in ("trance", "psy"):
+        if c.g in ("trance", "psy", "synth"):
             acorde = supersaw(c.raiz + 24 + c.grado(j), paso * 18, 7, 0.2, 5000.0, 0.01, 0.6, 1)
         elif c.g == "acid":
             acorde = organo(c.raiz + 36 + c.grado(j), paso * 12)
@@ -1449,9 +1602,9 @@ def remate_victoria(c, nivel):
                 c.raiz + 24 + c.grado(j), paso * 18, 5, 0.15, 2500.0, 0.01, 0.6, 1)
         ev.append((golpe, acorde, 0.35, (j - 3) * 0.15, 0.5))
     ev.append((golpe, platos("crash"), 0.4, 0.0, 0.3))
-    tipo = {"acid": "house", "trance": "trance", "psy": "psy", "neuro": "dnb", "liquid": "liquid"}[c.g]
+    tipo = {"acid": "house", "trance": "trance", "psy": "psy", "neuro": "dnb", "liquid": "liquid", "synth": "synth"}[c.g]
     ev.append((golpe, bombo(tipo), 0.8, 0.0, 0.0))
-    ev.append((golpe, caja("dnb") if c.g in ("neuro", "liquid") else palmada(), 0.5, 0.0, 0.4))
+    ev.append((golpe, caja_cortada() if c.g == "synth" else caja("dnb") if c.g in ("neuro", "liquid") else palmada(), 0.5, 0.0, 0.4))
     return _mezcla_remate(n, ev)
 
 
