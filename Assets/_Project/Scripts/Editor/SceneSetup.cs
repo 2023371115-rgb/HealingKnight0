@@ -127,6 +127,7 @@ namespace HealingKnight.EditorTools
             data.Run();
             prefabs.Run();
             signTheme = SignThemeFor(path);
+            currentScenePath = path;
             signRoot = null;
             placedSigns.Clear();
 
@@ -775,11 +776,13 @@ namespace HealingKnight.EditorTools
             var player = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.Player.gameObject);
             player.transform.position = new Vector3(spawn.x, spawn.y, 0f);
 
+            foreach (string ally in new[] { "LinfocitoB", "LinfocitoB_Infectado" })   // dibujos de los linfocitos (Resources), si existen
+                PrefabSetup.ArtSprite($"Assets/_Project/Art/Aliados/Resources/Aliados/{ally}.png", 100f, new Vector2(0.5f, 0.5f));
             foreach (string face in new[] { "Normal", "Alerta", "Feliz" })   // caras de NODO como Sprite (Resources)
                 PrefabSetup.ArtSprite($"{UIArtFolder}/Resources/Nodo/Nodo_{face}.png", 100f, new Vector2(0.5f, 0.5f));
             var hud = new GameObject("HUD", typeof(HUD)).GetComponent<HUD>();
             SetupUtils.SetRef(hud, "titleFont", signFont);                        // letra del globo de NODO y de los letreros
-            SetupUtils.SetString(hud, "theme", signTheme.system ?? "Digestivo");  // color del globo de NODO
+            SetupUtils.SetString(hud, "theme", signTheme.system ?? (IsCirculatory ? "Circulatorio" : "Digestivo"));  // color del globo de NODO
             new GameObject("PauseMenu", typeof(PauseMenu));
             new GameObject("Bestiario", typeof(BestiaryTracker));   // desbloquea fichas al ver / derrotar patógenos
 
@@ -3323,6 +3326,8 @@ namespace HealingKnight.EditorTools
         private struct SignTheme { public string system, title, hazard, exit; }
 
         private SignTheme signTheme;
+        private string currentScenePath;
+        private bool IsCirculatory => currentScenePath != null && currentScenePath.Contains("/Circulatorio/");
         private Transform signRoot;
         private readonly List<Vector2> placedSigns = new List<Vector2>();
         private Vector2 currentSpawn;
@@ -3330,6 +3335,7 @@ namespace HealingKnight.EditorTools
         private Font signFont;
 
         private const string SignArtRoot = "Assets/_Project/Art/Letreros";
+        private const string ShipArtPath = "Assets/_Project/Art/Nave/Nave_Capsula.png";
 
         private static SignTheme T(string system, string title, string hazard, string exit) =>
             new SignTheme { system = system, title = title, hazard = hazard, exit = exit };
@@ -3348,6 +3354,9 @@ namespace HealingKnight.EditorTools
             if (path == CerebroPath) return T("Nervioso", "CEREBRO", "¡HUECO!", "HIPOCAMPO");
             if (path == HipocampoPath) return T("Nervioso", "HIPOCAMPO", "¡HUECO!", "SALIDA");
             if (path == OjoPath) return T("Nervioso", "OJO", null, "SALIDA");
+            if (path == BazoPath) return T("Circulatorio", "BAZO", "¡CUIDADO!", "ARTERIAS");
+            if (path == CorazonPath) return T("Circulatorio", "CORAZÓN", "¡CUIDADO!", "AORTA");
+            if (path == RinonPath) return T("Circulatorio", "RIÑÓN", "¡CUIDADO!", "SALIDA");
             return new SignTheme();
         }
 
@@ -3427,6 +3436,7 @@ namespace HealingKnight.EditorTools
             {
                 case "Respiratorio": post = new Color(0.36f, 0.42f, 0.66f); board = new Color(0.9f, 0.96f, 1f); break;
                 case "Nervioso": post = new Color(0.42f, 0.26f, 0.6f); board = new Color(0.95f, 0.9f, 1f); break;
+                case "Circulatorio": post = new Color(0.55f, 0.1f, 0.16f); board = new Color(1f, 0.9f, 0.9f); break;
                 default: post = new Color(0.62f, 0.27f, 0.32f); board = new Color(1f, 0.93f, 0.85f); break;
             }
             ink = line;
@@ -4033,6 +4043,7 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SpriteChild(art, "Ceja", PlaceholderArt.SquareCentered, new Color(0.45f, 0.25f, 0.05f), eye + new Vector3(0f, 0.45f, 0f), new Vector2(0.7f, 0.14f), -98)
                     .transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
             }
+            BossDrawing(go, art, "Ateroma", width, new Vector2(0.5f, 0.02f), -100);   // si hay dibujo, reemplaza las figuras
             var health = go.AddComponent<EnemyHealth>();
             SetupUtils.SetRef(health, "data", data.AteromaJefe);
             SetupUtils.SetRef(health, "effectivenessTable", data.Table);
@@ -4318,6 +4329,20 @@ namespace HealingKnight.EditorTools
         }
 
         /// <summary>El jefe: el Plasmodium escondido en un anillo de glóbulos rojos, a media vena cava.</summary>
+        /// <summary>
+        /// Jefe con figuras armadas aquí ('art'): si existe Art/Jefes/&lt;jefe&gt;/&lt;jefe&gt;_Normal.png, quita las figuras y
+        /// pone el dibujo con sus poses (BossPoses). Sin PNG no hace nada.
+        /// </summary>
+        private static void BossDrawing(GameObject go, Transform art, string boss, float width, Vector2 pivot, int order)
+        {
+            if (AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Project/Art/Jefes/{boss}/{boss}_Normal.png") == null) return;
+            var old = new List<GameObject>();
+            foreach (Transform child in art) old.Add(child.gameObject);
+            foreach (GameObject child in old) Object.DestroyImmediate(child);
+            SpriteRenderer drawn = SetupUtils.SpriteChild(art, "DibujoJefe", null, Color.white, Vector3.zero, Vector2.one, order);
+            PrefabSetup.AddBossPoses(go, boss, boss, width, pivot, order, drawn);
+        }
+
         private void PlasmodiumBossAt(float x)
         {
             GameObject go = Node("Jefe_Plasmodium", x, FemoralCenterY(x));
@@ -4327,6 +4352,7 @@ namespace HealingKnight.EditorTools
             var hurt = go.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
             SetupUtils.SetVector2(hurt, "offset", Vector2.zero);
             SetupUtils.SetVector2(hurt, "size", new Vector2(1.7f, 1.7f));
+            PrefabSetup.AddBossPoses(go, "Plasmodium", "Plasmodium", 2.1f, new Vector2(0.5f, 0.5f), 18);   // el dibujo lo pone el jefe
             go.AddComponent<PlasmodiumBoss>().Configure(prefabs.EnemyProjectile, prefabs.Merozoito);
         }
 
@@ -4410,6 +4436,7 @@ namespace HealingKnight.EditorTools
             upper.Add(new Vector2(BranchEndX, IliacUpY(BranchEndX)));
             lower.Add(new Vector2(BranchEndX, IliacDownY(BranchEndX)));
             var route = new GameObject("RutaDeVuelo").AddComponent<FlightRoute>();
+            route.ConfigureShipArt(PrefabSetup.ArtByWidth(ShipArtPath, 2.3f));   // null si todavía no hay dibujo
             route.Configure(main.ToArray(), 3.1f, 2.2f);
             // La velocidad SUBE por zonas (sale "¡MÁS RÁPIDO!"): de 3.1 en la aorta ascendente a 5.2 en el sprint final.
             route.ConfigureSpeeds(new[]
@@ -5108,6 +5135,7 @@ namespace HealingKnight.EditorTools
             for (float x = -0.4f; x < endX - 6f; x += 2f) path.Add(new Vector2(x, CarotidCenterY(x)));
             path.Add(new Vector2(endX - 6f, CarotidCenterY(endX - 6f)));
             var route = new GameObject("RutaDeVuelo").AddComponent<FlightRoute>();
+            route.ConfigureShipArt(PrefabSetup.ArtByWidth(ShipArtPath, 2.3f));   // null si todavía no hay dibujo
             route.Configure(path.ToArray(), 3.3f, 2.2f);
             route.ConfigureSpeeds(new[]
             {
@@ -5148,6 +5176,7 @@ namespace HealingKnight.EditorTools
             var hurt = boss.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
             SetupUtils.SetVector2(hurt, "offset", Vector2.zero);
             SetupUtils.SetVector2(hurt, "size", new Vector2(3.4f, 3.8f));
+            PrefabSetup.AddBossPoses(boss, "GranTrombo", "GranTrombo", 5f, new Vector2(0.5f, 0.5f), 4);   // el dibujo lo pone el jefe
             boss.AddComponent<GreatThrombusBoss>().Configure(24f, CarotidBrainX, prefabs.Embolo);
 
             // ---------- Recorrido: aorta → carótida → carótida interna → cerebro ----------

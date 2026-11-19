@@ -73,10 +73,14 @@ namespace HealingKnight.Gameplay.Flight
             merozoitePrefab = merozoite;
         }
 
+        private BossPoses poses;
+
         private void Awake()
         {
             health = GetComponent<EnemyHealth>();
             box = GetComponent<Hurtbox>();
+            poses = GetComponent<BossPoses>();
+            if (poses != null && !poses.HasArt) poses = null;
             health.Died += OnDied;
         }
 
@@ -118,6 +122,17 @@ namespace HealingKnight.Gameplay.Flight
             parasite = new GameObject("Plasmodium").transform;
             parasite.SetParent(transform, false);
             CodeSprites.Add(parasite, CodeSprites.Glow, new Color(0.7f, 0.3f, 1f, 0.5f), 16, Vector2.zero, Vector2.one * 3.4f, "Aura");
+            if (poses != null) health.SetFlashRenderers(poses.Build(parasite, Vector2.zero));   // dibujo (Art/Jefes/Plasmodium)
+            else BuildParasiteFigure();
+            parasite.gameObject.SetActive(false);
+            if (box != null) box.enabled = false;
+            health.Shelled = true;
+            Infect(Random.Range(0, cells.Count));
+        }
+
+        /// <summary>El parásito con figuras (mientras no hay dibujo): un esquizonte morado lleno de merozoítos.</summary>
+        private void BuildParasiteFigure()
+        {
             CodeSprites.Add(parasite, CodeSprites.Circle, new Color(0.25f, 0.05f, 0.35f), 17, Vector2.zero, Vector2.one * 1.9f, "Contorno");
             CodeSprites.Add(parasite, CodeSprites.Circle, new Color(0.62f, 0.3f, 0.85f), 18, Vector2.zero, Vector2.one * 1.72f, "Cuerpo");
             for (int i = 0; i < 9; i++)
@@ -130,10 +145,6 @@ namespace HealingKnight.Gameplay.Flight
                 CodeSprites.Add(parasite, CodeSprites.Circle, Color.white, 20, new Vector2(0.15f, side * 0.28f), new Vector2(0.38f, 0.34f), "Ojo");
                 CodeSprites.Add(parasite, CodeSprites.Circle, new Color(0.15f, 0f, 0.2f), 21, new Vector2(0.2f, side * 0.26f), Vector2.one * 0.18f, "Pupila");
             }
-            parasite.gameObject.SetActive(false);
-            if (box != null) box.enabled = false;
-            health.Shelled = true;
-            Infect(Random.Range(0, cells.Count));
         }
 
         private Vector2 CellPos(RedCell c) => (Vector2)transform.position + new Vector2(Mathf.Cos((c.angle + orbit) * Mathf.Deg2Rad),
@@ -244,6 +255,7 @@ namespace HealingKnight.Gameplay.Flight
             exposed = true;
             exposeTimer = exposedTime;
             bursts++;
+            if (poses != null) { poses.SetAngry(true); poses.Show(BossPoses.Pose.Attack, 1f); }
             parasite.gameObject.SetActive(true);
             parasite.position = new Vector3(parasitePos.x, parasitePos.y, 0f);
             if (box != null) box.enabled = true;
@@ -261,6 +273,7 @@ namespace HealingKnight.Gameplay.Flight
         private void Hide()
         {
             exposed = false;
+            if (poses != null) poses.SetAngry(false);
             parasite.gameObject.SetActive(false);
             if (box != null) box.enabled = false;
             health.Shelled = true;
@@ -334,6 +347,7 @@ namespace HealingKnight.Gameplay.Flight
         {
             if (ended) return;
             ended = true;
+            if (poses != null) poses.Show(BossPoses.Pose.Defeated);
             foreach (RedCell c in cells) if (c.ringMark != null) c.ringMark.gameObject.SetActive(false);
             GameplayEvents.RaiseBossEnded();
             GameplayEvents.RaiseMessage("¡Malaria vencida! En la vida real se previene con mosquiteros y repelente, y se cura con " +

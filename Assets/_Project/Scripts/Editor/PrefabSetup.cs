@@ -533,6 +533,9 @@ namespace HealingKnight.EditorTools
 
         // ---------- Circulatorio: colesterol LDL y célula espumosa (dibujados con figuras) ----------
 
+        /// <summary>¿ApplyEnemyArt ya le puso su dibujo? (entonces no se le agregan figuras encima).</summary>
+        private static bool HasDrawing(GameObject go) => go.GetComponent<EnemyPoseArt>() != null;
+
         /// <summary>Quita las espículas de la figura redonda (es la de los virus).</summary>
         private static Transform RoundWithoutSpikes(GameObject go)
         {
@@ -547,6 +550,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildLdl()
         {
             GameObject go = BuildEnemy("Lipido_LDL", data.Ldl, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
             Transform visual = RoundWithoutSpikes(go);
             float s = data.Ldl.visualScale;
             SetupUtils.SpriteChild(visual, "Cascara", PlaceholderArt.Circle, new Color(0.5f, 0.32f, 0.05f), Vector3.zero, Vector2.one * 1.06f * s, -2);
@@ -565,6 +569,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildFoamCell()
         {
             GameObject go = BuildEnemy("Celula_Espumosa", data.CelulaEspumosa, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
             Transform visual = RoundWithoutSpikes(go);
             float s = data.CelulaEspumosa.visualScale;
             Color edge = new Color(0.55f, 0.42f, 0.3f), pale = data.CelulaEspumosa.tint;
@@ -593,6 +598,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildSporozoite()
         {
             GameObject go = BuildEnemy("Plasmodium_Esporozoito", data.Esporozoito, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
             Transform visual = RoundWithoutSpikes(go);
             Transform body = go.transform.Find("Visual/Body");
             float s = data.Esporozoito.visualScale;
@@ -612,6 +618,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildMerozoite()
         {
             GameObject go = BuildEnemy("Plasmodium_Merozoito", data.Merozoito, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
             Transform visual = RoundWithoutSpikes(go);
             float s = data.Merozoito.visualScale;
             SetupUtils.SpriteChild(visual, "Contorno", PlaceholderArt.Circle, new Color(0.25f, 0.05f, 0.35f), Vector3.zero, Vector2.one * 0.98f * s, -3);
@@ -665,6 +672,14 @@ namespace HealingKnight.EditorTools
                 case "Bacteria_Meningococo": folder = "Nervioso"; prefix = "Meningococo"; width = 1.6f; break;
                 case "Virus_Herpes": folder = "Nervioso"; prefix = "Herpes"; width = 1.5f; pivot = new Vector2(0.5f, 0.5f); break;
                 case "Virus_Rabia": folder = "Nervioso"; prefix = "Rabia"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
+                // Circulatorio (mirando a la DERECHA; los de vuelo con el pivote al centro)
+                case "Lipido_LDL": folder = "Circulatorio"; prefix = "LDL"; width = 0.95f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Celula_Espumosa": folder = "Circulatorio"; prefix = "CelulaEspumosa"; width = 1.5f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Plasmodium_Esporozoito": folder = "Circulatorio"; prefix = "Esporozoito"; width = 1.6f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Plasmodium_Merozoito": folder = "Circulatorio"; prefix = "Merozoito"; width = 0.95f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Coagulo_Embolo": folder = "Circulatorio"; prefix = "Embolo"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_SViridans": folder = "Circulatorio"; prefix = "SViridans"; width = 1.8f; break;
+                case "Bacteria_EColi": folder = "Circulatorio"; prefix = "EColi"; width = 1.9f; break;
                 default: return;
             }
 
@@ -1552,6 +1567,43 @@ namespace HealingKnight.EditorTools
             return sprites;
         }
 
+        /// <summary>
+        /// Si existe Art/Jefes/&lt;carpeta&gt;/&lt;prefijo&gt;_Normal.png, agrega <see cref="BossPoses"/> con las poses que haya
+        /// (Normal, Ataca, Enojado, Derrotado), todas a la escala de la Normal ('width' de ancho en el mundo).
+        /// 'renderer': el SpriteRenderer que ya muestra el dibujo (null = el jefe lo crea en Start con Build).
+        /// </summary>
+        public static BossPoses AddBossPoses(GameObject go, string folder, string prefix, float width, Vector2 pivot, int order,
+            SpriteRenderer renderer = null)
+        {
+            string dir = $"Assets/_Project/Art/Jefes/{folder}";
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{prefix}_Normal.png");
+            if (tex == null) return null;
+            float ppu = tex.width / width;
+            var sprites = new Sprite[4];
+            string[] names = { "Normal", "Ataca", "Enojado", "Derrotado" };
+            for (int i = 0; i < names.Length; i++) sprites[i] = LoadArtSprite($"{dir}/{prefix}_{names[i]}.png", ppu, pivot);
+            var poses = go.AddComponent<BossPoses>();
+            poses.Configure(sprites[0], sprites[1], sprites[2], sprites[3], renderer, order);
+            if (renderer != null) renderer.sprite = sprites[0];
+            return poses;
+        }
+
+        /// <summary>
+        /// Jefe armado aquí (en el prefab): si hay dibujo, quita las figuras de 'v' y pone el dibujo con sus poses.
+        /// Devuelve null (y deja las figuras) si no hay PNG.
+        /// </summary>
+        private static BossPoses DrawBoss(GameObject root, Transform v, string folder, string prefix, float width, Vector2 pivot, int order,
+            out SpriteRenderer drawn)
+        {
+            drawn = null;
+            if (AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Project/Art/Jefes/{folder}/{prefix}_Normal.png") == null) return null;
+            var old = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in v) old.Add(child.gameObject);
+            foreach (GameObject go in old) Object.DestroyImmediate(go);
+            drawn = SetupUtils.SpriteChild(v, "Dibujo", null, Color.white, Vector3.zero, Vector2.one, order);
+            return AddBossPoses(root, folder, prefix, width, pivot, order, drawn);
+        }
+
         private GameObject BossRoot(string name, EnemyData d, out Transform v, out EnemyHealth health)
         {
             var root = new GameObject(name);
@@ -1687,6 +1739,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildEColi()
         {
             GameObject go = BuildEnemy("Bacteria_EColi", data.EColi, EnemyShape.Blob);
+            if (HasDrawing(go)) return go;
             Transform visual = go.transform.Find("Visual");
             Transform body = go.transform.Find("Visual/Body");
             if (body != null) body.localScale = new Vector3(body.localScale.x * 1.5f, body.localScale.y * 0.75f, 1f);
@@ -1705,6 +1758,7 @@ namespace HealingKnight.EditorTools
             EnemyData d = data.CalculoJefe;
             GameObject root = BossRoot("Calculo_Rinon", d, out Transform v, out EnemyHealth health);
             SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 2.6f), new Vector2(1.1f, 1.1f));
+            AddBossPoses(root, "Calculo", "Calculo", 5.6f, new Vector2(0.5f, 0.5f), 11);   // si hay dibujo, lo pone KidneyStoneBoss
             root.AddComponent<KidneyStoneBoss>();
             return root;
         }
@@ -1713,6 +1767,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildEmbolus()
         {
             GameObject go = BuildEnemy("Coagulo_Embolo", data.Embolo, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
             Transform visual = RoundWithoutSpikes(go);
             float s = data.Embolo.visualScale;
             for (int i = 0; i < 6; i++)
@@ -1731,6 +1786,7 @@ namespace HealingKnight.EditorTools
         private GameObject BuildSViridans()
         {
             GameObject go = BuildEnemy("Bacteria_SViridans", data.SViridans, EnemyShape.Blob);
+            if (HasDrawing(go)) return go;
             Transform visual = go.transform.Find("Visual");
             Color edge = new Color(0.1f, 0.3f, 0.12f);
             for (int i = 0; i < 6; i++)
@@ -1767,6 +1823,8 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(1.75f, s * 0.2f, 0f), new Vector2(0.32f, 0.36f), 4);
                 SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(1.82f, s * 0.19f, 0f), Vector2.one * 0.16f, 5);
             }
+            if (DrawBoss(root, v, "TCruzi", "TCruzi", 4.6f, new Vector2(0.5f, 0.5f), 3, out SpriteRenderer drawn) != null)
+                body = new System.Collections.Generic.List<Object> { drawn };
             SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
             SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(3.6f, 1.2f));
             var boss = root.AddComponent<TrypanosomaBoss>();
@@ -1806,6 +1864,8 @@ namespace HealingKnight.EditorTools
                     .transform.localRotation = Quaternion.Euler(0f, 0f, s * -20f);
             }
             SetupUtils.SpriteChild(v, "Boca", PlaceholderArt.Circle, line, new Vector3(0f, -0.42f, 0f), new Vector2(0.7f, 0.28f), 5);
+            if (DrawBoss(root, v, "EpsteinBarr", "EpsteinBarr", 3.4f, new Vector2(0.5f, 0.5f), 3, out SpriteRenderer drawn) != null)
+                body = new System.Collections.Generic.List<Object> { drawn };
             SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
             SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(2.6f, 2.6f));
             var boss = root.AddComponent<EpsteinBarrBoss>();

@@ -46,7 +46,14 @@ namespace HealingKnight.Gameplay.Enemies
         private readonly List<SpriteRenderer> floorGlow = new List<SpriteRenderer>();
         private int facing = -1;
 
-        private void Awake() => health = GetComponent<EnemyHealth>();
+        private BossPoses poses;
+
+        private void Awake()
+        {
+            health = GetComponent<EnemyHealth>();
+            poses = GetComponent<BossPoses>();
+            if (poses != null && !poses.HasArt) poses = null;
+        }
         private void OnEnable() { health.Died += OnDied; Heartbeat.Beat += OnBeat; }
         private void OnDisable() { health.Died -= OnDied; Heartbeat.Beat -= OnBeat; }
 
@@ -108,7 +115,7 @@ namespace HealingKnight.Gameplay.Enemies
                     pos = next;
                     if (timer <= 0f && alive)
                     {
-                        if (Random.value < 0.6f) { state = State.Aim; timer = 0.7f; }
+                        if (Random.value < 0.6f) { state = State.Aim; timer = 0.7f; if (poses != null) poses.Show(BossPoses.Pose.Attack, 1.4f); }
                         else { Spit(player); timer = 2f; }
                     }
                     break;
@@ -147,7 +154,9 @@ namespace HealingKnight.Gameplay.Enemies
         private void Animate()
         {
             if (visual == null) return;
-            visual.localScale = new Vector3(-facing, 1f, 1f);
+            // La figura nada con el flagelo por delante (como el de verdad); el dibujo mira hacia donde va.
+            visual.localScale = new Vector3(poses != null ? facing : -facing, 1f, 1f);
+            if (poses != null) poses.SetAngry(arrhythmia || health.Health01 <= 0.35f);
             for (int i = 0; i < segments.Count; i++)
             {
                 Vector3 p = segments[i].localPosition;
@@ -220,6 +229,7 @@ namespace HealingKnight.Gameplay.Enemies
         private void Spit(PlayerController player)
         {
             if (pool == null || player == null) return;
+            if (poses != null) poses.Show(BossPoses.Pose.Attack);
             Vector2 from = transform.position;
             Vector2 dir = (player.Position + Vector2.up * 0.8f - from).normalized;
             float baseA = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
@@ -252,6 +262,7 @@ namespace HealingKnight.Gameplay.Enemies
         {
             dead = true;
             state = State.Dead;
+            if (poses != null) poses.Show(BossPoses.Pose.Defeated);
             if (Heartbeat.Current != null) Heartbeat.Current.Irregular = 0f;
             foreach (SpriteRenderer r in floorGlow) if (r != null) Destroy(r.gameObject);
             GameplayEvents.RaiseBossEnded();

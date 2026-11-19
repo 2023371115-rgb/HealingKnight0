@@ -147,14 +147,34 @@ namespace HealingKnight.EditorTools
             Debug.Log("[Healing Knight] Progreso borrado.");
         }
 
+        private static string sceneAfterPlay;
+
         private static void Open(string path)
         {
+            if (EditorApplication.isPlaying)
+            {
+                // En Play no se puede cambiar de escena desde el menú: primero se sale de Play y luego se abre.
+                sceneAfterPlay = path;
+                EditorApplication.playModeStateChanged -= OpenAfterPlay;
+                EditorApplication.playModeStateChanged += OpenAfterPlay;
+                EditorApplication.isPlaying = false;
+                return;
+            }
             if (AssetDatabase.LoadAssetAtPath<SceneAsset>(path) == null)
             {
                 EditorUtility.DisplayDialog("Healing Knight", "Esa escena no existe todavía. Ejecuta 'Healing Knight > Crear proyecto base'.", "Va");
                 return;
             }
             if (EditorSceneManager.SaveCurrentModifiedScenesIfUserWantsTo()) EditorSceneManager.OpenScene(path);
+        }
+
+        private static void OpenAfterPlay(PlayModeStateChange state)
+        {
+            if (state != PlayModeStateChange.EnteredEditMode) return;
+            EditorApplication.playModeStateChanged -= OpenAfterPlay;
+            string path = sceneAfterPlay;
+            sceneAfterPlay = null;
+            if (!string.IsNullOrEmpty(path)) Open(path);
         }
     }
 }

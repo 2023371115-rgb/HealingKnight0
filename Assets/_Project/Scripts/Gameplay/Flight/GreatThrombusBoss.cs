@@ -42,10 +42,15 @@ namespace HealingKnight.Gameplay.Flight
             emboliPrefab = emboli;
         }
 
+        private BossPoses poses;
+        private SpriteRenderer drawn;
+
         private void Awake()
         {
             health = GetComponent<EnemyHealth>();
             box = GetComponent<Hurtbox>();
+            poses = GetComponent<BossPoses>();
+            if (poses != null && !poses.HasArt) poses = null;
             health.Died += OnDied;
         }
 
@@ -56,6 +61,24 @@ namespace HealingKnight.Gameplay.Flight
             art.SetParent(transform, false);
             var rnd = new System.Random(77);
             CodeSprites.Add(art, CodeSprites.Glow, new Color(0.6f, 0.2f, 0.4f, 0.4f), 2, Vector2.zero, Vector2.one * 6.5f, "Aura");
+            if (poses != null)
+            {
+                // Con dibujo (Art/Jefes/GranTrombo): mirando de frente; se gira con la cámara para verse derecho.
+                drawn = poses.Build(art, Vector2.zero);
+                health.SetFlashRenderers(drawn);
+            }
+            else BuildFigure(rnd);
+            if (box != null) box.SetBox(Vector2.zero, new Vector2(3.4f, 3.8f));
+            emboliTimer = emboliEvery;
+            netTimer = netEvery;
+            BuildMeter();
+            art.gameObject.SetActive(false);
+            if (box != null) box.enabled = false;
+        }
+
+        /// <summary>El coágulo con figuras (mientras no hay dibujo).</summary>
+        private void BuildFigure(System.Random rnd)
+        {
             for (int i = 0; i < 46; i++)
             {
                 float a = (float)rnd.NextDouble() * Mathf.PI * 2f, r = (float)rnd.NextDouble() * 1.7f;
@@ -77,12 +100,6 @@ namespace HealingKnight.Gameplay.Flight
                 CodeSprites.Add(art, CodeSprites.Circle, Color.white, 6, new Vector2(-0.9f, side * 0.55f), new Vector2(0.6f, 0.55f), "Ojo");
                 CodeSprites.Add(art, CodeSprites.Circle, new Color(0.15f, 0f, 0.1f), 7, new Vector2(-1f, side * 0.52f), Vector2.one * 0.28f, "Pupila");
             }
-            if (box != null) box.SetBox(Vector2.zero, new Vector2(3.4f, 3.8f));
-            emboliTimer = emboliEvery;
-            netTimer = netEvery;
-            BuildMeter();
-            art.gameObject.SetActive(false);
-            if (box != null) box.enabled = false;
         }
 
         /// <summary>Barra al lado de la pantalla: del corazón (abajo) al cerebro (arriba), con el coágulo marcado.</summary>
@@ -130,6 +147,12 @@ namespace HealingKnight.Gameplay.Flight
             float size = Mathf.Lerp(0.55f, 1f, health.Health01) * (1f + Heartbeat.SurgeNow * 0.05f);
             art.localScale = Vector3.one * size;
             art.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(t * 0.7f) * 12f);
+            if (drawn != null)
+            {
+                FlightRoute r = FlightRoute.Current;
+                drawn.transform.localRotation = Quaternion.Euler(0f, 0f, (r != null ? r.Roll : 0f) - Mathf.Sin(t * 0.7f) * 8f);
+                poses.SetAngry(health.Health01 <= 0.6f);
+            }
             if (box != null) box.SetBox(Vector2.zero, new Vector2(3.4f, 3.8f) * Mathf.Max(0.6f, size));
 
             float progress = Mathf.InverseLerp(startX, brainX, route.CameraPosition.x);
@@ -161,6 +184,7 @@ namespace HealingKnight.Gameplay.Flight
             {
                 emboliTimer = health.Health01 <= 0.3f ? emboliEvery * 0.65f : emboliEvery;
                 DropEmboli(route, health.Health01 <= 0.6f ? 3 : 2);
+                if (poses != null) poses.Show(BossPoses.Pose.Attack, 0.9f);
             }
             if (toldHalf)
             {
@@ -226,6 +250,7 @@ namespace HealingKnight.Gameplay.Flight
         {
             if (ended) return;
             ended = true;
+            if (poses != null) poses.Show(BossPoses.Pose.Defeated);
             if (meter != null) Destroy(meter.gameObject);
             if (Heartbeat.Current != null) Heartbeat.Current.Tachycardia = 0f;
             FlightRoute route = FlightRoute.Current;

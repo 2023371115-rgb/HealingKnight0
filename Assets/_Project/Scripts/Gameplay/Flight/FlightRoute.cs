@@ -25,6 +25,8 @@ namespace HealingKnight.Gameplay.Flight
     {
         [Tooltip("Camino principal (hasta la bifurcación, si hay).")]
         [SerializeField] private Vector2[] path = { new Vector2(0f, 2.5f), new Vector2(100f, 2.5f) };
+        [Tooltip("Dibujo de la nave (Art/Nave/Nave_Capsula.png). Vacío = la cápsula de figuras.")]
+        [SerializeField] private Sprite shipArt;
         [SerializeField] private float baseSpeed = 3.2f;
         [SerializeField] private float surgeBoost = 2.2f;
         [SerializeField] private float launchDelay = 2.4f;
@@ -62,6 +64,9 @@ namespace HealingKnight.Gameplay.Flight
 
         public Vector2 CameraPosition { get; private set; }
         public Vector2 ScrollVelocity { get; private set; }
+        /// <summary>El dibujo de la nave para este nivel (lo pone SceneSetup si existe el PNG).</summary>
+        public void ConfigureShipArt(Sprite art) => shipArt = art;
+
         public Rect View { get; private set; }
         /// <summary>Giro de la cámara ahora (grados). Lo que se mueve con el control se gira igual (arriba = adelante).</summary>
         public float Roll { get; private set; }
@@ -312,7 +317,7 @@ namespace HealingKnight.Gameplay.Flight
             player.Respawned += OnRespawned;
             ship = player.GetComponent<ShipFlight>();
             if (ship == null) ship = player.gameObject.AddComponent<ShipFlight>();
-            ship.Activate();
+            ship.Activate(shipArt);
         }
 
         /// <summary>

@@ -79,6 +79,7 @@ namespace HealingKnight.Gameplay.Audio
         public static bool TryPlayLevel(string sceneName)
         {
             // Misma escena (por ejemplo, reaparecer tras morir): la música sigue; si estaba el jefe, vuelve la normal.
+            if (levelSong != null && !Alive(levelSong)) { levelSong = bossSong = current = null; bossOn = false; }
             if (levelSong != null && levelSong.key == sceneName)
             {
                 if (current == bossSong && bossSong != null) EndBoss();
@@ -99,7 +100,8 @@ namespace HealingKnight.Gameplay.Audio
         /// <summary>Empezó un jefe: canción de jefe del sistema, justo al empezar un compás. True si se encargó.</summary>
         public static bool TryBoss()
         {
-            if (levelSong == null) return false;
+            if (!Alive(levelSong)) return false;
+            if (bossSong != null && !Alive(bossSong)) bossSong = null;
             bossOn = true;
             if (current == bossSong && bossSong != null) return true;
 
@@ -122,7 +124,8 @@ namespace HealingKnight.Gameplay.Audio
         public static void EndBoss()
         {
             bossOn = false;
-            if (levelSong == null || current == levelSong) return;
+            // Al salir de Play (o al cambiar de escena) los jefes avisan que terminaron cuando las bocinas ya no existen.
+            if (!Alive(levelSong) || current == levelSong) return;
             SwitchTo(levelSong, NextBar(current));
         }
 
@@ -169,14 +172,18 @@ namespace HealingKnight.Gameplay.Audio
             return song;
         }
 
+        /// <summary>¿La canción todavía existe? (sus bocinas se destruyen al salir de Play o al cambiar de escena).</summary>
+        private static bool Alive(Song song) => song != null && song.root != null;
+
         /// <summary>Todas las capas empiezan en el MISMO instante del reloj de audio (así nunca se desfasan).</summary>
         private static void Start(Song song, double dspTime)
         {
+            if (!Alive(song)) return;
             song.startDsp = dspTime;
             song.fadeOutAt = double.MaxValue;
             foreach (AudioSource s in song.sources)
             {
-                if (s.clip == null) continue;
+                if (s == null || s.clip == null) continue;
                 s.Stop();
                 s.timeSamples = 0;
                 s.PlayScheduled(dspTime);

@@ -75,6 +75,15 @@ namespace HealingKnight.Gameplay.Enemies
             current = data != null ? data.maxHealth : 1f;
         }
 
+        /// <summary>Para los que arman su dibujo en Start (jefes con dibujo): lo que parpadea al recibir daño.</summary>
+        public void SetFlashRenderers(params SpriteRenderer[] renderers)
+        {
+            flashRenderers = renderers ?? new SpriteRenderer[0];
+            baseColors = new Color[flashRenderers.Length];
+            for (int i = 0; i < flashRenderers.Length; i++)
+                baseColors[i] = flashRenderers[i] != null ? flashRenderers[i].color : Color.white;
+        }
+
         public void Configure(EnemyData enemyData, EffectivenessTable table)
         {
             if (enemyData != null) data = enemyData;

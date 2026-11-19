@@ -548,6 +548,28 @@ muy fuerte. Métete **encogida** ({fijar}) y déjate jalar: hay un riñoncito br
   **grieta que brilla** (litotricia). Tres grietas en orden; al romperse una suelta piedritas que ruedan, y da saltos con
   ondas por el piso. **Premio: DEPURACIÓN** (lo que te alenta te dura la mitad, en todo el juego). E. coli en el camino.
 
+### Dibujos del circulatorio (por hacer)
+Todo el sistema se ve con figuras hasta que existan sus PNG. Guarda cada dibujo con el **nombre exacto** y corre
+*Regenerar proyecto base*: el juego lo usa solo (si falta uno, se queda la figura). Los prompts en inglés para hacerlos
+están en el proyecto de Claude: `claude/sprites-circulatorio.md`.
+- Hazlos con **fondo verde puro** (#00FF00), o **magenta** (#FF00FF) si el personaje es verde, y **mirando a la
+  derecha**. `python Tools/Art/quitar_fondo_verde.py <archivo o carpeta>` quita el fondo (adivina el color por las
+  esquinas), el halo de las orillas y recorta.
+
+| Qué | Archivo(s) | Notas |
+|---|---|---|
+| Enemigos | `Art/Enemigos/Circulatorio/<Nombre>_Normal.png` (+ `_Ataca`, `_Dano`, `_Muere`) | `LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito`, `Embolo`, `SViridans`, `EColi`. Solo `_Normal` es obligatoria |
+| Jefes | `Art/Jefes/<Jefe>/<Jefe>_Normal.png` (+ `_Ataca`, `_Enojado`, `_Derrotado`) | `Ateroma`, `Plasmodium`, `EpsteinBarr`, `TCruzi`, `GranTrombo`, `Calculo` (`BossPoses` cambia la pose: ataca, enojado desde la mitad, derrotado) |
+| Linfocito B | `Art/Aliados/Resources/Aliados/LinfocitoB.png` y `LinfocitoB_Infectado.png` | Los aliados del Bazo, los del jefe Epstein-Barr y el premio de las Amígdalas |
+| Nave | `Art/Nave/Nave_Capsula.png` | La cápsula blanca vista de lado, nariz a la derecha; su mitad de atrás se pinta sola del medicamento |
+| Ficha del coágulo | `Art/Enemigos/Circulatorio/Plaquetas_Normal.png` | Solo para el bestiario |
+| Letreros | `Art/Letreros/Circulatorio/Letrero_<Bienvenida, Info, Peligro, Salida, FlechaDerecha, FlechaArriba, FlechaAbajo, Secreto>.png` | Tablero en blanco. Al ponerlos hay que medir dónde va la palabra (`SignTextAreas`) |
+| Fondos | `Art/Fondos/Fondo_Bazo.png`, `Fondo_Corazon.png`, `Fondo_Rinon.png` | ≈ 2:1, oscuros y sin cosas que parezcan plataformas |
+
+En código: `Enemies/BossPoses.cs`, `PrefabSetup.AddBossPoses` / `DrawBoss`, `SceneSetup.BossDrawing` y
+`CodeSprites.ResourceArt` / `AddArt` (para lo que se dibuja en Start). Bazo, Corazón y Riñón ya tienen sus letreros
+(con figuras rojas) y el globo de NODO del circulatorio es rojo sangre con turquesa.
+
 ### Final del juego
 Al desinfectar los cuatro sistemas, en el mapa del cuerpo sale una vez la pantalla **"¡PACIENTE 001: SANO!"**
 (`BodyMapScreen.BuildEnding`, se guarda `endingSeen`).

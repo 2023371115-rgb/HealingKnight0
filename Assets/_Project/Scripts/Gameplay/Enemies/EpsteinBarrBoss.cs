@@ -47,7 +47,15 @@ namespace HealingKnight.Gameplay.Enemies
         public EnemyData InfectedData => infectedData;
         public EffectivenessTable Table => table;
 
-        private void Awake() => health = GetComponent<EnemyHealth>();
+        private BossPoses poses;
+
+        private void Awake()
+        {
+            health = GetComponent<EnemyHealth>();
+            poses = GetComponent<BossPoses>();
+            if (poses != null && !poses.HasArt) poses = null;
+        }
+
         private void OnEnable() => health.Died += OnDied;
         private void OnDisable() => health.Died -= OnDied;
 
@@ -109,15 +117,18 @@ namespace HealingKnight.Gameplay.Enemies
             transform.position = new Vector3(x, y, 0f);
             if (visual != null)
             {
-                visual.localRotation = Quaternion.Euler(0f, 0f, t * 30f);
+                // La figura gira (es una cápside); el dibujo solo se mece para que su cara no dé vueltas.
+                visual.localRotation = Quaternion.Euler(0f, 0f, poses != null ? Mathf.Sin(t * 1.3f) * 8f : t * 30f);
                 visual.localScale = Vector3.one * (1f + Mathf.Sin(t * 4f) * 0.05f);
             }
+            if (poses != null) poses.SetAngry(half);
 
             shotTimer -= dt;
             if (shotTimer <= 0f)
             {
                 shotTimer = half ? shotEvery * 0.7f : shotEvery;
                 Ring(half ? 9 : 7);
+                if (poses != null) poses.Show(BossPoses.Pose.Attack);
             }
 
             if (aiming != null)
@@ -193,6 +204,7 @@ namespace HealingKnight.Gameplay.Enemies
         private void OnDied(EnemyHealth _)
         {
             dead = true;
+            if (poses != null) poses.Show(BossPoses.Pose.Defeated);
             if (beam != null) beam.enabled = false;
             foreach (InfectableLymphocyte c in cells) if (c != null) c.CureSilently();
             GameplayEvents.RaiseBossEnded();
@@ -211,6 +223,7 @@ namespace HealingKnight.Gameplay.Enemies
         private EpsteinBarrBoss boss;
         private Vector2 home;
         private SpriteRenderer body, nucleus;
+        private Sprite healthyArt, infectedArt;   // dibujos (Art/Aliados/Resources/Aliados/LinfocitoB*.png), si existen
         private Transform eyes, angry;
         private EnemyHealth infection;
         private float timer, seed;
@@ -228,6 +241,17 @@ namespace HealingKnight.Gameplay.Enemies
             seed = Random.value * 10f;
             timer = 1.6f + seed * 0.1f;
             Sprite c = CodeSprites.Circle;
+            healthyArt = CodeSprites.ResourceArt("Aliados/LinfocitoB");
+            if (healthyArt != null)
+            {
+                infectedArt = CodeSprites.ResourceArt("Aliados/LinfocitoB_Infectado");
+                body = CodeSprites.AddArt(transform, healthyArt, 1.2f, 31, Vector2.zero, "Cuerpo");
+                eyes = new GameObject("Ojos").transform;
+                eyes.SetParent(transform, false);
+                angry = new GameObject("Enojado").transform;
+                angry.SetParent(transform, false);
+                return;
+            }
             CodeSprites.Add(transform, c, new Color(0.2f, 0.1f, 0.35f), 30, Vector2.zero, Vector2.one * 1.05f, "Contorno");
             body = CodeSprites.Add(transform, c, new Color(0.65f, 0.75f, 1f), 31, Vector2.zero, Vector2.one * 0.92f, "Cuerpo");
             nucleus = CodeSprites.Add(transform, c, new Color(0.45f, 0.4f, 0.9f), 32, new Vector2(0.05f, -0.04f), Vector2.one * 0.6f, "Nucleo");
@@ -289,8 +313,16 @@ namespace HealingKnight.Gameplay.Enemies
             infection.Configure(boss.InfectedData, boss.Table);
             go.AddComponent<Hurtbox>().SetBox(Vector2.zero, new Vector2(1.1f, 1.1f));
             infection.Died += OnCured;
-            body.color = new Color(0.7f, 0.4f, 0.85f);
-            nucleus.color = new Color(0.4f, 0.1f, 0.5f);
+            if (healthyArt != null)
+            {
+                if (infectedArt != null) body.sprite = infectedArt;
+                else body.color = new Color(0.8f, 0.55f, 0.95f);   // sin dibujo de infectado: el sano pintado de morado
+            }
+            else
+            {
+                body.color = new Color(0.7f, 0.4f, 0.85f);
+                nucleus.color = new Color(0.4f, 0.1f, 0.5f);
+            }
             eyes.gameObject.SetActive(false);
             angry.gameObject.SetActive(true);
             timer = 1.2f;
@@ -317,8 +349,16 @@ namespace HealingKnight.Gameplay.Enemies
         private void Heal()
         {
             if (body == null) return;
-            body.color = new Color(0.65f, 0.75f, 1f);
-            nucleus.color = new Color(0.45f, 0.4f, 0.9f);
+            if (healthyArt != null)
+            {
+                body.sprite = healthyArt;
+                body.color = Color.white;
+            }
+            else
+            {
+                body.color = new Color(0.65f, 0.75f, 1f);
+                nucleus.color = new Color(0.45f, 0.4f, 0.9f);
+            }
             eyes.gameObject.SetActive(true);
             angry.gameObject.SetActive(false);
             timer = 1.6f;

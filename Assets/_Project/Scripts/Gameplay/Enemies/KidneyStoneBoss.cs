@@ -42,10 +42,14 @@ namespace HealingKnight.Gameplay.Enemies
         private float floorY, t, slamTimer, hop = -1f, contactCooldown, tinkCooldown;
         private bool dead, toldTink;
 
+        private BossPoses poses;
+
         private void Awake()
         {
             health = GetComponent<EnemyHealth>();
             box = GetComponent<Hurtbox>();
+            poses = GetComponent<BossPoses>();
+            if (poses != null && !poses.HasArt) poses = null;
             health.Died += OnDied;
         }
 
@@ -62,6 +66,25 @@ namespace HealingKnight.Gameplay.Enemies
             art = new GameObject("Dibujo").transform;
             art.SetParent(transform, false);
             art.localPosition = new Vector3(0f, radius, 0f);
+            if (poses != null)
+            {
+                // Con dibujo (Art/Jefes/Calculo): el dibujo y encima solo las grietas que brillan.
+                SpriteRenderer drawn = poses.Build(art, Vector2.zero);
+                health.SetFlashRenderers(drawn);
+            }
+            else BuildFigure();
+            // Tres grietas: abajo a la izquierda, arriba y abajo a la derecha (en ese orden).
+            BuildCracks();
+            GameplayEvents.RaiseBossStarted(bossName, health);
+            GameplayEvents.RaiseMessage("¡El CÁLCULO GIGANTE! Las balas rebotan en la piedra: pégale SOLO en la GRIETA que brilla. Así funciona la " +
+                "LITOTRICIA: ondas de choque que rompen el cálculo por sus grietas.");
+            slamTimer = slamEvery * 0.7f;
+            UpdateCracks();
+        }
+
+        /// <summary>La piedra hecha con figuras (mientras no hay dibujo).</summary>
+        private void BuildFigure()
+        {
             CodeSprites.Add(art, CodeSprites.Circle, new Color(0.3f, 0.22f, 0.1f), 10, Vector2.zero, Vector2.one * radius * 2.1f, "Contorno");
             CodeSprites.Add(art, CodeSprites.Circle, new Color(0.85f, 0.73f, 0.45f), 11, Vector2.zero, Vector2.one * radius * 2f, "Piedra");
             var rnd = new System.Random(5);
@@ -78,7 +101,10 @@ namespace HealingKnight.Gameplay.Enemies
                 CodeSprites.Add(art, CodeSprites.Square, new Color(0.3f, 0.22f, 0.1f), 14, new Vector2(side * 0.7f, 1f), new Vector2(0.7f, 0.14f), "Ceja")
                     .transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
             }
-            // Tres grietas: abajo a la izquierda, arriba y abajo a la derecha (en ese orden).
+        }
+
+        private void BuildCracks()
+        {
             foreach (Vector2 c in new[] { new Vector2(-1.7f, -0.9f), new Vector2(0.2f, 1.9f), new Vector2(1.7f, -0.8f) })
             {
                 var crack = new Crack { local = c };
@@ -92,11 +118,6 @@ namespace HealingKnight.Gameplay.Enemies
                 crack.glow = g;
                 cracks.Add(crack);
             }
-            GameplayEvents.RaiseBossStarted(bossName, health);
-            GameplayEvents.RaiseMessage("¡El CÁLCULO GIGANTE! Las balas rebotan en la piedra: pégale SOLO en la GRIETA que brilla. Así funciona la " +
-                "LITOTRICIA: ondas de choque que rompen el cálculo por sus grietas.");
-            slamTimer = slamEvery * 0.7f;
-            UpdateCracks();
         }
 
         private void UpdateCracks()
@@ -123,7 +144,12 @@ namespace HealingKnight.Gameplay.Enemies
             // Salto y golpe: se agacha, brinca y al caer manda ondas.
             slamTimer -= dt;
             PlayerController player = PlayerController.Current;
-            if (hop < 0f && slamTimer <= 0f) { hop = 0f; slamTimer = Mathf.Lerp(slamEvery * 0.6f, slamEvery, health.Health01); }
+            if (hop < 0f && slamTimer <= 0f)
+            {
+                hop = 0f;
+                slamTimer = Mathf.Lerp(slamEvery * 0.6f, slamEvery, health.Health01);
+                if (poses != null) poses.Show(BossPoses.Pose.Attack, 1.4f);
+            }
             float y = floorY, sx = 1f, sy = 1f;
             if (hop >= 0f)
             {
@@ -176,6 +202,7 @@ namespace HealingKnight.Gameplay.Enemies
         private void BreakChunk(int next)
         {
             current = next;
+            if (poses != null) poses.SetAngry(true);
             UpdateCracks();
             SpeedBannerShow("¡CRACK!");
             Sfx.EffectAt("Coagulo_Disuelve", transform.position, 1f);
@@ -264,6 +291,7 @@ namespace HealingKnight.Gameplay.Enemies
         private void OnDied(EnemyHealth _)
         {
             dead = true;
+            if (poses != null) poses.Show(BossPoses.Pose.Defeated);
             GameplayEvents.RaiseBossEnded();
             bool isNew = !string.IsNullOrEmpty(rewardSecret) && GameSession.FindSecret(rewardSecret);
             GameplayEvents.RaiseMessage("¡Cálculo hecho polvo! Los cálculos se previenen tomando mucha AGUA." +

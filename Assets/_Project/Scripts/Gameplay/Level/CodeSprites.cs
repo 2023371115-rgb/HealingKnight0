@@ -94,6 +94,16 @@ namespace HealingKnight.Gameplay
         }
 
         /// <summary>Capa de color hija de 'parent' (posición y tamaño locales en unidades).</summary>
+        /// <summary>Un dibujo que vive en una carpeta Resources (p. ej. "Aliados/LinfocitoB"), o null si no existe.</summary>
+        public static Sprite ResourceArt(string path) => Resources.Load<Sprite>(path);
+
+        /// <summary>Pone un dibujo escalado para que mida 'width' de ancho en el mundo.</summary>
+        public static SpriteRenderer AddArt(Transform parent, Sprite sprite, float width, int order, Vector2 pos, string name = "Dibujo")
+        {
+            float w = Mathf.Max(0.01f, sprite.bounds.size.x);
+            return Add(parent, sprite, Color.white, order, pos, Vector2.one * (width / w), name);
+        }
+
         public static SpriteRenderer Add(Transform parent, Sprite sprite, Color color, int order, Vector2 pos, Vector2 size, string name = "Capa")
         {
             var go = new GameObject(name);

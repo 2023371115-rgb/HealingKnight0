@@ -32,6 +32,12 @@ namespace HealingKnight.Gameplay.Level
             timer = interval;
             visual = new GameObject("Dibujo").transform;
             visual.SetParent(transform, false);
+            Sprite art = CodeSprites.ResourceArt("Aliados/LinfocitoB");   // Art/Aliados/Resources/Aliados/LinfocitoB.png
+            if (art != null)
+            {
+                CodeSprites.AddArt(visual, art, 1f, 31, Vector2.zero);
+                return;
+            }
             Sprite c = CodeSprites.Circle;
             CodeSprites.Add(visual, c, new Color(0.2f, 0.1f, 0.35f), 30, Vector2.zero, new Vector2(0.86f, 0.86f));
             CodeSprites.Add(visual, c, new Color(0.65f, 0.75f, 1f), 31, Vector2.zero, new Vector2(0.74f, 0.74f));

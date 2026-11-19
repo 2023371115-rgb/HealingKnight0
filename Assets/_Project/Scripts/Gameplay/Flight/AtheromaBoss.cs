@@ -63,8 +63,12 @@ namespace HealingKnight.Gameplay.Flight
         private Vector2 Front => (Vector2)transform.position + new Vector2(-width * 0.44f, height * 0.4f);
         private static readonly Vector2 ClotSize = new Vector2(2f, 2.6f);
 
+        private BossPoses poses;
+
         private void Awake()
         {
+            poses = GetComponent<BossPoses>();
+            if (poses != null && !poses.HasArt) poses = null;
             health = GetComponent<EnemyHealth>();
             solid = GetComponent<Collider2D>();
             visual = transform.Find("Dibujo");
@@ -116,6 +120,7 @@ namespace HealingKnight.Gameplay.Flight
             if (!ruptured && health.Health01 <= ruptureAt)
             {
                 ruptured = true;
+                if (poses != null) poses.SetAngry(true);
                 GameplayEvents.RaiseMessage("¡Se ROMPIÓ y le salió un COÁGULO! Mientras esté, tus balas no le hacen nada: ¡ANTICOAGULANTE al coágulo!");
                 Sfx.EffectAt("Coagulo_Disuelve", Front, 0.6f);
                 GrowClot();
@@ -138,6 +143,7 @@ namespace HealingKnight.Gameplay.Flight
             if (pool == null) pool = new ComponentPool<Projectile>(projectilePrefab, 6, 30);
             Vector2 from = Top;
             Vector2 dir = (player.Position + new Vector2(0f, 0.6f) - from).normalized;
+            if (poses != null) poses.Show(BossPoses.Pose.Attack, 0.5f);
             int shots = ruptured ? 5 : 3;
             float spread = ruptured ? 50f : 34f;
             float baseAngle = Mathf.Atan2(dir.y, dir.x) * Mathf.Rad2Deg;
@@ -227,6 +233,7 @@ namespace HealingKnight.Gameplay.Flight
         {
             if (ended) return;
             ended = true;
+            if (poses != null) poses.Show(BossPoses.Pose.Defeated);
             if (solid != null) solid.enabled = false;
             if (clot != null) clot.Kill();
             GameplayEvents.RaiseBossEnded();

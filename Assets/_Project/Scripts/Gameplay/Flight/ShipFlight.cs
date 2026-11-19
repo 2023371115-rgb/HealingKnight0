@@ -82,8 +82,8 @@ namespace HealingKnight.Gameplay.Flight
             hurtbox = GetComponent<Hurtbox>();
         }
 
-        /// <summary>Convierte al caballero en nave (dibuja la cápsula y ajusta su cuerpo).</summary>
-        public void Activate()
+        /// <summary>Convierte al caballero en nave (dibuja la cápsula y ajusta su cuerpo). 'art': dibujo de la cápsula (o null).</summary>
+        public void Activate(Sprite art = null)
         {
             if (Active) return;
             Active = true;
@@ -92,7 +92,7 @@ namespace HealingKnight.Gameplay.Flight
             motor.SetFacing(1);
             body = motor.Visual != null ? motor.Visual.Find("Body") : null;
             if (body == null) body = motor.Visual != null ? motor.Visual : transform;
-            BuildShip();
+            BuildShip(art);
             if (motor.Collider != null)
             {
                 // Casco + cabina (para que la cabeza no se meta en las paredes del vaso).
@@ -116,7 +116,7 @@ namespace HealingKnight.Gameplay.Flight
 
         // ───────────────────────────── La nave ─────────────────────────────
 
-        private void BuildShip()
+        private void BuildShip(Sprite art)
         {
             // El casco va ENTRE las piernas (atrás) y el torso (adelante): se suben las capas del torso, el brazo y el
             // escudo para dejarle lugar (el jugador tiene su propio grupo de capas, no afecta al resto del nivel).
@@ -126,29 +126,15 @@ namespace HealingKnight.Gameplay.Flight
 
             ship = new GameObject("Nanocapsula").transform;
             ship.SetParent(body, false);
-            Sprite c = CodeSprites.Circle, sq = CodeSprites.Square;
+            Sprite c = CodeSprites.Circle;
             Color outline = new Color(0.12f, 0.05f, 0.12f);
             Color white = new Color(0.97f, 0.97f, 1f);
             const float w = 1.25f, h = 0.86f, y = 0.5f;   // cuerpo de la píldora (sin las puntas redondas)
             const float line = 0.09f;
 
-            // Contorno grueso (estilo caricatura).
-            CodeSprites.Add(ship, sq, outline, 7, new Vector2(0f, y), new Vector2(w, h + line * 2f), "Contorno");
-            CodeSprites.Add(ship, c, outline, 7, new Vector2(-w * 0.5f, y), Vector2.one * (h + line * 2f), "ContornoAtras");
-            CodeSprites.Add(ship, c, outline, 7, new Vector2(w * 0.5f, y), Vector2.one * (h + line * 2f), "ContornoNariz");
-
-            // Mitad de atrás: color del medicamento. Mitad de enfrente: blanca (como una cápsula de verdad).
             var tinted = new System.Collections.Generic.List<SpriteRenderer>();
-            tinted.Add(CodeSprites.Add(ship, c, white, 8, new Vector2(-w * 0.5f, y), Vector2.one * h, "Atras"));
-            tinted.Add(CodeSprites.Add(ship, sq, white, 8, new Vector2(-w * 0.25f, y), new Vector2(w * 0.5f, h), "AtrasCuerpo"));
-            CodeSprites.Add(ship, sq, white, 8, new Vector2(w * 0.25f, y), new Vector2(w * 0.5f, h), "Enfrente");
-            CodeSprites.Add(ship, c, white, 8, new Vector2(w * 0.5f, y), Vector2.one * h, "Nariz");
-            CodeSprites.Add(ship, sq, outline, 9, new Vector2(0f, y), new Vector2(0.06f, h), "Union");
-            // Brillo de arriba y sombra de abajo.
-            CodeSprites.Add(ship, c, new Color(1f, 1f, 1f, 0.55f), 10, new Vector2(0.15f, y + h * 0.27f), new Vector2(w * 0.9f, 0.13f), "Brillo");
-            CodeSprites.Add(ship, c, new Color(0f, 0f, 0f, 0.18f), 10, new Vector2(0f, y - h * 0.3f), new Vector2(w * 1.2f, 0.18f), "Sombra");
-            // Luz del frente (se pinta del medicamento).
-            tinted.Add(CodeSprites.Add(ship, c, white, 11, new Vector2(w * 0.62f, y + 0.05f), Vector2.one * 0.16f, "Faro"));
+            if (art != null) BuildShipArt(art, y, tinted);
+            else BuildShipFigure(w, h, y, line, outline, white, tinted);
 
             // Cabina de vidrio sobre el caballero (por delante, transparente).
             CodeSprites.Add(ship, c, new Color(0.7f, 0.95f, 1f, 0.16f), 25, new Vector2(0.03f, 1.3f), new Vector2(1.35f, 1.35f), "Cabina");
@@ -162,6 +148,46 @@ namespace HealingKnight.Gameplay.Flight
             flameRenderer = CodeSprites.Add(flame, CodeSprites.Glow, new Color(1f, 0.85f, 0.4f, 0.9f), 5, new Vector2(-0.25f, 0f), new Vector2(0.9f, 0.5f), "Fuego");
             CodeSprites.Add(flame, CodeSprites.Glow, new Color(1f, 1f, 0.9f, 1f), 5, new Vector2(-0.1f, 0f), new Vector2(0.4f, 0.28f), "FuegoCentro");
             tintParts = tinted.ToArray();
+        }
+
+        /// <summary>
+        /// Con dibujo (Art/Nave/Nave_Capsula.png, la cápsula blanca vista de lado, con la nariz a la derecha): el dibujo, y
+        /// encima su mitad de atrás (la mitad izquierda del mismo dibujo) teñida del medicamento, como una cápsula de verdad.
+        /// </summary>
+        private void BuildShipArt(Sprite art, float y, System.Collections.Generic.List<SpriteRenderer> tinted)
+        {
+            const float length = 2.3f;
+            SpriteRenderer hull = CodeSprites.AddArt(ship, art, length, 8, new Vector2(0f, y), "Casco");
+            Rect r = art.rect;
+            // La mitad izquierda, con el pivote en su orilla derecha (= el centro del dibujo completo).
+            float pivotY = art.pivot.y / Mathf.Max(1f, r.height);
+            Sprite half = Sprite.Create(art.texture, new Rect(r.x, r.y, r.width * 0.5f, r.height), new Vector2(1f, pivotY), art.pixelsPerUnit);
+            float centerX = (0.5f - art.pivot.x / Mathf.Max(1f, r.width)) * art.bounds.size.x * hull.transform.localScale.x;
+            SpriteRenderer back = CodeSprites.Add(ship, half, Color.white, 9, new Vector2(centerX, y), hull.transform.localScale, "CascoColor");
+            tinted.Add(back);
+            tinted.Add(CodeSprites.Add(ship, CodeSprites.Circle, Color.white, 11, new Vector2(length * 0.42f, y + 0.05f), Vector2.one * 0.16f, "Faro"));
+        }
+
+        /// <summary>La cápsula hecha con figuras (mientras no hay dibujo).</summary>
+        private void BuildShipFigure(float w, float h, float y, float line, Color outline, Color white, System.Collections.Generic.List<SpriteRenderer> tinted)
+        {
+            Sprite c = CodeSprites.Circle, sq = CodeSprites.Square;
+            // Contorno grueso (estilo caricatura).
+            CodeSprites.Add(ship, sq, outline, 7, new Vector2(0f, y), new Vector2(w, h + line * 2f), "Contorno");
+            CodeSprites.Add(ship, c, outline, 7, new Vector2(-w * 0.5f, y), Vector2.one * (h + line * 2f), "ContornoAtras");
+            CodeSprites.Add(ship, c, outline, 7, new Vector2(w * 0.5f, y), Vector2.one * (h + line * 2f), "ContornoNariz");
+
+            // Mitad de atrás: color del medicamento. Mitad de enfrente: blanca (como una cápsula de verdad).
+            tinted.Add(CodeSprites.Add(ship, c, white, 8, new Vector2(-w * 0.5f, y), Vector2.one * h, "Atras"));
+            tinted.Add(CodeSprites.Add(ship, sq, white, 8, new Vector2(-w * 0.25f, y), new Vector2(w * 0.5f, h), "AtrasCuerpo"));
+            CodeSprites.Add(ship, sq, white, 8, new Vector2(w * 0.25f, y), new Vector2(w * 0.5f, h), "Enfrente");
+            CodeSprites.Add(ship, c, white, 8, new Vector2(w * 0.5f, y), Vector2.one * h, "Nariz");
+            CodeSprites.Add(ship, sq, outline, 9, new Vector2(0f, y), new Vector2(0.06f, h), "Union");
+            // Brillo de arriba y sombra de abajo.
+            CodeSprites.Add(ship, c, new Color(1f, 1f, 1f, 0.55f), 10, new Vector2(0.15f, y + h * 0.27f), new Vector2(w * 0.9f, 0.13f), "Brillo");
+            CodeSprites.Add(ship, c, new Color(0f, 0f, 0f, 0.18f), 10, new Vector2(0f, y - h * 0.3f), new Vector2(w * 1.2f, 0.18f), "Sombra");
+            // Luz del frente (se pinta del medicamento).
+            tinted.Add(CodeSprites.Add(ship, c, white, 11, new Vector2(w * 0.62f, y + 0.05f), Vector2.one * 0.16f, "Faro"));
         }
 
         private void OnMedication(MedicationData med)
