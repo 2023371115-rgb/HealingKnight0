@@ -55,6 +55,7 @@ namespace HealingKnight.EditorTools
         public static string ArteriasVenasPath => $"{Folder}/Levels/Circulatorio/Circulatorio_ArteriasVenas.unity";
         public static string BazoPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Bazo.unity";
         public static string CorazonPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Corazon.unity";
+        public static string GranTromboPath => $"{Folder}/Levels/Circulatorio/Circulatorio_GranTrombo.unity";
 
         public void Run()
         {
@@ -75,6 +76,7 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(ArteriasVenasPath, BuildArteriasVenas);
             CreateIfMissing(BazoPath, BuildBazo);
             CreateIfMissing(CorazonPath, BuildCorazon);
+            CreateIfMissing(GranTromboPath, BuildGranTrombo);
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
@@ -98,6 +100,7 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(ArteriasVenasPath, true),
                 new EditorBuildSettingsScene(BazoPath, true),
                 new EditorBuildSettingsScene(CorazonPath, true),
+                new EditorBuildSettingsScene(GranTromboPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
             EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
@@ -5048,6 +5051,137 @@ namespace HealingKnight.EditorTools
             if (manager != null)
                 SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Corazón a salvo y con su ritmo! Pero... con la arritmia se formó un COÁGULO " +
                     "adentro y se SOLTÓ rumbo al CEREBRO. ¡Hay que perseguirlo!");
+        }
+
+        // ================= JEFE DEL SISTEMA: EL GRAN TROMBO (vuelo hacia arriba) =================
+
+        private const float CarotidBrainX = 676f;
+
+        /// <summary>Centro de la aorta y la carótida (todo se juega hacia ARRIBA: la cámara va girada -90°).</summary>
+        private static float CarotidCenterY(float x) => 1f + 1.8f * Mathf.Sin(x * 0.012f) * Smooth01(60f, 140f, x);
+
+        /// <summary>Aorta ancha al salir del corazón, luego la carótida y al final la carótida interna (más angosta).</summary>
+        private static float CarotidRadius(float x)
+        {
+            float r = Mathf.Lerp(4.6f, 3.8f, Smooth01(90f, 140f, x));
+            r = Mathf.Lerp(r, 3.2f, Smooth01(480f, 540f, x));
+            return Mathf.Lerp(r, 5.5f, Smooth01(668f, 690f, x));   // se abre al cerebro
+        }
+
+        private static float CarotidTopY(float x) => CarotidCenterY(x) + CarotidRadius(x);
+        private static float CarotidBottomY(float x) => CarotidCenterY(x) - CarotidRadius(x);
+
+        private void BuildGranTrombo()
+        {
+            // El gran trombo (720 u, vuelo hacia ARRIBA): sales disparado del ventrículo izquierdo, subes por la aorta y la
+            // CARÓTIDA persiguiendo un coágulo enorme que va al CEREBRO. Hay que deshacerlo con ANTICOAGULANTE antes de que
+            // llegue (la barra de la derecha). Si llega: EMBOLIA y regresas al último punto de guardado.
+            const float length = 720f;
+            const float startX = -10f, endX = startX + length;
+            LevelManager manager = BuildLevelBase(length, new LevelStyle
+            {
+                background = new Color(0.2f, 0.02f, 0.05f),
+                wall = new Color(0.35f, 0.04f, 0.08f),
+                floor = new Color(0.6f, 0.1f, 0.15f),
+                floorEdge = new Color(0.95f, 0.35f, 0.4f),
+                decor = Decor.None,
+                tissue = "Arteria",
+                flight = true
+            }, "NODO: ¡Un COÁGULO se soltó del corazón y va rumbo al CEREBRO! Súbete a la nanocápsula y persíguelo por la CARÓTIDA. " +
+               "Solo el ANTICOAGULANTE lo deshace. Espera el latido...");
+
+            var back = new GameObject("Fondo");
+            back.transform.SetParent(environment, false);
+            var backRenderer = back.AddComponent<SpriteRenderer>();
+            backRenderer.sprite = PlaceholderArt.SquareCentered;
+            backRenderer.color = new Color(0.36f, 0.04f, 0.08f);
+            backRenderer.sortingOrder = -300;
+            back.AddComponent<LevelBackdrop>().Configure(startX, endX);
+            back.AddComponent<AmbientLife>().Configure(AmbientLife.Theme.Blood, 40);
+            new GameObject("Latido").AddComponent<Heartbeat>().Configure(88f);
+
+            var path = new List<Vector2>();
+            for (float x = -0.4f; x < endX - 6f; x += 2f) path.Add(new Vector2(x, CarotidCenterY(x)));
+            path.Add(new Vector2(endX - 6f, CarotidCenterY(endX - 6f)));
+            var route = new GameObject("RutaDeVuelo").AddComponent<FlightRoute>();
+            route.Configure(path.ToArray(), 3.3f, 2.2f);
+            route.ConfigureSpeeds(new[]
+            {
+                new Vector2(-40f, 3.3f), new Vector2(200f, 3.3f), new Vector2(230f, 3.7f), new Vector2(420f, 3.7f),
+                new Vector2(450f, 4.1f)
+            });
+            route.ConfigureRoll(new[] { new Vector2(-40f, -90f) });
+
+            // Paredes, con el hueco de la carótida EXTERNA (a la cara) que jala hacia afuera.
+            var topGaps = new List<Vector2> { new Vector2(472f, 1.6f) };
+            WallWithGaps(CarotidBottomY, -40f, CarotidBrainX + 2f, true, new List<Vector2>());
+            WallWithGaps(CarotidTopY, -40f, CarotidBrainX + 2f, false, topGaps);
+            {
+                float x = 472f, y = CarotidTopY(x);
+                VesselWall(new Vector2(x - 1.6f, y + 7f), new Vector2(x - 1.6f, y - 0.3f), 1.4f);
+                VesselWall(new Vector2(x + 1.6f, y - 0.3f), new Vector2(x + 1.6f, y + 7f), 1.4f);
+                Node("CorrienteCarotidaExterna", x, y - 1.6f).AddComponent<FlowZone>().Configure(new Vector2(3.8f, 3.4f), new Vector2(0f, 6f));
+            }
+            // El cerebro al final: tejido rosa en vez de pared.
+            for (float x = CarotidBrainX - 2f; x < endX + 20f; x += 2.2f)
+                foreach (int side in new[] { -1, 1 })
+                {
+                    float y = CarotidCenterY(x) + side * (CarotidRadius(x) + 1.6f + Mathf.Sin(x * 1.3f) * 0.5f);
+                    GameObject g = SetupUtils.Child(environment, "Cerebro", new Vector3(x, y, 0f));
+                    SetupUtils.SpriteChild(g.transform, "Contorno", PlaceholderArt.Circle, new Color(0.45f, 0.18f, 0.3f), Vector3.zero, new Vector2(3.4f, 3.2f), -92);
+                    SetupUtils.SpriteChild(g.transform, "Pliegue", PlaceholderArt.Circle, new Color(1f, 0.7f, 0.8f), Vector3.zero, new Vector2(3.1f, 2.9f), -91);
+                    SetupUtils.SpriteChild(g.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 0.88f, 0.92f, 0.6f), new Vector3(-0.5f, 0.6f, 0f), new Vector2(1.1f, 0.5f), -90);
+                }
+
+            Sprite cellArt = PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 1f);
+            new GameObject("GlobulosRojos").AddComponent<BloodStream>().Configure(14f, endX - 8f, 6, 2.6f, cellArt);
+
+            // ---------- El jefe que te lleva la delantera ----------
+            GameObject boss = Node("Jefe_GranTrombo", 30f, CarotidCenterY(30f));
+            var health = boss.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.GranTromboJefe);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            var hurt = boss.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
+            SetupUtils.SetVector2(hurt, "offset", Vector2.zero);
+            SetupUtils.SetVector2(hurt, "size", new Vector2(3.4f, 3.8f));
+            boss.AddComponent<GreatThrombusBoss>().Configure(24f, CarotidBrainX, prefabs.Embolo);
+
+            // ---------- Recorrido: aorta → carótida → carótida interna → cerebro ----------
+            FlightNote(12f, "La AORTA: el coágulo ya va adelante. Cámbiale al ANTICOAGULANTE ({cambiar}) y ¡dispárale!");
+            Checkpoint(60f);
+            FlightBannerNote(96f, "CARÓTIDA", new Color(1f, 0.6f, 0.65f), "La CARÓTIDA lleva sangre a la cabeza y al CEREBRO. Te la puedes sentir en el cuello.");
+            var g1 = Spec(prefabs.SAureus, 3, FlightPattern.Line, 2.5f, -2.5f, 2.6f);
+            g1.splitPrefab = prefabs.SAureusCoco; g1.splitCount = 2; g1.interval = 0.4f;
+            FlightWaveAt(120f, g1);
+            SpeedPad(140f, CarotidCenterY(140f), FlightSpeedPad.Kind.Adrenaline);
+            Checkpoint(170f);
+            IVSerum(220f, CarotidCenterY(220f) + 1.5f);
+            SpeedPad(250f, CarotidCenterY(250f) - 1.4f, FlightSpeedPad.Kind.BetaBlocker,
+                "¡BETABLOQUEADOR! Todo va más lento... y el coágulo también: te da más TIEMPO para deshacerlo.");
+            var g2 = Spec(prefabs.Neumococo, 4, FlightPattern.Swoop, 0.6f, 0.8f, 3f);
+            g2.edge = FlightEdge.Top; g2.interval = 0.4f;
+            FlightWaveAt(270f, g2);
+            Checkpoint(290f);
+            ThickBlood(330f, 352f, CarotidCenterY(341f), CarotidRadius(341f),
+                "SANGRE ESPESA: aquí todo va más lento (el coágulo también). ¡Aprovecha para dispararle!");
+            SpeedPad(380f, CarotidCenterY(380f) + 1.2f, FlightSpeedPad.Kind.Adrenaline);
+            Checkpoint(410f);
+            FlightNote(456f, "La carótida se divide: la EXTERNA va a la cara (te jala de lado) y la INTERNA al CEREBRO. El coágulo va a la INTERNA.");
+            IVSerum(470f, CarotidCenterY(470f) - 1.6f);
+            SpeedPad(520f, CarotidCenterY(520f), FlightSpeedPad.Kind.BetaBlocker);
+            Checkpoint(530f);
+            var g3 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 2f, -4f, 2.4f);
+            g3.hoverX = 3.4f; g3.hoverTime = 4f; g3.fireEveryBeats = 2; g3.interval = 0.3f;
+            FlightWaveAt(560f, g3);
+            IVSerum(590f, CarotidCenterY(590f));
+            SpeedPad(610f, CarotidCenterY(610f), FlightSpeedPad.Kind.BetaBlocker);
+            Checkpoint(630f);
+            FlightBannerNote(CarotidBrainX + 8f, "EL CEREBRO", new Color(1f, 0.75f, 0.85f),
+                "¡El CEREBRO! Recibe sangre todo el tiempo: sin ella, en unos minutos las neuronas se dañan.");
+
+            if (manager != null)
+                SetupUtils.SetString(manager, "completeMessage", "NODO: ¡SISTEMA CIRCULATORIO A SALVO! Deshiciste el gran trombo y la sangre " +
+                    "llega a todo el cuerpo. ¡Lo lograste, caballero!");
         }
 
         private void BuildSandbox()

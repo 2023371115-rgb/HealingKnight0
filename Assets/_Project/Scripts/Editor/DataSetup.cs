@@ -33,6 +33,7 @@ namespace HealingKnight.EditorTools
         public EnemyData Esporozoito, Merozoito, PlasmodiumJefe;
         public EnemyData LinfocitoInfectado, EpsteinBarrJefe;
         public EnemyData SViridans, Vegetacion, TCruziJefe;
+        public EnemyData Embolo, GranTromboJefe;
         public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
 
         public void Run()
@@ -48,6 +49,7 @@ namespace HealingKnight.EditorTools
             CreateMalariaEnemies();
             CreateSpleenEnemies();
             CreateHeartEnemies();
+            CreateThrombusEnemies();
             CreateOffspring();
             CreateCatalog();
             CreateBestiary();
@@ -736,6 +738,35 @@ namespace HealingKnight.EditorTools
             });
         }
 
+        /// <summary>El gran trombo (jefe del sistema) y los émbolos que suelta.</summary>
+        private void CreateThrombusEnemies()
+        {
+            Embolo = Enemy("Coagulo_Embolo", e =>
+            {
+                e.displayName = "Émbolo";
+                e.threat = ThreatType.Coagulo;
+                e.biologia = "Un pedazo de coágulo que se suelta y viaja por la sangre hasta que tapa algo. Anticoagulante.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 2f;
+                e.maxHealth = 10f; e.moveSpeed = 3f;
+                e.attackDamage = 9f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.tint = new Color(0.8f, 0.6f, 0.9f);
+                e.visualScale = 0.9f;
+            });
+            GranTromboJefe = Enemy("Jefe_GranTrombo", e =>
+            {
+                e.displayName = "El gran trombo";
+                e.threat = ThreatType.Coagulo;
+                e.biologia = "Un coágulo enorme que se formó en el corazón (por la arritmia) y se soltó. Si llega al cerebro tapa una " +
+                    "arteria: eso es una EMBOLIA (infarto cerebral). Solo lo deshace el anticoagulante.";
+                e.maxHealth = 900f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 8;
+                e.attackDamage = 9f;
+                e.tint = new Color(0.8f, 0.6f, 0.9f);
+            });
+        }
+
         /// <summary>Corazón: estreptococo viridans (endocarditis), sus vegetaciones en las válvulas y el T. cruzi.</summary>
         private void CreateHeartEnemies()
         {
@@ -1099,8 +1130,9 @@ namespace HealingKnight.EditorTools
                 "Vuela en la nanocápsula: el ventrículo te dispara a la aorta. Avanza con cada latido y deshaz los coágulos con Anticoagulante.");
             CirculatorioCorazon = PlayableLevel("Circulatorio", "03_Corazon", "circulatorio_corazon", "Corazón", "Circulatorio_Corazon", true,
                 "Válvulas al ritmo del latido, ventrículos que se aprietan, cuerdas tendinosas y el Trypanosoma cruzi (Chagas)."); 
-            CirculatorioGranTrombo = Level("Circulatorio", "04_GranTrombo", "circulatorio_gran_trombo", "El gran trombo", "", false,
-                "Persigue al coágulo por la carótida antes de que llegue al cerebro. Próximamente.");
+            CirculatorioGranTrombo = PlayableLevel("Circulatorio", "04_GranTrombo", "circulatorio_gran_trombo", "El gran trombo",
+                "Circulatorio_GranTrombo", false,
+                "Jefe del sistema: persigue al coágulo por la carótida y deshazlo con anticoagulante antes de que llegue al cerebro.");
             SystemData circulatorio = MakeSystem("Circulatorio", "circulatorio", "Sistema Circulatorio", "IV", Anticoagulante,
                 new Color(0.9f, 0.2f, 0.25f), new Vector2(0.45f, 0.65f),
                 "La Cepa Madre bombea variantes resistentes a todo el cuerpo.",

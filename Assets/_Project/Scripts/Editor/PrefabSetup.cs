@@ -33,6 +33,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
         public EnemyHealth PlaquetasBloqueo, EpsteinBarrJefe;
         public EnemyHealth SViridans, VegetacionBloqueo, TCruziJefe;
+        public EnemyHealth Embolo;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -149,6 +150,7 @@ namespace HealingKnight.EditorTools
             SViridans = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_SViridans.prefab", BuildSViridans);
             VegetacionBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Vegetacion.prefab", () => BuildObstacle("Bloqueo_Vegetacion", data.Vegetacion, true, false));
             TCruziJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/TCruzi_Corazon.prefab", BuildTCruzi);
+            Embolo = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Coagulo_Embolo.prefab", BuildEmbolus);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -1676,6 +1678,24 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(boss, "deadSprite", art[3]);
             }
             return root;
+        }
+
+        /// <summary>Émbolo: bolita de plaquetas moradas con hilos de fibrina (un pedazo del gran trombo).</summary>
+        private GameObject BuildEmbolus()
+        {
+            GameObject go = BuildEnemy("Coagulo_Embolo", data.Embolo, EnemyShape.Round);
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Embolo.visualScale;
+            for (int i = 0; i < 6; i++)
+            {
+                float a = i * 60f * Mathf.Deg2Rad;
+                var p = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.32f * s;
+                SetupUtils.SpriteChild(visual, "PlaquetaContorno" + i, PlaceholderArt.Circle, new Color(0.3f, 0.1f, 0.34f), p, Vector2.one * 0.42f * s, -2);
+                SetupUtils.SpriteChild(visual, "Plaqueta" + i, PlaceholderArt.Circle, new Color(0.85f, 0.65f, 0.95f), p, Vector2.one * 0.34f * s, -1);
+            }
+            SetupUtils.SpriteChild(visual, "Fibrina", PlaceholderArt.SquareCentered, new Color(1f, 0.95f, 0.8f, 0.9f), Vector3.zero, new Vector2(1.1f, 0.06f) * s, 2)
+                .transform.localRotation = Quaternion.Euler(0f, 0f, 25f);
+            return go;
         }
 
         /// <summary>S. viridans: cadenita de cocos verdes (un "collar") sobre su cuerpo.</summary>
