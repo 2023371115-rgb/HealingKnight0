@@ -56,6 +56,7 @@ namespace HealingKnight.EditorTools
         public static string BazoPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Bazo.unity";
         public static string CorazonPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Corazon.unity";
         public static string GranTromboPath => $"{Folder}/Levels/Circulatorio/Circulatorio_GranTrombo.unity";
+        public static string RinonPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Rinon.unity";
 
         public void Run()
         {
@@ -77,6 +78,7 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(BazoPath, BuildBazo);
             CreateIfMissing(CorazonPath, BuildCorazon);
             CreateIfMissing(GranTromboPath, BuildGranTrombo);
+            CreateIfMissing(RinonPath, BuildRinon);
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
@@ -101,6 +103,7 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(BazoPath, true),
                 new EditorBuildSettingsScene(CorazonPath, true),
                 new EditorBuildSettingsScene(GranTromboPath, true),
+                new EditorBuildSettingsScene(RinonPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
             EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
@@ -4456,6 +4459,7 @@ namespace HealingKnight.EditorTools
             BranchTube(147f, 1.4f, true, 7f);
             BranchTube(398f, 1.2f, true, 7f);
             BranchTube(452f, 0.9f, true, 11f);    // renal izquierda (angosta)
+            RenalSecretEntrance(452f, OuterTopY(452f) + 1f);
             BranchTube(418f, 1.3f, false, 7f);
             BranchTube(460f, 1.1f, false, 11f);   // renal derecha
             BranchTube(515f, 0.9f, false, 6f);
@@ -4601,7 +4605,7 @@ namespace HealingKnight.EditorTools
             a4.warn = true; a4.interval = 0.9f;
             a4.message = "¡MENINGOCOCO en la sangre (meningococemia)! Cruza RAPIDÍSIMO: fíjate en el aviso (!) de la orilla. Antibiótico.";
             FlightWaveAt(434f, a4);
-            FlightNote(446f, "Las arterias RENALES llevan sangre a los RIÑONES: les llega una QUINTA PARTE de toda tu sangre. ¡Jalan fuerte!");
+            FlightNote(446f, "Las arterias RENALES llevan sangre a los RIÑONES: les llega una QUINTA PARTE de toda tu sangre. ¡Jalan fuerte! (¿Cabrás ENCOGIDA en la de arriba?)");
             Clot(445f, OuterTopY(445f) - 1.1f, new Vector2(2f, 2.4f), false, null);   // las plaquetas se pegan donde la sangre se arremolina
             var a5 = Spec(prefabs.Neumococo, 4, FlightPattern.Line, 0f, 0f, 3.2f);
             a5.amplitude = 2.2f; a5.frequency = 0.45f; a5.interval = 0.45f;
@@ -5182,6 +5186,127 @@ namespace HealingKnight.EditorTools
             if (manager != null)
                 SetupUtils.SetString(manager, "completeMessage", "NODO: ¡SISTEMA CIRCULATORIO A SALVO! Deshiciste el gran trombo y la sangre " +
                     "llega a todo el cuerpo. ¡Lo lograste, caballero!");
+        }
+
+        // ================= SECRETO: RIÑÓN (a pie; se entra por la renal izquierda de Arterias y venas) =================
+
+        /// <summary>
+        /// La entrada escondida al Riñón: adentro de la arteria renal izquierda (la rama angosta de arriba del tramo 2).
+        /// Solo cabes ENCOGIDO; un riñoncito brillante marca el lugar.
+        /// </summary>
+        private void RenalSecretEntrance(float x, float y)
+        {
+            GameObject go = Node("HaciaElRinon", x, y);
+            var entrance = go.AddComponent<SecretTooth>();
+            GameObject visual = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            Color line = new Color(0.2f, 0.08f, 0.05f);
+            SetupUtils.SpriteChild(visual.transform, "Aura", PlaceholderArt.Circle, new Color(1f, 0.85f, 0.5f, 0.4f), Vector3.zero, new Vector2(1.6f, 1.6f), 19);
+            SetupUtils.SpriteChild(visual.transform, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, new Vector2(0.75f, 1f), 20);
+            SetupUtils.SpriteChild(visual.transform, "Rinon", PlaceholderArt.Circle, new Color(0.75f, 0.35f, 0.25f), Vector3.zero, new Vector2(0.62f, 0.88f), 21);
+            SetupUtils.SpriteChild(visual.transform, "Hilio", PlaceholderArt.Circle, new Color(0.45f, 0.15f, 0.1f), new Vector3(0.2f, 0f, 0f), new Vector2(0.22f, 0.3f), 22);
+            SetupUtils.SetString(entrance, "secretId", "circulatorio_rinon");
+            SetupUtils.SetRef(entrance, "targetLevel", data.CirculatorioRinon);
+            SetupUtils.SetString(entrance, "firstMessage", "¡Te metiste a la arteria RENAL! Lleva la sangre al RIÑÓN... ¡un nivel secreto!");
+            SetupUtils.SetString(entrance, "againMessage", "De vuelta al riñón por la arteria renal.");
+            SetupUtils.SetFloat(entrance, "radius", 0.9f);
+            SetupUtils.SetRef(entrance, "visual", visual.transform);
+        }
+
+        /// <summary>Pared que cuelga del techo (para nadar por debajo en el asa de Henle).</summary>
+        private void HangingWall(float x, float bottomY, float topY, float width)
+        {
+            var go = new GameObject("ParedColgante");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, (bottomY + topY) * 0.5f, 0f);
+            go.layer = PhysicsLayers.Ground;
+            go.AddComponent<BoxCollider2D>().size = new Vector2(width, topY - bottomY);
+            SetupUtils.SpriteChild(go.transform, "Tejido", PlaceholderArt.SquareCentered, new Color(0.45f, 0.2f, 0.14f), Vector3.zero, new Vector2(width, topY - bottomY), -95);
+            SetupUtils.SpriteChild(go.transform, "Orilla", PlaceholderArt.Circle, new Color(0.9f, 0.6f, 0.45f), new Vector3(0f, -(topY - bottomY) * 0.5f, 0f), new Vector2(width + 0.2f, 0.7f), -94);
+        }
+
+        private ShootSwitch SwitchAt(float x, float y, float hold, string label)
+        {
+            var sw = Node("Boton", x, y).AddComponent<ShootSwitch>();
+            sw.Configure(hold, label);
+            return sw;
+        }
+
+        private void BuildRinon()
+        {
+            // Riñón (secreto, 232 u): todo es de AGUA y PRESIÓN. Glomérulo (sube la presión con las dos arteriolas para
+            // pasar el colador) → túbulo con E. coli → asa de Henle (nadar: entre más hondo, más salado y más flotas) →
+            // túbulo colector (la hormona ADH sube el agua) → uréter (te persigue una piedra) → pelvis renal con el jefe:
+            // el CÁLCULO GIGANTE (litotricia: pégale en la grieta que brilla). Premio: DEPURACIÓN.
+            LevelManager manager = BuildLevelBase(232f, new LevelStyle
+            {
+                background = new Color(0.12f, 0.06f, 0.04f),
+                wall = new Color(0.4f, 0.2f, 0.14f),
+                floor = new Color(0.55f, 0.28f, 0.2f),
+                floorEdge = new Color(1f, 0.75f, 0.5f),
+                blob = new Color(0.95f, 0.8f, 0.4f, 0.22f),
+                decor = Decor.Blobs,
+                glow = new Color(1f, 0.85f, 0.45f, 0.45f),
+                backdrop = "Fondo_Rinon",
+                tissue = "Rinon"
+            }, "NODO: ¡Nivel secreto: el RIÑÓN! Filtra TODA tu sangre muchas veces al día y saca lo que sobra en la orina. " +
+               "Aquí todo es AGUA y PRESIÓN.");
+
+            // ---------- Glomérulo: presión ----------
+            Arena("Arena_1_Rinon", 6f, 16f, "E. COLI: la causa más común de infección urinaria (sube desde la vejiga). Antibiótico.",
+                W(0.6f, E(prefabs.EColi, data.EColi, 2)),
+                W(1.0f, E(prefabs.EColi, data.EColi, 2, SpawnSide.Both)));
+            Platform(12f, 2.6f, 2.6f);
+            Tip(25f, "GLOMÉRULO", "GLOMÉRULO: un colador de vasitos. Dispárale a las DOS ARTERIOLAS: cuando las dos brillen sube la PRESIÓN y el colador se abre.");
+            ShootSwitch afferent = SwitchAt(30f, FloorY + 1.6f, 6f, "AFERENTE");
+            Platform(35f, 4f, 2.4f);
+            ShootSwitch efferent = SwitchAt(36.5f, FloorY + 7.2f, 6f, "EFERENTE");
+            Node("Glomerulo", 41f, FloorY).AddComponent<GlomerulusFilter>().Configure(afferent, efferent, 12f);
+            Checkpoint(44f);
+
+            // ---------- Túbulo proximal ----------
+            EnemyAt(prefabs.EColi, 52f, FloorY);
+            Platform(56f, 2.8f, 2.4f);
+            EnemyAt(prefabs.EColi, 62f, FloorY);
+            Platform(66f, 4f, 2.4f);
+            OralSerum(72f, FloorY + 1f);
+
+            // ---------- Asa de Henle: nadar en forma de U ----------
+            Tip(76f, "ASA DE HENLE", "ASA DE HENLE: el túbulo baja en U. Entre más bajas, el agua está más SALADA y FLOTAS más. " +
+                "Nada con {saltar}, mantén ABAJO para hundirte y pasa por DEBAJO de la pared.");
+            SolidBlock(78f, 84f, FloorY + 8.5f);
+            Node("AsaDeHenle", 84f, FloorY).AddComponent<BuoyancyZone>().Configure(84f, 116f, FloorY, FloorY + 1f, FloorY + 8f, true, true);
+            HangingWall(100f, FloorY + 2f, FloorY + 18f, 2f);
+            EnemyAt(prefabs.EColi, 92f, FloorY + 4f);
+            SolidBlock(116f, 122f, FloorY + 8.5f);
+            Checkpoint(119f);
+
+            // ---------- Túbulo colector: la hormona ADH sube el agua ----------
+            Tip(124f, "ADH", "TÚBULO COLECTOR: la hormona ADH decide cuánta AGUA guarda tu cuerpo. Dispárale al botón ADH: el agua SUBE y tú con ella.");
+            BuoyancyZone duct = Node("TubuloColector", 122f, FloorY).AddComponent<BuoyancyZone>();
+            duct.Configure(122f, 146f, FloorY, FloorY + 0.8f, FloorY + 9f, false, false);
+            ShootSwitch adh = SwitchAt(134f, FloorY + 4.5f, 0f, "ADH");
+            Node("ConexionADH", 134f, FloorY).AddComponent<SwitchToWater>().Configure(adh, duct);
+            SolidBlock(146f, 152f, FloorY + 9.5f);
+            EnemyAt(prefabs.EColi, 150f, FloorY + 9.5f);
+            Checkpoint(156f);
+
+            // ---------- Uréter: te persigue una piedra ----------
+            Node("PiedraQueRueda", 160f, FloorY).AddComponent<RollingStoneChase>().Configure(160f, 192f, FloorY, 5.4f);
+            Platform(168f, 2.4f, 2.4f);
+            EnemyAt(prefabs.EColi, 175f, FloorY);
+            Platform(181f, 2.6f, 2.4f);
+            Checkpoint(194f);
+
+            // ---------- Pelvis renal: el cálculo gigante ----------
+            Tip(195.5f, "CÁLCULO", "Un CÁLCULO gigante tapa la pelvis del riñón. Las balas rebotan: pégale en la GRIETA que brilla.");
+            Arena("Arena_Calculo", 198f, 25f, null,
+                W(1.2f, E(prefabs.CalculoJefe, data.CalculoJefe, 1)));
+            Platform(202f, 3.2f, 2.6f);
+            Platform(210.5f, 5f, 2.6f);
+            Platform(219f, 3.2f, 2.6f);
+
+            if (manager != null)
+                SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Riñón limpio! Toma AGUA: así trabajan felices y no se forman piedras.");
         }
 
         private void BuildSandbox()

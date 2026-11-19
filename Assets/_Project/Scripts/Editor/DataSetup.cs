@@ -34,7 +34,8 @@ namespace HealingKnight.EditorTools
         public EnemyData LinfocitoInfectado, EpsteinBarrJefe;
         public EnemyData SViridans, Vegetacion, TCruziJefe;
         public EnemyData Embolo, GranTromboJefe;
-        public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
+        public EnemyData EColi, CalculoJefe;
+        public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo, CirculatorioRinon;
 
         public void Run()
         {
@@ -50,6 +51,7 @@ namespace HealingKnight.EditorTools
             CreateSpleenEnemies();
             CreateHeartEnemies();
             CreateThrombusEnemies();
+            CreateKidneyEnemies();
             CreateOffspring();
             CreateCatalog();
             CreateBestiary();
@@ -738,6 +740,35 @@ namespace HealingKnight.EditorTools
             });
         }
 
+        /// <summary>Riñón (secreto): E. coli (infección urinaria) y el cálculo gigante.</summary>
+        private void CreateKidneyEnemies()
+        {
+            EColi = Enemy("Bacteria_EColi", e =>
+            {
+                e.displayName = "E. coli";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Vive normalmente en el intestino, pero si sube por las vías urinarias causa INFECCIÓN URINARIA (la más común). " +
+                    "Antibiótico. Se previene tomando agua y con buena higiene.";
+                e.maxHealth = 24f; e.moveSpeed = 3.4f;
+                e.attackDistance = 1.6f; e.attackWindup = 0.5f; e.attackCooldown = 1.8f; e.attackDamage = 9f; e.attackKnockback = 5f;
+                e.tint = new Color(0.95f, 0.8f, 0.45f);
+            });
+            CalculoJefe = Enemy("Jefe_Calculo", e =>
+            {
+                e.displayName = "Cálculo gigante";
+                e.threat = ThreatType.Inflamacion;
+                e.biologia = "Una piedra de sales (casi siempre calcio) que se forma en el riñón cuando falta agua. Duele muchísimo al " +
+                    "bajar por el uréter. Se rompe con LITOTRICIA (ondas de choque). Se previene tomando agua.";
+                e.maxHealth = 450f;
+                e.meleeDamageTakenMultiplier = 1f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
+                e.attackDamage = 10f;
+                e.tint = new Color(0.85f, 0.73f, 0.45f);
+                // Lo que importa es pegarle en la grieta: ahí todas las cápsulas sirven.
+                AllMedications(e, Effectiveness.Effective, null);
+            });
+        }
+
         /// <summary>El gran trombo (jefe del sistema) y los émbolos que suelta.</summary>
         private void CreateThrombusEnemies()
         {
@@ -1133,14 +1164,28 @@ namespace HealingKnight.EditorTools
             CirculatorioGranTrombo = PlayableLevel("Circulatorio", "04_GranTrombo", "circulatorio_gran_trombo", "El gran trombo",
                 "Circulatorio_GranTrombo", false,
                 "Jefe del sistema: persigue al coágulo por la carótida y deshazlo con anticoagulante antes de que llegue al cerebro.");
+            CirculatorioRinon = Level("Circulatorio", "99_Rinon_Secreto", "circulatorio_rinon", "Riñón", "Circulatorio_Rinon", false,
+                "Nivel secreto: sube la presión del glomérulo, nada en el asa de Henle, juega con el agua y rompe el cálculo gigante.");
+            if (!CirculatorioRinon.hidden)
+            {
+                CirculatorioRinon.hidden = true;
+                CirculatorioRinon.secretId = "circulatorio_rinon";
+                UnityEditor.EditorUtility.SetDirty(CirculatorioRinon);
+            }
+
             SystemData circulatorio = MakeSystem("Circulatorio", "circulatorio", "Sistema Circulatorio", "IV", Anticoagulante,
                 new Color(0.9f, 0.2f, 0.25f), new Vector2(0.45f, 0.65f),
                 "La Cepa Madre bombea variantes resistentes a todo el cuerpo.",
-                CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo);
+                CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo, CirculatorioRinon);
             if (circulatorio.regionalMedication != Anticoagulante || !circulatorio.levels.Contains(CirculatorioArteriasVenas))
             {
                 circulatorio.regionalMedication = Anticoagulante;
                 circulatorio.levels = new List<LevelData> { CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo };
+                UnityEditor.EditorUtility.SetDirty(circulatorio);
+            }
+            if (!circulatorio.levels.Contains(CirculatorioRinon))
+            {
+                circulatorio.levels.Add(CirculatorioRinon);
                 UnityEditor.EditorUtility.SetDirty(circulatorio);
             }
 

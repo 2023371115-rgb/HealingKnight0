@@ -33,7 +33,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
         public EnemyHealth PlaquetasBloqueo, EpsteinBarrJefe;
         public EnemyHealth SViridans, VegetacionBloqueo, TCruziJefe;
-        public EnemyHealth Embolo;
+        public EnemyHealth Embolo, EColi, CalculoJefe;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -151,6 +151,9 @@ namespace HealingKnight.EditorTools
             VegetacionBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Vegetacion.prefab", () => BuildObstacle("Bloqueo_Vegetacion", data.Vegetacion, true, false));
             TCruziJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/TCruzi_Corazon.prefab", BuildTCruzi);
             Embolo = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Coagulo_Embolo.prefab", BuildEmbolus);
+            // Riñón (secreto): E. coli y el cálculo gigante.
+            EColi = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_EColi.prefab", BuildEColi);
+            CalculoJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Calculo_Rinon.prefab", BuildKidneyStone);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -1677,6 +1680,32 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(boss, "attackSprite", art[2]);
                 SetupUtils.SetRef(boss, "deadSprite", art[3]);
             }
+            return root;
+        }
+
+        /// <summary>E. coli: bacilo (bastoncito) amarillo con flagelos.</summary>
+        private GameObject BuildEColi()
+        {
+            GameObject go = BuildEnemy("Bacteria_EColi", data.EColi, EnemyShape.Blob);
+            Transform visual = go.transform.Find("Visual");
+            Transform body = go.transform.Find("Visual/Body");
+            if (body != null) body.localScale = new Vector3(body.localScale.x * 1.5f, body.localScale.y * 0.75f, 1f);
+            for (int i = 0; i < 4; i++)
+            {
+                var f = SetupUtils.SpriteChild(visual, "Flagelo" + i, PlaceholderArt.SquareCentered, new Color(0.5f, 0.35f, 0.15f),
+                    new Vector3(-0.9f + i * 0.6f, 0.05f, 0f), new Vector2(0.06f, 0.6f), -1);
+                f.transform.localRotation = Quaternion.Euler(0f, 0f, -30f + i * 20f);
+            }
+            return go;
+        }
+
+        /// <summary>Cálculo gigante (jefe secreto del Riñón): el dibujo y la lógica los arma KidneyStoneBoss.</summary>
+        private GameObject BuildKidneyStone()
+        {
+            EnemyData d = data.CalculoJefe;
+            GameObject root = BossRoot("Calculo_Rinon", d, out Transform v, out EnemyHealth health);
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 2.6f), new Vector2(1.1f, 1.1f));
+            root.AddComponent<KidneyStoneBoss>();
             return root;
         }
 

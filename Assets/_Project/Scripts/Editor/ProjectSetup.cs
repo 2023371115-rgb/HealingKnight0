@@ -101,6 +101,9 @@ namespace HealingKnight.EditorTools
         [MenuItem("Healing Knight/Abrir escena/Circulatorio · El gran trombo (jefe del sistema)", priority = 39)]
         private static void OpenGranTrombo() => Open(SceneSetup.GranTromboPath);
 
+        [MenuItem("Healing Knight/Abrir escena/Circulatorio · Riñón (secreto)", priority = 40)]
+        private static void OpenRinon() => Open(SceneSetup.RinonPath);
+
         [MenuItem("Healing Knight/Abrir escena/Extra · Mundo secreto (prueba)", priority = 41)]
         private static void OpenSecreto() => Open(SceneSetup.SecretoPath);
 

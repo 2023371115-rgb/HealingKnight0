@@ -419,6 +419,9 @@ namespace HealingKnight.Gameplay.Player
         /// <summary>Frena al jugador un momento (mucosidad: 0.5 = mitad de velocidad).</summary>
         public void ApplySlow(float multiplier, float duration)
         {
+            // Premio del riñón (DEPURACIÓN): lo que te alenta te dura la mitad.
+            if (HealingKnight.Core.Flow.GameSession.Save != null && HealingKnight.Core.Flow.GameSession.Save.HasSecret("premio_depuracion"))
+                duration *= 0.5f;
             if (Time.time >= slowUntil || multiplier < slowMultiplier) slowMultiplier = multiplier;
             slowUntil = Mathf.Max(slowUntil, Time.time + duration);
         }
