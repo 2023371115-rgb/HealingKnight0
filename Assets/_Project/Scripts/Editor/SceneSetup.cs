@@ -3590,13 +3590,142 @@ namespace HealingKnight.EditorTools
             return ys[ys.Length - 1];
         }
 
-        /// <summary>Centro del vaso (y de la cámara): plano en la aorta ascendente, sube al ARCO y baja a la descendente.</summary>
+        /// <summary>Centro del vaso (y de la cámara): plano en la aorta ascendente, sube al ARCO, baja a la descendente y
+        /// en la panza ondula suave (sigue a la columna).</summary>
         private static float AortaCenterY(float x) =>
-            SmoothKeys(new[] { -40f, 92f, 114f, 160f, 188f, 500f }, new[] { 2.5f, 2.5f, 8f, 8f, 1f, 1f }, x);
+            SmoothKeys(new[] { -40f, 92f, 114f, 160f, 188f, 370f, 430f, 500f, 548f, 1200f },
+                       new[] { 2.5f, 2.5f, 8f, 8f, 1f, 1f, -0.5f, 2f, 1f, 1f }, x);
 
-        /// <summary>Radio del vaso: ancho en el ventrículo, angosto en la válvula aórtica y luego la aorta.</summary>
+        /// <summary>Radio del vaso: ancho en el ventrículo, angosto en la válvula aórtica, la aorta y la abdominal (más chica).</summary>
         private static float AortaRadiusAt(float x) =>
-            SmoothKeys(new[] { -40f, 0.5f, 5.2f, 6.8f, 10f, 500f }, new[] { 4.8f, 4.8f, 3.2f, 3.2f, AortaRadius, AortaRadius }, x);
+            SmoothKeys(new[] { -40f, 0.5f, 5.2f, 6.8f, 10f, 372f, 392f, 1200f }, new[] { 4.8f, 4.8f, 3.2f, 3.2f, AortaRadius, AortaRadius, 3.6f, 3.6f }, x);
+
+        // La bifurcación: la aorta empieza a partirse en ForkStart y en ForkWide ya son las dos ilíacas.
+        private const float ForkStart = 566f, ForkWide = 602f, IliacOffset = 5.6f;
+
+        private static float ForkK(float x)
+        {
+            float k = Mathf.Clamp01((x - ForkStart) / (ForkWide - ForkStart));
+            return k * k * (3f - 2f * k);
+        }
+
+        /// <summary>Centro de la ilíaca izquierda (la de arriba).</summary>
+        private static float IliacUpY(float x) =>
+            AortaCenterY(x) + IliacOffset * ForkK(x) + (x > ForkWide ? 1.1f * Mathf.Sin((x - ForkWide) * 0.05f) : 0f);
+
+        /// <summary>Centro de la ilíaca derecha (la de abajo).</summary>
+        private static float IliacDownY(float x) =>
+            AortaCenterY(x) - IliacOffset * ForkK(x) - (x > ForkWide ? 1f * Mathf.Sin((x - ForkWide) * 0.043f) : 0f);
+
+        private static float IliacUpR(float x) => Mathf.Lerp(AortaRadiusAt(x), 3f, ForkK(x));
+        private static float IliacDownR(float x) => Mathf.Lerp(AortaRadiusAt(x), 3.4f, ForkK(x));
+
+        /// <summary>Pared de arriba por fuera: la de la aorta y, después de partirse, la de la ilíaca izquierda.</summary>
+        private static float OuterTopY(float x) => x < ForkStart ? AortaCenterY(x) + AortaRadiusAt(x) : IliacUpY(x) + IliacUpR(x);
+        private static float OuterBottomY(float x) => x < ForkStart ? AortaCenterY(x) - AortaRadiusAt(x) : IliacDownY(x) - IliacDownR(x);
+
+        /// <summary>
+        /// Pared que sigue una función, con huecos donde salen ramas (x, medio ancho). 'lipUp' = pared de abajo (se
+        /// recorre de izquierda a derecha); si no, pared de arriba (de derecha a izquierda), así la orilla queda adentro.
+        /// </summary>
+        private void WallWithGaps(System.Func<float, float> wallY, float fromX, float toX, bool lipUp, List<Vector2> gaps)
+        {
+            var xs = new List<float>();
+            for (float x = fromX; x <= toX; x += 1f) xs.Add(x);
+            foreach (Vector2 g in gaps) { xs.Add(g.x - g.y); xs.Add(g.x + g.y); }
+            xs.Sort();
+            if (!lipUp) xs.Reverse();
+            var pts = new List<Vector2>();
+            foreach (float x in xs)
+            {
+                bool gap = false;
+                foreach (Vector2 g in gaps) if (x > g.x - g.y + 0.01f && x < g.x + g.y - 0.01f) gap = true;
+                if (gap)
+                {
+                    if (pts.Count > 1) VesselWallAlong(pts);
+                    pts.Clear();
+                    continue;
+                }
+                if (pts.Count > 0 && Mathf.Abs(pts[pts.Count - 1].x - x) < 0.05f) continue;
+                pts.Add(new Vector2(x, wallY(x)));
+            }
+            if (pts.Count > 1) VesselWallAlong(pts);
+        }
+
+        /// <summary>Tubito de una rama que sale del vaso (arriba o abajo) y la corriente que te jala hacia él.</summary>
+        private void BranchTube(float x, float half, bool up, float pull)
+        {
+            float y = up ? OuterTopY(x) : OuterBottomY(x);
+            float s = up ? 1f : -1f;
+            // Las orillas miran hacia adentro del tubo.
+            if (up)
+            {
+                VesselWall(new Vector2(x - half, y + 7f), new Vector2(x - half, y - 0.3f), 1.4f);
+                VesselWall(new Vector2(x + half, y - 0.3f), new Vector2(x + half, y + 7f), 1.4f);
+            }
+            else
+            {
+                VesselWall(new Vector2(x - half, y + 0.3f), new Vector2(x - half, y - 7f), 1.4f);
+                VesselWall(new Vector2(x + half, y - 7f), new Vector2(x + half, y + 0.3f), 1.4f);
+            }
+            Node("CorrienteRama", x, y - s * 1.6f).AddComponent<FlowZone>().Configure(new Vector2(half * 2f + 0.6f, 3.4f), new Vector2(0f, s * pull));
+        }
+
+        /// <summary>
+        /// La "punta" que separa las ilíacas: la pared de abajo de la izquierda y la de arriba de la derecha, con tejido
+        /// en medio. Cerca de la punta va en pedacitos (es delgada); luego en tramos largos.
+        /// </summary>
+        private void Divider(float tipX, float toX)
+        {
+            const float near = 28f;
+            for (float x = tipX; x < tipX + near; x += 1f)
+            {
+                float thick = (IliacUpY(x) - IliacUpR(x)) - (IliacDownY(x) + IliacDownR(x));
+                float depth = Mathf.Max(0.15f, thick * 0.5f + 0.05f);
+                VesselWall(new Vector2(x, IliacUpY(x) - IliacUpR(x)), new Vector2(x + 1f, IliacUpY(x + 1f) - IliacUpR(x + 1f)), depth);
+                VesselWall(new Vector2(x + 1f, IliacDownY(x + 1f) + IliacDownR(x + 1f)), new Vector2(x, IliacDownY(x) + IliacDownR(x)), depth);
+            }
+            var upperInner = new List<Vector2>();
+            var lowerInner = new List<Vector2>();
+            for (float x = tipX + near; x <= toX; x += 1f)
+            {
+                upperInner.Add(new Vector2(x, IliacUpY(x) - IliacUpR(x)));
+                lowerInner.Insert(0, new Vector2(x, IliacDownY(x) + IliacDownR(x)));
+            }
+            VesselWallAlong(upperInner, 1.3f);
+            VesselWallAlong(lowerInner, 1.3f);
+            // Relleno del tejido de en medio (detrás de las paredes).
+            if (tissueFill == null) return;
+            for (float x = tipX + 1f; x <= toX; x += 1.5f)
+            {
+                float topY = IliacUpY(x) - IliacUpR(x), bottomY = IliacDownY(x) + IliacDownR(x);
+                if (topY - bottomY < 0.3f) continue;
+                TiledChild(environment, "TejidoEntreIliacas", tissueFill, new Vector3(x, topY, 0f), new Vector2(1.7f, topY - bottomY), -101, Color.white);
+            }
+        }
+
+        /// <summary>Mensaje de NODO en el vuelo (cuando el centro de la pantalla llega a 'x'; con rama, solo en esa).</summary>
+        private void FlightNote(float x, string text, int branch = 0) =>
+            Node("MensajeVuelo", x, AortaCenterY(x)).AddComponent<FlightMessage>().Configure(text, branch);
+
+        /// <summary>Suero intravenoso flotando en la sangre: cura y da una bomba. (Una bolsita de suero dibujada con figuras.)</summary>
+        private void IVSerum(float x, float y)
+        {
+            var go = new GameObject("SueroIntravenoso");
+            go.transform.SetParent(environment, false);
+            go.transform.position = new Vector3(x, y, 0f);
+            GameObject art = SetupUtils.Child(go.transform, "Dibujo", Vector3.zero);
+            SetupUtils.SpriteChild(art.transform, "Contorno", PlaceholderArt.SquareCentered, new Color(0.08f, 0.15f, 0.3f), Vector3.zero, new Vector2(0.78f, 1.02f), 20);
+            SetupUtils.SpriteChild(art.transform, "Bolsa", PlaceholderArt.SquareCentered, new Color(0.85f, 0.95f, 1f), Vector3.zero, new Vector2(0.66f, 0.9f), 21);
+            SetupUtils.SpriteChild(art.transform, "Liquido", PlaceholderArt.SquareCentered, new Color(0.45f, 0.8f, 1f), new Vector3(0f, -0.15f, 0f), new Vector2(0.66f, 0.58f), 22);
+            SetupUtils.SpriteChild(art.transform, "CruzH", PlaceholderArt.SquareCentered, Color.white, new Vector3(0f, -0.12f, 0f), new Vector2(0.34f, 0.1f), 23);
+            SetupUtils.SpriteChild(art.transform, "CruzV", PlaceholderArt.SquareCentered, Color.white, new Vector3(0f, -0.12f, 0f), new Vector2(0.1f, 0.34f), 23);
+            SetupUtils.SpriteChild(art.transform, "Tubo", PlaceholderArt.SquareCentered, new Color(0.85f, 0.95f, 1f, 0.9f), new Vector3(0f, -0.68f, 0f), new Vector2(0.07f, 0.4f), 21);
+            SetupUtils.SpriteChild(go.transform, "Aura", PlaceholderArt.Circle, new Color(0.5f, 0.85f, 1f, 0.3f), Vector3.zero, new Vector2(1.7f, 1.7f), 19);
+            var pickup = go.AddComponent<HealPickup>();
+            pickup.Configure(art.transform, 30f, 1, "NODO: SUERO intravenoso: agua con sales directo a la sangre (así se cura a alguien deshidratado en el hospital). +Vida y +1 bomba.");
+            SetupUtils.SetFloat(pickup, "radius", 1.2f);
+        }
 
         /// <summary>
         /// Pared del vaso de 'a' a 'b' (tramo recto). La orilla brillante (endotelio) queda a la IZQUIERDA del recorrido
@@ -3662,7 +3791,7 @@ namespace HealingKnight.EditorTools
         }
 
         /// <summary>Coágulo de plaquetas (lo dibuja aquí con figuras de relleno). 'full' tapa todo el vaso.</summary>
-        private void Clot(float x, float centerY, Vector2 size, bool full, string message)
+        private ClotGate Clot(float x, float centerY, Vector2 size, bool full, string message)
         {
             GameObject go = Node(full ? "CoaguloCompleto" : "CoaguloPegado", x, centerY);
             var art = new GameObject("Dibujo").transform;
@@ -3699,7 +3828,9 @@ namespace HealingKnight.EditorTools
                 go.layer = PhysicsLayers.Ground;
                 go.AddComponent<BoxCollider2D>().size = size;
             }
-            go.AddComponent<ClotGate>().Configure(full, size, message);
+            ClotGate gate = go.AddComponent<ClotGate>();
+            gate.Configure(full, size, message);
+            return gate;
         }
 
         private FlightWaveSpec Spec(EnemyHealth prefab, int count, FlightPattern pattern, float entry, float step, float speed)
@@ -3716,14 +3847,20 @@ namespace HealingKnight.EditorTools
 
         private void BuildArteriasVenas()
         {
-            // Primer tramo (prueba del modo de vuelo): el VENTRÍCULO IZQUIERDO te dispara a la AORTA.
-            //  1) Ventrículo (inicio quieto) y válvula aórtica que se abre con cada latido.
-            //  2) Aorta ascendente: sepsis (S. aureus, neumococo) entre el tráfico de glóbulos rojos.
-            //  3) Arco aórtico: sube, de arriba salen sus ramas (te jalan) y de ahí bajan enemigos.
-            //     Al bajar, el primer COÁGULO completo: tutorial del ANTICOAGULANTE.
-            //  4) Aorta descendente: coágulos pegados a la pared, TAQUICARDIA y el enjambre final.
+            // ARTERIAS Y VENAS (vuelo). Tramos hechos:
+            //  TRAMO 1 — la AORTA (0–360):
+            //   1) Ventrículo (inicio quieto) y válvula aórtica que se abre con cada latido.
+            //   2) Aorta ascendente: sepsis (S. aureus, neumococo) entre el tráfico de glóbulos rojos.
+            //   3) Arco aórtico: sube, de arriba salen sus ramas (te jalan) y de ahí bajan enemigos.
+            //      Al bajar, el primer COÁGULO completo: tutorial del ANTICOAGULANTE.
+            //   4) Aorta descendente: coágulos pegados a la pared, TAQUICARDIA y el enjambre final.
+            //  TRAMO 2 — AORTA ABDOMINAL e ILÍACAS (360–780):
+            //   5) Pasa el diafragma; las ramas a los órganos de la panza jalan hacia arriba y hacia abajo
+            //      (tronco celíaco, mesentéricas y las RENALES, que jalan fuerte). Llega el meningococo: rapidísimo, con aviso.
+            //   6) La aorta se parte en las dos ILÍACAS: escoges por arriba o por abajo de la punta.
+            //      Arriba (izquierda): más rápida, más enemigos y suero. Abajo (derecha): más coágulos y glóbulos.
             // Todo es relativo a la cámara, que avanza sola por el centro del vaso (FlightRoute).
-            const float length = 370f;
+            const float length = 790f;
             const float startX = -10f, endX = startX + length;
             LevelManager manager = BuildLevelBase(length, new LevelStyle
             {
@@ -3749,41 +3886,47 @@ namespace HealingKnight.EditorTools
 
             new GameObject("Latido").AddComponent<Heartbeat>().Configure(84f);
 
-            // Camino de la cámara (= centro del vaso) y paredes que lo siguen.
-            var path = new List<Vector2>();
-            for (float x = -0.4f; x < endX - 6f; x += 2f) path.Add(new Vector2(x, AortaCenterY(x)));
-            path.Add(new Vector2(endX - 6f, AortaCenterY(endX - 6f)));
-            new GameObject("RutaDeVuelo").AddComponent<FlightRoute>().Configure(path.ToArray(), 2.9f, 2.2f);
+            // ---------- Geometría: la aorta, sus ramas y la bifurcación en las ilíacas ----------
+            float tipX = ForkStart;
+            for (float x = ForkStart; x < ForkWide; x += 0.1f)
+                if (IliacUpY(x) - IliacUpR(x) >= IliacDownY(x) + IliacDownR(x)) { tipX = x; break; }
+            float decisionX = tipX + 7f;
 
-            float[] branches = { 121f, 134f, 147f };   // tronco braquiocefálico, carótida y subclavia izquierdas
-            const float branchHalf = 1.4f;
-            var bottom = new List<Vector2>();
-            for (float x = -40f; x <= endX + 25f; x += 1f) bottom.Add(new Vector2(x, AortaCenterY(x) - AortaRadiusAt(x)));
-            VesselWallAlong(bottom);
-            // Pared de arriba: de derecha a izquierda (la orilla queda hacia adentro), con huecos en las ramas.
-            var top = new List<Vector2>();
-            for (float x = endX + 25f; x >= -40f; x -= 1f)
+            // Camino de la cámara: el centro de la aorta hasta un poco después de la punta; luego la rama que escojas.
+            var main = new List<Vector2>();
+            for (float x = -0.4f; x < decisionX; x += 2f) main.Add(new Vector2(x, AortaCenterY(x)));
+            main.Add(new Vector2(decisionX, AortaCenterY(decisionX)));
+            var upper = new List<Vector2>();
+            var lower = new List<Vector2>();
+            for (float x = decisionX + 2f; x < endX - 6f; x += 2f)
             {
-                bool inBranch = false;
-                foreach (float b in branches) if (x > b - branchHalf && x < b + branchHalf) inBranch = true;
-                if (inBranch)
-                {
-                    if (top.Count > 0) VesselWallAlong(top);
-                    top.Clear();
-                    continue;
-                }
-                top.Add(new Vector2(x, AortaCenterY(x) + AortaRadiusAt(x)));
+                float k = Mathf.SmoothStep(0f, 1f, (x - decisionX) / 14f);
+                upper.Add(new Vector2(x, Mathf.Lerp(AortaCenterY(x), IliacUpY(x), k)));
+                lower.Add(new Vector2(x, Mathf.Lerp(AortaCenterY(x), IliacDownY(x), k)));
             }
-            VesselWallAlong(top);
-            foreach (float b in branches)
-            {
-                float y = AortaCenterY(b) + AortaRadius;
-                // Tubito de la rama: dos paredes que suben (las orillas miran hacia adentro del tubo).
-                VesselWall(new Vector2(b - branchHalf, y + 7f), new Vector2(b - branchHalf, y - 0.3f), 1.4f);
-                VesselWall(new Vector2(b + branchHalf, y - 0.3f), new Vector2(b + branchHalf, y + 7f), 1.4f);
-                // La sangre que se va por la rama te jala hacia arriba.
-                Node("CorrienteRama", b, y - 1.6f).AddComponent<FlowZone>().Configure(new Vector2(branchHalf * 2f + 0.6f, 3.4f), new Vector2(0f, 7f));
-            }
+            upper.Add(new Vector2(endX - 6f, IliacUpY(endX - 6f)));
+            lower.Add(new Vector2(endX - 6f, IliacDownY(endX - 6f)));
+            var route = new GameObject("RutaDeVuelo").AddComponent<FlightRoute>();
+            route.Configure(main.ToArray(), 2.9f, 2.2f);
+            route.ConfigureFork(upper.ToArray(), lower.ToArray(), new Vector2(tipX, AortaCenterY(tipX)), 1.25f,
+                "Ilíaca IZQUIERDA: la sangre corre más rápido aquí. Más enemigos... y suero.",
+                "Ilíaca DERECHA: más coágulos y más glóbulos rojos. Ten listo el ANTICOAGULANTE.");
+
+            // Ramas: (x, medio ancho). Arriba: las del arco (cabeza y brazos), el tronco celíaco y la renal izquierda.
+            // Abajo: la mesentérica superior, la renal derecha y la mesentérica inferior.
+            var topGaps = new List<Vector2> { new Vector2(121f, 1.4f), new Vector2(134f, 1.4f), new Vector2(147f, 1.4f), new Vector2(398f, 1.2f), new Vector2(452f, 0.9f) };
+            var bottomGaps = new List<Vector2> { new Vector2(418f, 1.3f), new Vector2(460f, 1.1f), new Vector2(515f, 0.9f) };
+            WallWithGaps(OuterBottomY, -40f, endX + 25f, true, bottomGaps);
+            WallWithGaps(OuterTopY, -40f, endX + 25f, false, topGaps);
+            BranchTube(121f, 1.4f, true, 7f);
+            BranchTube(134f, 1.4f, true, 7f);
+            BranchTube(147f, 1.4f, true, 7f);
+            BranchTube(398f, 1.2f, true, 7f);
+            BranchTube(452f, 0.9f, true, 11f);    // renal izquierda (angosta)
+            BranchTube(418f, 1.3f, false, 7f);
+            BranchTube(460f, 1.1f, false, 11f);   // renal derecha
+            BranchTube(515f, 0.9f, false, 6f);
+            Divider(tipX, endX + 25f);
 
             // Ventrículo: músculo grueso que se aprieta con cada latido, y la válvula aórtica (dos valvas).
             for (int i = 0; i < 6; i++)
@@ -3809,11 +3952,14 @@ namespace HealingKnight.EditorTools
                 hinge.AddComponent<HeartPulse>().Configure(HeartPulse.Mode.Valve, 0f, side > 0 ? 72f : -72f);
             }
 
-            // Tráfico de glóbulos rojos en todo el tramo.
+            // Tráfico de glóbulos rojos: en la aorta, poco en la ilíaca izquierda y mucho en la derecha.
             Sprite cellArt = PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 1f);
-            new GameObject("GlobulosRojos").AddComponent<BloodStream>().Configure(14f, endX - 8f, 7, 2.5f, cellArt);
+            new GameObject("GlobulosRojos").AddComponent<BloodStream>().Configure(14f, tipX + 4f, 7, 2.5f, cellArt);
+            new GameObject("GlobulosRojos_Izquierda").AddComponent<BloodStream>().Configure(ForkWide, endX - 8f, 4, 1.8f, cellArt, 1);
+            new GameObject("GlobulosRojos_Derecha").AddComponent<BloodStream>().Configure(ForkWide, endX - 8f, 11, 2.2f, cellArt, 2);
 
-            // ---------- 2) Aorta ascendente ----------
+            // ================= TRAMO 1: la aorta =================
+            // ---------- Aorta ascendente ----------
             SetMessage("Cada LATIDO empuja la sangre: la pantalla avanza de golpe y luego va lento. Los GLÓBULOS ROJOS detienen las balas... las tuyas también.", 14f);
             var w1 = Spec(prefabs.SAureus, 3, FlightPattern.Line, 1.6f, -1.6f, 2.6f);
             w1.amplitude = 0.6f; w1.frequency = 0.4f; w1.splitPrefab = prefabs.SAureusCoco; w1.splitCount = 2;
@@ -3833,14 +3979,14 @@ namespace HealingKnight.EditorTools
             FlightWaveAt(82f, w4);
             Checkpoint(92f);
 
-            // ---------- 3) Arco aórtico ----------
+            // ---------- Arco aórtico ----------
             SetMessage("El ARCO de la aorta: de arriba salen las arterias que van a la cabeza y a los brazos. La sangre que se va por ahí te JALA.", 106f);
             var w5 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 0f, 0f, 2.6f);
-            w5.edge = FlightEdge.Top; w5.worldX = branches[0]; w5.interval = 0.7f;
-            FlightWaveAt(branches[0] + 3f, w5);
+            w5.edge = FlightEdge.Top; w5.worldX = 121f; w5.interval = 0.7f;
+            FlightWaveAt(124f, w5);
             var w6 = Spec(prefabs.SAureus, 3, FlightPattern.Swoop, 0f, 0f, 2.4f);
-            w6.edge = FlightEdge.Top; w6.worldX = branches[1]; w6.interval = 0.8f; w6.splitPrefab = prefabs.SAureusCoco; w6.splitCount = 2;
-            FlightWaveAt(branches[1] + 3f, w6);
+            w6.edge = FlightEdge.Top; w6.worldX = 134f; w6.interval = 0.8f; w6.splitPrefab = prefabs.SAureusCoco; w6.splitCount = 2;
+            FlightWaveAt(137f, w6);
             var w7 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, -2f, 3.5f, 2.5f);
             w7.edge = FlightEdge.Bottom; w7.hoverX = 4.5f; w7.hoverTime = 5f; w7.fireEveryBeats = 2; w7.shots = 3; w7.spreadDegrees = 30f; w7.shotSpeed = 5f;
             FlightWaveAt(152f, w7);
@@ -3850,7 +3996,7 @@ namespace HealingKnight.EditorTools
                 "¡Un COÁGULO tapa la aorta! Las plaquetas se pegaron. Cambia al ANTICOAGULANTE ({medicamento}) y dispárale: las demás cápsulas rebotan.");
             Checkpoint(178f);
 
-            // ---------- 4) Aorta descendente ----------
+            // ---------- Aorta descendente ----------
             var w8 = Spec(prefabs.SAureus, 4, FlightPattern.Line, 0f, 0f, 2.8f);
             w8.amplitude = 2f; w8.frequency = 0.35f; w8.interval = 0.6f; w8.splitPrefab = prefabs.SAureusCoco; w8.splitCount = 2;
             FlightWaveAt(196f, w8);
@@ -3881,10 +4027,10 @@ namespace HealingKnight.EditorTools
             Clot(304f, AortaCenterY(304f) - AortaRadius + 1.1f, new Vector2(2.4f, 2.8f), false, null);
             Checkpoint(310f);
 
-            // Enjambre final: sepsis por todos lados.
+            // Enjambre final del tramo 1: sepsis por todos lados.
             var w14 = Spec(prefabs.SAureus, 5, FlightPattern.Line, 2.6f, 0f, 3f);
             w14.amplitude = 0.8f; w14.interval = 0.5f; w14.splitPrefab = prefabs.SAureusCoco; w14.splitCount = 2;
-            w14.message = "¡Un enjambre de SEPSIS! Aguanta: ya casi llegas a la bifurcación de la aorta.";
+            w14.message = "¡Un enjambre de SEPSIS! Aguanta: ya casi llegas a la panza.";
             FlightWaveAt(320f, w14);
             var w15 = Spec(prefabs.Neumococo, 5, FlightPattern.Line, -2.6f, 0f, 3.6f);
             w15.amplitude = 0.8f; w15.interval = 0.5f;
@@ -3892,14 +4038,129 @@ namespace HealingKnight.EditorTools
             var w16 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 3f, -6f, 2.5f);
             w16.hoverX = 6f; w16.hoverTime = 4f; w16.fireEveryBeats = 1; w16.shots = 3; w16.spreadDegrees = 30f; w16.interval = 0.2f;
             FlightWaveAt(334f, w16);
-            SetMessage("¡Lo lograste! Aquí la aorta se divide hacia las piernas... (fin del primer tramo: lo que sigue es la bifurcación).", endX - 18f);
+
+            // ================= TRAMO 2: aorta abdominal e ilíacas =================
+            Checkpoint(358f);
+            Node("CalmaElCorazon", 362f, AortaCenterY(362f)).AddComponent<TachycardiaTrigger>().Configure(0f,
+                "Cruzaste el DIAFRAGMA: ahora es la aorta ABDOMINAL. El corazón se calmó... por ahora.");
+            FlightNote(384f, "De la aorta abdominal salen ramas a los órganos de la panza, y cada una te JALA: unas hacia arriba y otras hacia abajo.");
+            FlightNote(392f, "Tronco CELÍACO: lleva sangre al estómago, al hígado... y al BAZO.");
+            var a1 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 0f, 0f, 2.6f);
+            a1.edge = FlightEdge.Top; a1.worldX = 398f; a1.interval = 0.7f;
+            FlightWaveAt(401f, a1);
+            var a2 = Spec(prefabs.SAureus, 3, FlightPattern.Line, -1.5f, -0.9f, 2.8f);
+            a2.amplitude = 0.5f; a2.interval = 0.5f; a2.splitPrefab = prefabs.SAureusCoco; a2.splitCount = 2;
+            FlightWaveAt(408f, a2);
+            var a3 = Spec(prefabs.SAureus, 2, FlightPattern.Swoop, 0f, 0f, 2.4f);
+            a3.edge = FlightEdge.Bottom; a3.worldX = 418f; a3.interval = 0.9f; a3.splitPrefab = prefabs.SAureusCoco; a3.splitCount = 2;
+            FlightWaveAt(421f, a3);
+            FlightNote(414f, "Mesentérica SUPERIOR: va al intestino delgado. Esta jala hacia ABAJO.");
+            var a4 = Spec(prefabs.Meningococo, 3, FlightPattern.Line, 2f, -2f, 9f);
+            a4.warn = true; a4.interval = 0.9f;
+            a4.message = "¡MENINGOCOCO en la sangre (meningococemia)! Cruza RAPIDÍSIMO: fíjate en el aviso (!) de la orilla. Antibiótico.";
+            FlightWaveAt(434f, a4);
+            FlightNote(446f, "Las arterias RENALES llevan sangre a los RIÑONES: les llega una QUINTA PARTE de toda tu sangre. ¡Jalan fuerte!");
+            Clot(445f, OuterTopY(445f) - 1.1f, new Vector2(2f, 2.4f), false, null);   // las plaquetas se pegan donde la sangre se arremolina
+            var a5 = Spec(prefabs.Neumococo, 4, FlightPattern.Line, 0f, 0f, 3.2f);
+            a5.amplitude = 2.2f; a5.frequency = 0.45f; a5.interval = 0.45f;
+            FlightWaveAt(458f, a5);
+            Checkpoint(468f);
+            var a6 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 2.2f, -4.4f, 2.5f);
+            a6.hoverX = 5.5f; a6.hoverTime = 5f; a6.fireEveryBeats = 2; a6.shots = 3; a6.spreadDegrees = 28f; a6.interval = 0.2f;
+            a6.splitPrefab = prefabs.SAureusCoco; a6.splitCount = 2;
+            FlightWaveAt(480f, a6);
+            var a7 = Spec(prefabs.Neumococo, 2, FlightPattern.Chase, 2.5f, -5f, 2.6f);
+            a7.hoverTime = 6f; a7.interval = 0.5f;
+            FlightWaveAt(492f, a7);
+            var a8 = Spec(prefabs.Meningococo, 2, FlightPattern.Line, 2.6f, -5.2f, 10f);
+            a8.warn = true; a8.interval = 0.6f;
+            FlightWaveAt(504f, a8);
+            var a9 = Spec(prefabs.Meningococo, 2, FlightPattern.Line, 0.2f, 0f, 10f);
+            a9.warn = true; a9.interval = 0.6f;
+            FlightWaveAt(509f, a9);
+            Clot(522f, OuterBottomY(522f) + 1.1f, new Vector2(2.2f, 2.6f), false, null);
+            Clot(530f, OuterTopY(530f) - 1.1f, new Vector2(2.2f, 2.6f), false, null);
+            var a10 = Spec(prefabs.SAureus, 4, FlightPattern.Line, 0f, 0f, 3f);
+            a10.amplitude = 1.8f; a10.frequency = 0.5f; a10.interval = 0.45f; a10.splitPrefab = prefabs.SAureusCoco; a10.splitCount = 2;
+            FlightWaveAt(536f, a10);
+            Checkpoint(542f);
+
+            // ---------- La bifurcación: las dos ilíacas ----------
+            FlightNote(tipX - 26f, "¡La aorta se divide en las dos ILÍACAS, una para cada pierna! ARRIBA (izquierda): más rápida, más enemigos y SUERO. " +
+                "ABAJO (derecha): más coágulos y glóbulos. Pasa por arriba o por abajo de la PUNTA.");
+
+            // Rama de arriba (1): ilíaca izquierda.
+            var u1 = Spec(prefabs.SAureus, 3, FlightPattern.Hover, 1.6f, -1.6f, 2.5f);
+            u1.hoverX = 5f; u1.hoverTime = 4.5f; u1.fireEveryBeats = 2; u1.shots = 3; u1.spreadDegrees = 26f; u1.interval = 0.25f; u1.branch = 1;
+            u1.splitPrefab = prefabs.SAureusCoco; u1.splitCount = 2;
+            FlightWaveAt(612f, u1);
+            var u2 = Spec(prefabs.Meningococo, 3, FlightPattern.Line, 1.4f, -1.4f, 10f);
+            u2.warn = true; u2.interval = 0.7f; u2.branch = 1;
+            FlightWaveAt(626f, u2);
+            IVSerum(634f, IliacUpY(634f) + 1.2f);
+            var u3 = Spec(prefabs.Neumococo, 6, FlightPattern.Line, 1.8f, -0.7f, 3.6f);
+            u3.interval = 0.25f; u3.branch = 1;
+            FlightWaveAt(642f, u3);
+            var u4 = Spec(prefabs.Neumococo, 3, FlightPattern.Chase, 1.5f, -1.5f, 2.8f);
+            u4.hoverTime = 5.5f; u4.interval = 0.5f; u4.branch = 1;
+            FlightWaveAt(656f, u4);
+            Checkpoint(664f);
+            var u5 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.5f, -3f, 2.5f);
+            u5.hoverX = 5.5f; u5.hoverTime = 4f; u5.fireEveryBeats = 1; u5.interval = 0.2f; u5.branch = 1;
+            FlightWaveAt(674f, u5);
+            var u6 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 3f, 1.6f, 3.2f);
+            u6.edge = FlightEdge.Top; u6.interval = 0.4f; u6.branch = 1;
+            FlightWaveAt(680f, u6);
+            var u7 = Spec(prefabs.Meningococo, 5, FlightPattern.Line, 1.5f, -0.75f, 11f);
+            u7.warn = true; u7.interval = 0.5f; u7.branch = 1;
+            u7.message = "¡Una ráfaga de meningococos! Mira los avisos.";
+            FlightWaveAt(696f, u7);
+            IVSerum(708f, IliacUpY(708f) - 1f);
+            var u8 = Spec(prefabs.SAureus, 4, FlightPattern.Line, 1.6f, -1.1f, 3.2f);
+            u8.amplitude = 0.6f; u8.interval = 0.4f; u8.branch = 1; u8.splitPrefab = prefabs.SAureusCoco; u8.splitCount = 2;
+            FlightWaveAt(720f, u8);
+            var u9 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.4f, -2.8f, 2.5f);
+            u9.hoverX = 6f; u9.hoverTime = 4f; u9.fireEveryBeats = 1; u9.shots = 3; u9.spreadDegrees = 30f; u9.interval = 0.2f; u9.branch = 1;
+            FlightWaveAt(736f, u9);
+            FlightNote(endX - 22f, "¡Ilíaca izquierda superada! De aquí sigue la arteria FEMORAL, rumbo a la pierna... (fin del tramo 2).", 1);
+
+            // Rama de abajo (2): ilíaca derecha — más obstáculos.
+            Clot(616f, IliacDownY(616f) + IliacDownR(616f) - 1f, new Vector2(2.2f, 2.2f), false, "Coágulos en la ilíaca derecha: esquívalos o disuélvelos.").SetBranch(2);
+            Clot(628f, IliacDownY(628f) - IliacDownR(628f) + 1f, new Vector2(2.2f, 2.2f), false, null).SetBranch(2);
+            var l1 = Spec(prefabs.SAureus, 3, FlightPattern.Line, 0f, 1.2f, 2.6f);
+            l1.amplitude = 0.8f; l1.interval = 0.6f; l1.branch = 2; l1.splitPrefab = prefabs.SAureusCoco; l1.splitCount = 2;
+            FlightWaveAt(622f, l1);
+            Clot(642f, IliacDownY(642f) + IliacDownR(642f) - 1f, new Vector2(2.4f, 2.4f), false, null).SetBranch(2);
+            Clot(642f, IliacDownY(642f) - IliacDownR(642f) + 1f, new Vector2(2.4f, 2.4f), false, null).SetBranch(2);
+            var l2 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.4f, -2.8f, 2.5f);
+            l2.hoverX = 5.5f; l2.hoverTime = 4.5f; l2.fireEveryBeats = 2; l2.interval = 0.2f; l2.branch = 2;
+            FlightWaveAt(652f, l2);
+            Clot(668f, IliacDownY(668f), new Vector2(2.4f, IliacDownR(668f) * 2f + 1f), true,
+                "¡Otro coágulo tapa la ilíaca! ANTICOAGULANTE.").SetBranch(2);
+            Checkpoint(672f);
+            var l3 = Spec(prefabs.Neumococo, 4, FlightPattern.Line, 1.5f, -1f, 3.2f);
+            l3.interval = 0.35f; l3.branch = 2;
+            FlightWaveAt(684f, l3);
+            IVSerum(694f, IliacDownY(694f));
+            Clot(704f, IliacDownY(704f) + IliacDownR(704f) - 1f, new Vector2(2.2f, 2.4f), false, null).SetBranch(2);
+            var l4 = Spec(prefabs.Neumococo, 2, FlightPattern.Chase, 1.5f, -3f, 2.5f);
+            l4.hoverTime = 6f; l4.interval = 0.5f; l4.branch = 2;
+            FlightWaveAt(710f, l4);
+            Clot(722f, IliacDownY(722f) - IliacDownR(722f) + 1f, new Vector2(2.2f, 2.4f), false, null).SetBranch(2);
+            var l5 = Spec(prefabs.Meningococo, 2, FlightPattern.Line, 1.2f, -2.4f, 9f);
+            l5.warn = true; l5.interval = 0.8f; l5.branch = 2;
+            FlightWaveAt(728f, l5);
+            var l6 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.4f, -2.8f, 2.5f);
+            l6.hoverX = 6f; l6.hoverTime = 4f; l6.fireEveryBeats = 2; l6.shots = 3; l6.spreadDegrees = 26f; l6.interval = 0.2f; l6.branch = 2;
+            FlightWaveAt(740f, l6);
+            FlightNote(endX - 22f, "¡Ilíaca derecha superada! De aquí sigue la arteria FEMORAL, rumbo a la pierna... (fin del tramo 2).", 2);
 
             // Inicio dentro del ventrículo.
             var spawn = new Vector2(startX + 4f, AortaCenterY(startX) - 0.6f);
             SetupUtils.SetVector2(manager, "spawnPoint", spawn);
             var player = Object.FindAnyObjectByType<HealingKnight.Gameplay.Player.PlayerController>();
             if (player != null) player.transform.position = spawn;
-            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Aorta desinfectada! (Prueba del modo de vuelo terminada.)");
+            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Aorta e ilíacas desinfectadas! (Fin del tramo 2 de prueba.)");
         }
 
         private void BuildSandbox()

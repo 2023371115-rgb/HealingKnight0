@@ -20,6 +20,8 @@ namespace HealingKnight.Gameplay.Flight
     public class ClotGate : MonoBehaviour
     {
         [SerializeField] private bool full;
+        [Tooltip("0 = cuenta siempre; 1/2 = solo si escogiste esa rama de la bifurcación (FlightRoute).")]
+        [SerializeField] private int branch;
         [SerializeField] private Vector2 size = new Vector2(2f, 4f);
         [SerializeField] private float contactDamage = 8f;
         [SerializeField, TextArea] private string message;
@@ -46,11 +48,17 @@ namespace HealingKnight.Gameplay.Flight
             message = firstMessage;
         }
 
-        /// <summary>¿Hay un coágulo completo (vivo) que empiece antes de esta X? La pantalla no pasa de ahí.</summary>
-        public static bool BlocksAt(float x)
+        /// <summary>Que solo cuente en una rama de la bifurcación (1 arriba, 2 abajo).</summary>
+        public void SetBranch(int routeBranch) => branch = routeBranch;
+
+        /// <summary>
+        /// ¿Hay un coágulo completo (vivo) que empiece antes de esta X? La pantalla no pasa de ahí.
+        /// Los de la otra rama no cuentan.
+        /// </summary>
+        public static bool BlocksAt(float x, int routeBranch = 0)
         {
             foreach (ClotGate g in all)
-                if (g != null && g.full && g.Alive && g.Area.xMin <= x) return true;
+                if (g != null && g.full && g.Alive && g.Area.xMin <= x && (g.branch == 0 || g.branch == routeBranch)) return true;
             return false;
         }
 
@@ -82,7 +90,7 @@ namespace HealingKnight.Gameplay.Flight
             if (visual != null) visual.localScale = Vector3.one * (1f + Heartbeat.SurgeNow * 0.04f);
 
             FlightRoute route = FlightRoute.Current;
-            if (!told && route != null && route.View.xMax > Area.xMin + 1f)
+            if (!told && route != null && route.InBranch(branch) && route.View.xMax > Area.xMin + 1f)
             {
                 told = true;
                 if (!string.IsNullOrEmpty(message)) GameplayEvents.RaiseMessage(message);

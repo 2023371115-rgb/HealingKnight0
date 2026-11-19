@@ -396,8 +396,8 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 ## Sistema circulatorio: modo de VUELO (prueba)
 
 Plan completo del sistema (Bazo → Arterias y venas → Corazón → El gran trombo, y el Riñón secreto) en el proyecto de
-Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo de vuelo** con el primer tramo de
-**Arterias y venas: la Aorta**. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
+Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo de vuelo** con los dos primeros tramos de
+**Arterias y venas**: la Aorta y la aorta abdominal con las ilíacas. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
 (en el mapa todavía no se puede jugar: va después del Bazo, que aún no existe).
 
 **La nave** (`Gameplay/Flight/ShipFlight.cs`): NODO se vuelve una nanocápsula con el caballero sentado adentro.
@@ -433,9 +433,25 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
   `Tejido_Arteria_*` (`python Tools/Art/generar_tejido.py Arteria`). El fondo es el tema `Blood` de `AmbientLife`:
   glóbulos lejanos, plasma y rayitas de velocidad que corren más rápido en cada latido.
 
-**El tramo de la Aorta** (370 u, ~1.7 min): ventrículo y válvula → aorta ascendente (sepsis: S. aureus y neumococo,
+**Tramo 1, la Aorta** (0–360, ~1.7 min): ventrículo y válvula → aorta ascendente (sepsis: S. aureus y neumococo,
 tráfico de glóbulos) → arco aórtico (sube; sus tres ramas te jalan y de ellas bajan enemigos) → el primer coágulo completo
 (tutorial del anticoagulante) → aorta descendente (coágulos pegados, taquicardia y el enjambre final de sepsis).
+
+**Tramo 2, aorta abdominal e ilíacas** (360–780, ~1.8 min):
+- Cruzas el diafragma y el corazón se calma. De la aorta abdominal salen ramas que **jalan** hacia arriba o hacia abajo:
+  tronco celíaco (estómago, hígado y bazo), mesentérica superior, las dos **renales** (jalan más fuerte: a los riñones les
+  llega una quinta parte de la sangre) y la mesentérica inferior. Enemigos que bajan o suben de las ramas.
+- **Meningococo** (meningococemia): cruza rapidísimo; antes de entrar parpadea un aviso (!) en la orilla (`warn`).
+- **La bifurcación**: la aorta se parte en las dos **ilíacas** (una por pierna). Escoges pasando por arriba o por abajo de
+  la punta. Arriba (izquierda): la pantalla va 25 % más rápido, más enemigos y dos **sueros intravenosos** (+vida y
+  +1 bomba). Abajo (derecha): más glóbulos rojos, coágulos pegados y otro coágulo completo, y un suero.
+- Si mueres antes de la punta, vuelves a escoger.
+
+**Bifurcaciones en el código:** `FlightRoute.ConfigureFork(rutaArriba, rutaAbajo, punta, ...)`. `Branch` dice cuál escogiste
+(1 arriba, 2 abajo). Lo que solo existe en una rama lleva `branch`: `FlightWaveSpec.branch`, `ClotGate.SetBranch`,
+`BloodStream` y `FlightMessage` (mensaje de NODO por la X del centro de la pantalla). En `SceneSetup`: `WallWithGaps`
+(paredes con huecos para las ramas), `BranchTube`, `Divider` (la punta y el tejido entre las ilíacas), `FlightNote` e
+`IVSerum`.
 
 Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
 `Impacto_Anticoagulante`. Falta la música del sistema (synthwave, en el plan).

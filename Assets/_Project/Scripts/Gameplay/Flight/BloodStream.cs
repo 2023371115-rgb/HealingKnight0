@@ -23,6 +23,8 @@ namespace HealingKnight.Gameplay.Flight
         [Tooltip("Banda vertical donde viajan (respecto al centro de la pantalla).")]
         [SerializeField] private float band = 3.2f;
         [SerializeField] private Sprite art;
+        [Tooltip("0 = siempre; 1/2 = solo en esa rama de la bifurcación.")]
+        [SerializeField] private int branch;
 
         private class Cell
         {
@@ -36,8 +38,9 @@ namespace HealingKnight.Gameplay.Flight
         private readonly List<Cell> pool = new List<Cell>();
         private float aspect = 1f;   // alto / ancho del dibujo (el de arte es un disco visto de lado)
 
-        public void Configure(float startX, float endX, int count, float verticalBand, Sprite sprite)
+        public void Configure(float startX, float endX, int count, float verticalBand, Sprite sprite, int routeBranch = 0)
         {
+            branch = routeBranch;
             fromX = startX;
             toX = endX;
             cells = count;
@@ -78,7 +81,7 @@ namespace HealingKnight.Gameplay.Flight
             if (route == null) return;
             float dt = Time.deltaTime;
             float hw = route.HalfWidth;
-            bool inRange = route.View.xMax > fromX && route.View.xMin < toX && route.Launched;
+            bool inRange = route.View.xMax > fromX && route.View.xMin < toX && route.Launched && route.InBranch(branch);
             PlayerController player = PlayerController.Current;
             ShipFlight ship = player != null ? player.Flight : null;
 

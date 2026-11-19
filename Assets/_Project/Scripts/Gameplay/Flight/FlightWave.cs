@@ -59,6 +59,10 @@ namespace HealingKnight.Gameplay.Flight
         public EnemyHealth splitPrefab;
         public int splitCount;
         [TextArea] public string message;
+        [Tooltip("0 = sale siempre; 1/2 = solo si escogiste esa rama de la bifurcación.")]
+        public int branch;
+        [Tooltip("Antes de cada uno aparece un aviso (!) en la orilla por donde va a entrar (los muy rápidos).")]
+        public bool warn;
 
         public FlightWaveSpec Copy() => (FlightWaveSpec)MemberwiseClone();
     }
@@ -78,6 +82,9 @@ namespace HealingKnight.Gameplay.Flight
         private int spawned;
         private float timer, holdUntil;
         private ComponentPool<Projectile> pool;
+        private Transform marker;
+        private float warnLeft;
+        private Vector2 warnScreen;
 
         public FlightWaveSpec Spec => spec;
         public float TriggerX => transform.position.x;
@@ -89,7 +96,11 @@ namespace HealingKnight.Gameplay.Flight
 
         private void OnEnable() { if (!all.Contains(this)) all.Add(this); }
         private void OnDisable() => all.Remove(this);
-        private void OnDestroy() => pool?.Clear();
+        private void OnDestroy()
+        {
+            pool?.Clear();
+            if (marker != null) Destroy(marker.gameObject);
+        }
 
         /// <summary>Al reaparecer: se rearman las oleadas que quedaron adelante; las que ya se ven salen escalonadas.</summary>
         public static void RearmFrom(float viewMinX, float viewMaxX)
@@ -104,6 +115,7 @@ namespace HealingKnight.Gameplay.Flight
                 w.triggered = false;
                 w.spawned = 0;
                 w.timer = 0f;
+                w.HideWarning();
                 w.holdUntil = Time.time + (w.TriggerX < viewMaxX ? 1.2f + 2.2f * visible++ : 0.8f);
             }
         }
@@ -112,6 +124,7 @@ namespace HealingKnight.Gameplay.Flight
         {
             FlightRoute route = FlightRoute.Current;
             if (route == null || spec.prefab == null || spawned >= spec.count) return;
+            if (!route.InBranch(spec.branch)) return;
             if (!triggered)
             {
                 if (route.View.xMax < TriggerX || Time.time < holdUntil || !route.Launched) return;
@@ -119,27 +132,71 @@ namespace HealingKnight.Gameplay.Flight
                 timer = 0f;
                 if (!told && !string.IsNullOrEmpty(spec.message)) { told = true; GameplayEvents.RaiseMessage(spec.message); }
             }
+            if (warnLeft > 0f)
+            {
+                // Aviso: el "!" parpadea en la orilla un momento y luego entra (rapidísimo).
+                warnLeft -= Time.deltaTime;
+                if (marker != null)
+                {
+                    Vector2 at = route.CameraPosition + new Vector2(route.HalfWidth - 0.9f, warnScreen.y);
+                    marker.position = new Vector3(at.x, at.y, 0f);
+                    marker.gameObject.SetActive(Mathf.Repeat(warnLeft * 8f, 1f) > 0.35f);
+                }
+                if (warnLeft > 0f) return;
+                HideWarning();
+                SpawnAt(spec, warnScreen, Random.value * 10f);
+                spawned++;
+                timer = spec.interval;
+                return;
+            }
             timer -= Time.deltaTime;
             if (timer > 0f) return;
             timer = spec.interval;
+            if (spec.warn && spec.edge == FlightEdge.Right)
+            {
+                warnScreen = EntryScreen(route, spawned);
+                ShowWarning();
+                return;
+            }
             Spawn(route, spawned);
             spawned++;
         }
 
-        private void Spawn(FlightRoute route, int index)
+        private void ShowWarning()
+        {
+            warnLeft = 0.75f;
+            if (marker == null)
+            {
+                marker = new GameObject("AvisoEnemigo").transform;
+                CodeSprites.Add(marker, CodeSprites.Glow, new Color(1f, 0.25f, 0.2f, 0.85f), 60, Vector2.zero, Vector2.one * 1.6f, "Luz");
+                CodeSprites.Add(marker, CodeSprites.Circle, new Color(0.3f, 0.02f, 0.05f), 61, Vector2.zero, Vector2.one * 0.8f, "Fondo");
+                CodeSprites.Add(marker, CodeSprites.Square, Color.white, 62, new Vector2(0f, 0.08f), new Vector2(0.13f, 0.36f), "Raya");
+                CodeSprites.Add(marker, CodeSprites.Circle, Color.white, 62, new Vector2(0f, -0.2f), Vector2.one * 0.13f, "Punto");
+            }
+            marker.gameObject.SetActive(true);
+            Audio.Sfx.Effect("Nodo_Alerta", 0.25f);
+        }
+
+        private void HideWarning()
+        {
+            warnLeft = 0f;
+            if (marker != null) marker.gameObject.SetActive(false);
+        }
+
+        private Vector2 EntryScreen(FlightRoute route, int index)
         {
             float hw = route.HalfWidth, hh = route.HalfHeight;
             float along = spec.entry + spec.entryStep * index;
             if (spec.worldX != 0f && spec.edge != FlightEdge.Right) along = spec.worldX - route.CameraPosition.x + spec.entryStep * index;
-            Vector2 screen;
             switch (spec.edge)
             {
-                case FlightEdge.Top: screen = new Vector2(along, hh + 1.2f); break;
-                case FlightEdge.Bottom: screen = new Vector2(along, -hh - 1.2f); break;
-                default: screen = new Vector2(hw + 1.4f, along); break;
+                case FlightEdge.Top: return new Vector2(along, hh + 1.2f);
+                case FlightEdge.Bottom: return new Vector2(along, -hh - 1.2f);
+                default: return new Vector2(hw + 1.4f, along);
             }
-            SpawnAt(spec, screen, Random.value * 10f);
         }
+
+        private void Spawn(FlightRoute route, int index) => SpawnAt(spec, EntryScreen(route, index), Random.value * 10f);
 
         /// <summary>Hace nacer un enemigo de esta oleada en una posición de la pantalla (también lo usan las crías).</summary>
         public FlightEnemy SpawnAt(FlightWaveSpec s, Vector2 screen, float seed)
