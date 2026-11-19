@@ -11,7 +11,8 @@ namespace HealingKnight.Gameplay.Flight
     /// <summary>
     /// El camino de la pantalla en un nivel de vuelo: la cámara avanza SOLA por una línea de puntos (el centro del vaso
     /// sanguíneo) y el jugador vuela dentro de lo que se ve.
-    /// - Avanza a 'baseSpeed' y en cada latido la sangre la empuja más ('surgeBoost').
+    /// - Avanza a 'baseSpeed' (o a la velocidad de la zona, 'speedKeys') y en cada latido la sangre la empuja más
+    ///   ('surgeBoost'). Los anillos de adrenalina / betabloqueador y la sangre espesa la cambian un rato.
     /// - Al empezar espera 'launchDelay' (dentro del ventrículo) y luego el latido te DISPARA a la aorta.
     /// - Se detiene frente a un coágulo que tapa todo (ClotGate) hasta que lo disuelvas, y al final del camino.
     /// - Si mueres, regresa al último punto de guardado: borra a los enemigos de la pantalla y rearma las oleadas.
@@ -47,6 +48,11 @@ namespace HealingKnight.Gameplay.Flight
         [SerializeField] private Vector2[] continuation = new Vector2[0];
         [SerializeField, TextArea] private string continuationMessage;
 
+        [Header("Velocidad por zona (vacío = siempre baseSpeed)")]
+        [Tooltip("(x, velocidad): la velocidad de la pantalla según por dónde va. Entre dos puntos cambia suave; " +
+                 "cuando sube, sale el letrero \"¡MÁS RÁPIDO!\".")]
+        [SerializeField] private Vector2[] speedKeys = new Vector2[0];
+
         public static FlightRoute Current { get; private set; }
 
         public Vector2 CameraPosition { get; private set; }
@@ -58,6 +64,10 @@ namespace HealingKnight.Gameplay.Flight
         public bool AtEnd => distance >= total - 0.01f;
         /// <summary>Multiplica la velocidad (tramos lentos o rápidos). 1 = normal.</summary>
         public float SpeedMultiplier { get; set; } = 1f;
+        /// <summary>Velocidad de la zona donde va la pantalla (sin latido ni impulsos).</summary>
+        public float AreaSpeed => AreaSpeedAt(CameraPosition.x);
+        /// <summary>Multiplicador de ahora por adrenalina / betabloqueador / sangre espesa (1 = normal).</summary>
+        public float EffectMultiplier => effectMul * zoneMul;
         /// <summary>0 = todavía no escoges (o no hay bifurcación), 1 = rama de arriba, 2 = rama de abajo.</summary>
         public int Branch => branch;
         public bool HasFork => upperPath != null && lowerPath != null && upperPath.Length > 0 && lowerPath.Length > 0;
@@ -73,6 +83,9 @@ namespace HealingKnight.Gameplay.Flight
         private SpriteRenderer fadeRenderer;
         private PlayerController player;
         private ShipFlight ship;
+        // Impulsos y frenos (anillos) y zonas que alentan.
+        private float effectMul = 1f, effectTarget = 1f, effectTimer, zoneMul = 1f, zoneTarget = 1f, zoneUntil;
+        private int keysPassed = -1;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics() => Current = null;
@@ -82,6 +95,76 @@ namespace HealingKnight.Gameplay.Flight
             path = points;
             baseSpeed = speed;
             surgeBoost = surge;
+        }
+
+        /// <summary>Velocidad por zona: (x, velocidad), de izquierda a derecha.</summary>
+        public void ConfigureSpeeds(Vector2[] keys) => speedKeys = keys;
+
+        /// <summary>Velocidad de la zona en esa X (curva suave entre los puntos).</summary>
+        public float AreaSpeedAt(float x)
+        {
+            if (speedKeys == null || speedKeys.Length == 0) return baseSpeed;
+            if (x <= speedKeys[0].x) return speedKeys[0].y;
+            for (int i = 1; i < speedKeys.Length; i++)
+            {
+                if (x > speedKeys[i].x) continue;
+                float k = Mathf.InverseLerp(speedKeys[i - 1].x, speedKeys[i].x, x);
+                return Mathf.Lerp(speedKeys[i - 1].y, speedKeys[i].y, k * k * (3f - 2f * k));
+            }
+            return speedKeys[speedKeys.Length - 1].y;
+        }
+
+        /// <summary>
+        /// Impulso (adrenalina, multiplicador &gt; 1) o freno (betabloqueador, &lt; 1) por unos segundos. También cambia el
+        /// ritmo del corazón ('bpm' extra) mientras dura.
+        /// </summary>
+        public void ApplySpeedEffect(float multiplier, float seconds, float bpm)
+        {
+            effectTarget = multiplier;
+            effectTimer = seconds;
+            if (Heartbeat.Current != null) Heartbeat.Current.Modifier = bpm;
+        }
+
+        /// <summary>Una zona que alenta (sangre espesa): se llama cada cuadro mientras la pantalla va por ella.</summary>
+        public void SlowZone(float factor)
+        {
+            zoneTarget = Mathf.Min(zoneTarget, factor);
+            zoneUntil = Time.time + 0.15f;
+        }
+
+        private void UpdateEffects(float dt)
+        {
+            if (effectTimer > 0f)
+            {
+                effectTimer -= dt;
+                if (effectTimer <= 0f)
+                {
+                    effectTarget = 1f;
+                    if (Heartbeat.Current != null) Heartbeat.Current.Modifier = 0f;
+                }
+            }
+            // Arranca rápido y regresa suave.
+            effectMul = Mathf.MoveTowards(effectMul, effectTarget, dt * (effectTarget > effectMul ? 4f : 1.5f));
+            if (Time.time > zoneUntil) zoneTarget = 1f;
+            zoneMul = Mathf.MoveTowards(zoneMul, zoneTarget, dt * 1.5f);
+        }
+
+        /// <summary>Letrero cuando la pantalla entra a una zona más rápida.</summary>
+        private void AnnounceSpeed(bool silent)
+        {
+            if (speedKeys == null || speedKeys.Length == 0) return;
+            int passed = 0;
+            while (passed < speedKeys.Length && speedKeys[passed].x <= CameraPosition.x) passed++;
+            if (!silent && keysPassed >= 0 && passed > keysPassed)
+            {
+                for (int i = Mathf.Max(1, keysPassed); i < passed; i++)
+                    if (speedKeys[i].y > speedKeys[i - 1].y + 0.15f)
+                    {
+                        SpeedBanner.Show("¡MÁS RÁPIDO!", new Color(1f, 0.95f, 0.6f));
+                        break;
+                    }
+            }
+            keysPassed = passed;
         }
 
         /// <summary>Camino que sigue después de las dos ramas (se llega con un fundido a negro).</summary>
@@ -228,6 +311,7 @@ namespace HealingKnight.Gameplay.Flight
             bool alive = player != null && player.Health.IsAlive;
             if (Heartbeat.Current != null) Heartbeat.Current.SetRunning(alive || !launched);
             if (alive) CheckFork();
+            UpdateEffects(dt);
 
             float speed = 0f;
             if (!launched)
@@ -249,7 +333,10 @@ namespace HealingKnight.Gameplay.Flight
             {
                 launchKick = Mathf.MoveTowards(launchKick, 0f, dt * 0.7f);
                 float branchSpeed = branch == 1 && distance > mainTotal ? upperSpeed : 1f;
-                speed = (baseSpeed + Heartbeat.SurgeNow * surgeBoost) * SpeedMultiplier * branchSpeed + launchKick * launchBoost;
+                float area = AreaSpeedAt(CameraPosition.x);
+                // El empujón del latido crece un poco con la zona (si no, en las zonas rápidas casi no se sentiría).
+                float surge = surgeBoost * Mathf.Lerp(1f, area / Mathf.Max(0.5f, baseSpeed), 0.5f);
+                speed = (area + Heartbeat.SurgeNow * surge) * SpeedMultiplier * branchSpeed * effectMul * zoneMul + launchKick * launchBoost;
             }
 
             Vector2 before = CameraPosition;
@@ -259,6 +346,7 @@ namespace HealingKnight.Gameplay.Flight
             ScrollVelocity = (CameraPosition - before) / dt;
             UpdateView();
             UpdateFade(dt);
+            AnnounceSpeed(false);
         }
 
         /// <summary>Al llegar al final de la rama: se oscurece la pantalla. Devuelve true si está esperando el salto.</summary>
@@ -332,6 +420,11 @@ namespace HealingKnight.Gameplay.Flight
             fadeState = 0;
             fade = 0f;
             if (fadeRenderer != null) fadeRenderer.enabled = false;
+            // Sin impulsos ni frenos pendientes; el letrero de velocidad no se repite.
+            effectMul = effectTarget = zoneMul = zoneTarget = 1f;
+            effectTimer = 0f;
+            if (Heartbeat.Current != null) Heartbeat.Current.Modifier = 0f;
+            AnnounceSpeed(true);
 
             ClearScreen();
             FlightWave.RearmFrom(View.xMin, View.xMax);

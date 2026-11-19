@@ -45,6 +45,8 @@ namespace HealingKnight.Gameplay.Flight
         public bool Active { get; private set; }
         public bool Shrunk { get; private set; }
         public bool IsDashing => dashTimer > 0f;
+        /// <summary>Con adrenalina: invencible y embiste a los enemigos que toca.</summary>
+        public bool Boosting => boostTimer > 0f;
         public float ShrinkFactor => shrinkFactor;
         public Vector2 Velocity => velocity;
 
@@ -53,6 +55,25 @@ namespace HealingKnight.Gameplay.Flight
 
         /// <summary>Empujón de un golpe (choque con un coágulo, el despegue): se suma de una vez a la velocidad.</summary>
         public void Kick(Vector2 v) => velocity += v;
+
+        /// <summary>ADRENALINA: unos segundos invencible, embistiendo enemigos, con el fuego de la turbina al máximo.</summary>
+        public void StartBoost(float seconds)
+        {
+            boostTimer = Mathf.Max(boostTimer, seconds);
+            controller.Health.GrantInvulnerability(seconds + 0.3f);
+            velocity += new Vector2(6f, 0f);
+        }
+
+        /// <summary>SANGRE ESPESA: la nave se mueve con trabajo y sin dash (se llama cada cuadro mientras estás adentro).</summary>
+        public void Slow(float factor)
+        {
+            slowFactor = Mathf.Min(slowFactor, factor);
+            slowUntil = Time.time + 0.15f;
+        }
+
+        private float boostTimer, slowFactor = 1f, slowUntil;
+        private readonly System.Collections.Generic.List<Hurtbox> rammed = new System.Collections.Generic.List<Hurtbox>();
+        private float ramCooldown;
 
         private void Awake()
         {
@@ -182,8 +203,12 @@ namespace HealingKnight.Gameplay.Flight
             Vector2 move = blocked ? Vector2.zero : input.Move;
             if (move.sqrMagnitude > 1f) move.Normalize();
 
+            if (Time.time > slowUntil) slowFactor = 1f;
+            bool thick = slowFactor < 0.99f;
+            if (boostTimer > 0f) { boostTimer -= dt; Ram(dt); }
+
             if (dashTimer > 0f) dashTimer -= dt;
-            else if (!blocked && input.DashPressed && Time.time >= dashReadyAt)
+            else if (!blocked && !thick && input.DashPressed && Time.time >= dashReadyAt)
             {
                 dashDir = move.sqrMagnitude > 0.04f ? move.normalized : Vector2.right;
                 dashTimer = dashTime;
@@ -192,7 +217,7 @@ namespace HealingKnight.Gameplay.Flight
                 Sfx.Effect("Jugador_Dash", 0.6f);
             }
 
-            float top = Shrunk ? shrunkSpeed : speed;
+            float top = (Shrunk ? shrunkSpeed : speed) * slowFactor;
             Vector2 target = dashTimer > 0f ? scroll + dashDir * dashSpeed : scroll + move * top + extra;
             if (hurtPush > 0f) hurtPush -= dt;
             float k = dashTimer > 0f ? 1f : 1f - Mathf.Exp(-response * dt);
@@ -271,6 +296,23 @@ namespace HealingKnight.Gameplay.Flight
             return wanted;
         }
 
+        /// <summary>Con adrenalina, los enemigos que tocas reciben un golpazo (no los coágulos ni las placas).</summary>
+        private void Ram(float dt)
+        {
+            if (ramCooldown > 0f) { ramCooldown -= dt; return; }
+            if (hurtbox == null) return;
+            Hurtbox.QueryCircle(Team.Enemy, hurtbox.Center, 1f * controller.Size, rammed);
+            bool hit = false;
+            foreach (Hurtbox h in rammed)
+            {
+                if (h == null || h.GetComponent<FlightEnemy>() == null) continue;
+                DamageInfo info = DamageInfo.Create(40f, DamageKind.Contact, Team.Player, hurtbox.Center);
+                h.Damageable.ApplyDamage(info);
+                hit = true;
+            }
+            if (hit) ramCooldown = 0.2f;
+        }
+
         private void Visuals(float dt, Vector2 scroll)
         {
             if (body == null) return;
@@ -282,12 +324,14 @@ namespace HealingKnight.Gameplay.Flight
             if (flame != null)
             {
                 float thrust = Mathf.Clamp01(0.35f + rel.x * 0.12f + Heartbeat.SurgeNow * 0.4f + (IsDashing ? 1f : 0f));
+                if (Boosting) thrust = 1.8f;   // adrenalina: chorro enorme
                 float flicker = 1f + Mathf.Sin(Time.time * 37f) * 0.12f;
                 flame.localScale = new Vector3((0.6f + thrust * 1.1f) * flicker, 0.8f + thrust * 0.3f, 1f);
                 if (flameRenderer != null)
                 {
                     bool alive = controller.Health.IsAlive;
-                    flameRenderer.color = alive ? new Color(1f, 0.8f, 0.35f, 0.9f) : new Color(0.4f, 0.4f, 0.4f, 0.3f);
+                    flameRenderer.color = !alive ? new Color(0.4f, 0.4f, 0.4f, 0.3f)
+                        : Boosting ? new Color(1f, 0.55f, 0.15f, 1f) : new Color(1f, 0.8f, 0.35f, 0.9f);
                 }
             }
         }

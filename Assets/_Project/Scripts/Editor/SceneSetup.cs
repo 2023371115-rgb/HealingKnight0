@@ -3994,6 +3994,15 @@ namespace HealingKnight.EditorTools
             go.AddComponent<AtheromaBoss>().Configure(width, height, prefabs.EnemyProjectile, prefabs.CelulaEspumosa, data.Plaquetas, data.Table);
         }
 
+        /// <summary>Anillo de ADRENALINA (acelera, invencible, embistes) o BETABLOQUEADOR (todo más lento un rato).</summary>
+        private void SpeedPad(float x, float y, FlightSpeedPad.Kind kind, string message = null, int branch = 0) =>
+            Node(kind == FlightSpeedPad.Kind.Adrenaline ? "Anillo_Adrenalina" : "Anillo_Betabloqueador", x, y)
+                .AddComponent<FlightSpeedPad>().Configure(kind, message, branch);
+
+        /// <summary>SANGRE ESPESA de 'fromX' a 'toX': la pantalla y la nave van lentas (sin dash).</summary>
+        private void ThickBlood(float fromX, float toX, float centerY, float halfHeight, string message, int branch = 0) =>
+            Node("SangreEspesa", (fromX + toX) * 0.5f, centerY).AddComponent<ThickBloodZone>().Configure(fromX, toX, halfHeight, message, branch);
+
         private FlightWaveSpec Spec(EnemyHealth prefab, int count, FlightPattern pattern, float entry, float step, float speed)
         {
             return new FlightWaveSpec
@@ -4074,8 +4083,19 @@ namespace HealingKnight.EditorTools
             upper.Add(new Vector2(BranchEndX, IliacUpY(BranchEndX)));
             lower.Add(new Vector2(BranchEndX, IliacDownY(BranchEndX)));
             var route = new GameObject("RutaDeVuelo").AddComponent<FlightRoute>();
-            route.Configure(main.ToArray(), 2.9f, 2.2f);
-            route.ConfigureFork(upper.ToArray(), lower.ToArray(), new Vector2(tipX, AortaCenterY(tipX)), 1.25f,
+            route.Configure(main.ToArray(), 3.1f, 2.2f);
+            // La velocidad SUBE por zonas (sale "¡MÁS RÁPIDO!"): de 3.1 en la aorta ascendente a 5.2 en el sprint final.
+            route.ConfigureSpeeds(new[]
+            {
+                new Vector2(-40f, 3.1f), new Vector2(96f, 3.1f),     // aorta ascendente
+                new Vector2(118f, 3.4f), new Vector2(192f, 3.4f),    // arco
+                new Vector2(214f, 3.8f), new Vector2(366f, 3.8f),    // aorta descendente
+                new Vector2(392f, 4.1f), new Vector2(566f, 4.1f),    // aorta abdominal
+                new Vector2(606f, 4.4f), new Vector2(BranchEndX + 10f, 4.4f),   // ilíacas
+                new Vector2(FemoralStart, 4.6f), new Vector2(1112f, 4.6f),       // femoral
+                new Vector2(1130f, 5.2f)                              // después del minijefe: sprint final
+            });
+            route.ConfigureFork(upper.ToArray(), lower.ToArray(), new Vector2(tipX, AortaCenterY(tipX)), 1.15f,
                 "Ilíaca IZQUIERDA: la sangre corre más rápido aquí. Más enemigos... y suero.",
                 "Ilíaca DERECHA: más coágulos y más glóbulos rojos. Ten listo el ANTICOAGULANTE.");
             // Al acabar la ilíaca: fundido y sigue la femoral (tramo 3).
@@ -4184,6 +4204,7 @@ namespace HealingKnight.EditorTools
             w9.hoverTime = 6f; w9.interval = 0.4f;
             w9.message = "¡Estos te persiguen! Dispárales antes de que te alcancen.";
             FlightWaveAt(226f, w9);
+            SpeedPad(233f, AortaCenterY(233f), FlightSpeedPad.Kind.Adrenaline);
             var w10 = Spec(prefabs.SAureus, 3, FlightPattern.Hover, 2.6f, -2.6f, 2.5f);
             w10.hoverX = 5f; w10.hoverTime = 5f; w10.fireEveryBeats = 2; w10.shots = 3; w10.spreadDegrees = 26f; w10.interval = 0.3f;
             FlightWaveAt(242f, w10);
@@ -4200,6 +4221,7 @@ namespace HealingKnight.EditorTools
             var w13 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.8f, -3.6f, 2.5f);
             w13.hoverX = 5.5f; w13.hoverTime = 4.5f; w13.fireEveryBeats = 1; w13.interval = 0.2f;
             FlightWaveAt(292f, w13);
+            SpeedPad(297f, AortaCenterY(297f) + 1.4f, FlightSpeedPad.Kind.BetaBlocker);
             Clot(304f, AortaCenterY(304f) + AortaRadius - 1.1f, new Vector2(2.4f, 2.8f), false, null);
             Clot(304f, AortaCenterY(304f) - AortaRadius + 1.1f, new Vector2(2.4f, 2.8f), false, null);
             Checkpoint(310f);
@@ -4218,6 +4240,7 @@ namespace HealingKnight.EditorTools
 
             // ================= TRAMO 2: aorta abdominal e ilíacas =================
             Checkpoint(358f);
+            SpeedPad(376f, AortaCenterY(376f), FlightSpeedPad.Kind.Adrenaline);
             Node("CalmaElCorazon", 362f, AortaCenterY(362f)).AddComponent<TachycardiaTrigger>().Configure(0f,
                 "Cruzaste el DIAFRAGMA: ahora es la aorta ABDOMINAL. El corazón se calmó... por ahora.");
             FlightNote(384f, "De la aorta abdominal salen ramas a los órganos de la panza, y cada una te JALA: unas hacia arriba y otras hacia abajo.");
@@ -4242,6 +4265,7 @@ namespace HealingKnight.EditorTools
             a5.amplitude = 2.2f; a5.frequency = 0.45f; a5.interval = 0.45f;
             FlightWaveAt(458f, a5);
             Checkpoint(468f);
+            SpeedPad(474f, AortaCenterY(474f) - 1.5f, FlightSpeedPad.Kind.BetaBlocker);
             var a6 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 2.2f, -4.4f, 2.5f);
             a6.hoverX = 5.5f; a6.hoverTime = 5f; a6.fireEveryBeats = 2; a6.shots = 3; a6.spreadDegrees = 28f; a6.interval = 0.2f;
             a6.splitPrefab = prefabs.SAureusCoco; a6.splitCount = 2;
@@ -4278,6 +4302,7 @@ namespace HealingKnight.EditorTools
             var u3 = Spec(prefabs.Neumococo, 6, FlightPattern.Line, 1.8f, -0.7f, 3.6f);
             u3.interval = 0.25f; u3.branch = 1;
             FlightWaveAt(642f, u3);
+            SpeedPad(650f, IliacUpY(650f), FlightSpeedPad.Kind.Adrenaline, null, 1);
             var u4 = Spec(prefabs.Neumococo, 3, FlightPattern.Chase, 1.5f, -1.5f, 2.8f);
             u4.hoverTime = 5.5f; u4.interval = 0.5f; u4.branch = 1;
             FlightWaveAt(656f, u4);
@@ -4315,6 +4340,8 @@ namespace HealingKnight.EditorTools
             Clot(668f, IliacDownY(668f), new Vector2(2.4f, IliacDownR(668f) * 2f + 1f), true,
                 "¡Otro coágulo tapa la ilíaca! ANTICOAGULANTE.").SetBranch(2);
             Checkpoint(672f);
+            ThickBlood(678f, 692f, IliacDownY(685f), IliacDownR(685f),
+                "SANGRE ESPESA: con tantísimos glóbulos rojos la sangre se pone espesa y todo va lento (y sin dash).", 2);
             var l3 = Spec(prefabs.Neumococo, 4, FlightPattern.Line, 1.5f, -1f, 3.2f);
             l3.interval = 0.35f; l3.branch = 2;
             FlightWaveAt(684f, l3);
@@ -4365,12 +4392,13 @@ namespace HealingKnight.EditorTools
             FlightWaveAt(874f, c3);
 
             // ---------- Coágulo que se forma ----------
-            FormingClot(896f, 3.6f, "¡Un COÁGULO se está FORMANDO! Disuélvelo con ANTICOAGULANTE antes de que se cierre... o cruza por el hueco.");
+            FormingClot(896f, 2.5f, "¡Un COÁGULO se está FORMANDO! Disuélvelo con ANTICOAGULANTE antes de que se cierre... o cruza por el hueco.");
             Checkpoint(904f);
             var c4 = Spec(prefabs.CelulaEspumosa, 2, FlightPattern.Chase, 1.6f, -3.2f, 2.3f);
             c4.hoverTime = 6f; c4.interval = 0.6f;
             c4.message = "CÉLULAS ESPUMOSAS: macrófagos atascados de colesterol. Te persiguen; el ANTIINFLAMATORIO les hace más.";
             FlightWaveAt(906f, c4);
+            SpeedPad(912f, FemoralCenterY(912f), FlightSpeedPad.Kind.BetaBlocker);
 
             // ---------- Zigzag entre placas ----------
             Plaque(918f, false, 4.2f, 2.9f);
@@ -4387,13 +4415,15 @@ namespace HealingKnight.EditorTools
             Plaque(954f, false, 4.4f, 3.1f);
             Plaque(963f, true, 4.4f, 3.1f);
 
-            FormingClot(978f, 2.8f, "¡Otro coágulo formándose! Este se cierra más rápido.");
+            FormingClot(978f, 2f, "¡Otro coágulo formándose! Este se cierra más rápido.");
             Checkpoint(990f);
 
             // ---------- Células espumosas, meningococos y una placa rota ----------
             var c7 = Spec(prefabs.CelulaEspumosa, 3, FlightPattern.Chase, 2f, -2f, 2.5f);
             c7.hoverTime = 5.5f; c7.interval = 0.5f;
             FlightWaveAt(998f, c7);
+            ThickBlood(996f, 1013f, FemoralCenterY(1004f), FemoralRadius,
+                "SANGRE ESPESA: con tanta grasa la sangre se pone espesa (hiperviscosidad). Todo va lento y no hay dash.");
             var c8 = Spec(prefabs.Meningococo, 3, FlightPattern.Line, 1.4f, -1.4f, 10f);
             c8.warn = true; c8.interval = 0.7f;
             FlightWaveAt(1008f, c8);
@@ -4417,6 +4447,7 @@ namespace HealingKnight.EditorTools
             Checkpoint(1090f);
             AtheromaBossAt(1104f);
 
+            SpeedPad(1134f, FemoralCenterY(1134f), FlightSpeedPad.Kind.Adrenaline);
             FlightNote(1124f, "¡La sangre vuelve a pasar! En la vida real las placas se previenen comiendo bien, haciendo ejercicio y sin fumar.");
             var c11 = Spec(prefabs.Ldl, 6, FlightPattern.Swoop, 3f, 1.2f, 3.4f);
             c11.edge = FlightEdge.Top; c11.interval = 0.35f;

@@ -411,8 +411,10 @@ Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo d
 sístole la sangre empuja: la pantalla avanza de golpe y luego va lenta. Los enemigos disparan **al ritmo** y se ponen
 rojos medio latido antes. `TachycardiaTrigger` sube el ritmo (taquicardia).
 
-**La pantalla avanza sola** (`FlightRoute.cs`): la cámara sigue una línea de puntos (el centro del vaso) a 2.9 u/s más el
-empujón de cada latido. Al empezar esperas dentro del **ventrículo izquierdo** y el latido te **dispara a la aorta**. Se
+**La pantalla avanza sola** (`FlightRoute.cs`): la cámara sigue una línea de puntos (el centro del vaso) más el empujón de
+cada latido. La **velocidad sube por zonas** (`ConfigureSpeeds`, sale el letrero "¡MÁS RÁPIDO!"): 3.1 u/s en la aorta
+ascendente, 3.4 en el arco, 3.8 en la descendente, 4.1 en la abdominal, 4.4 en las ilíacas, 4.6 en la femoral y 5.2 en el
+sprint después del minijefe. Al empezar esperas dentro del **ventrículo izquierdo** y el latido te **dispara a la aorta**. Se
 detiene frente a lo que tapa todo (`FlightBlockers`: un coágulo completo o un minijefe, solo si está ADELANTE de la nave) y
 al final. Si te quedas atorado contra algo sólido y la orilla izquierda te alcanza, te aplasta (−15) y te acomoda en el
 lugar libre más cercano. Si mueres, la pantalla regresa al punto de guardado, se borran los
@@ -429,6 +431,13 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
   (turquesa, como la heparina; amenaza `Coagulo`). Completo = la pantalla se detiene hasta disolverlo; pegado a la pared =
   te lastima si lo tocas. Con `formTime` se va **formando**: al entrar a la pantalla sus dos mitades crecen desde las
   paredes; si lo disuelves antes (o cruzas el hueco) pasas, si se cierra se vuelve completo.
+- `FlightSpeedPad` (en `FlightSpeed.cs`): **anillos de velocidad**. **ADRENALINA** (naranja, flechas hacia adelante):
+  2.6 s con la pantalla ×1.75, la nave invencible y **embistiendo** enemigos (golpe de 40), pero el corazón late +30 y
+  disparan más seguido. **BETABLOQUEADOR** (azul, flechas hacia atrás): 4 s con todo ×0.5 y el corazón −26 (antes de las
+  partes difíciles). Si mueres y regresas antes del anillo, vuelve a salir.
+- `ThickBloodZone`: **sangre espesa** (niebla amarilla con gotitas): mientras la pantalla va por ahí, todo va a ×0.6, la
+  nave a ×0.55 y sin dash. Está en la ilíaca derecha (muchos glóbulos rojos) y en la femoral (mucha grasa).
+- `SpeedBanner`: el letrero grande de arriba ("¡MÁS RÁPIDO!", "¡ADRENALINA!", "SANGRE ESPESA").
 - `PlaqueBump`: **placa de colesterol** pegada a la pared (sólida). Se encoge con cada golpe hasta romperse; el
   antiinflamatorio le hace más (las demás cápsulas, parcial).
 - `FlowZone`: corriente que te empuja (abajo de las ramas del arco de la aorta te jala hacia arriba).
@@ -448,7 +457,7 @@ tráfico de glóbulos) → arco aórtico (sube; sus tres ramas te jalan y de ell
   llega una quinta parte de la sangre) y la mesentérica inferior. Enemigos que bajan o suben de las ramas.
 - **Meningococo** (meningococemia): cruza rapidísimo; antes de entrar parpadea un aviso (!) en la orilla (`warn`).
 - **La bifurcación**: la aorta se parte en las dos **ilíacas** (una por pierna). Escoges pasando por arriba o por abajo de
-  la punta. Arriba (izquierda): la pantalla va 25 % más rápido, más enemigos y dos **sueros intravenosos** (+vida y
+  la punta. Arriba (izquierda): la pantalla va 15 % más rápido, más enemigos y dos **sueros intravenosos** (+vida y
   +1 bomba). Abajo (derecha): más glóbulos rojos, coágulos pegados y otro coágulo completo, y un suero.
 - Si mueres antes de la punta, vuelves a escoger.
 
@@ -473,6 +482,10 @@ acabar la que escogiste la pantalla se va a **negro** y sigues por "una pierna" 
 
 Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
 `Impacto_Anticoagulante`. Falta la música del sistema (synthwave, en el plan).
+
+**Controles guardados:** los cambios de teclas se guardan por acción y posición (`hk.controles2` en PlayerPrefs:
+"acción|posición|tecla"). Antes se guardaba el JSON de Unity, que busca por un id que cambia cada vez que le das Play,
+así que el esquema Clásico (WASD) se perdía y se regresaba a las flechas. Lo guardado a la antigua se rescata solo.
 
 ## Menú y mapa del cuerpo (estilo caricatura)
 

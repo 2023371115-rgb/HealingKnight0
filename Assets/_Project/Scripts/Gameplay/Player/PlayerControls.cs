@@ -59,7 +59,8 @@ namespace HealingKnight.Gameplay.Player
             new Row { label = "Herramienta (hilo dental)", action = Gadget, token = "herramienta", cuphead = "<Keyboard>/s", classic = "<Keyboard>/r", pad = "<Gamepad>/rightTrigger" },
         };
 
-        private const string BindingsKey = "hk.controles";
+        private const string BindingsKey = "hk.controles";          // formato viejo (JSON de Unity, por id: ya no se usa)
+        private const string SlotsKey = "hk.controles2";            // formato nuevo: "acción|posición|tecla" por renglón
         private const string MouseKey = "hk.apuntarConMouse";
         private const string PresetKey = "hk.esquema";
 
@@ -161,12 +162,7 @@ namespace HealingKnight.Gameplay.Player
             for (int i = 0; i < 5; i++)
                 map.AddAction("Medication" + (i + 1), InputActionType.Button, "<Keyboard>/" + (i + 1));
 
-            string saved = PlayerPrefs.GetString(BindingsKey, "");
-            if (!string.IsNullOrEmpty(saved))
-            {
-                try { map.LoadBindingOverridesFromJson(saved); }
-                catch (Exception e) { Debug.LogWarning("[Controles] No se pudieron leer los controles guardados: " + e.Message); }
-            }
+            LoadSaved();
 
             // Para que los textos de ayuda muestren teclas o botones según lo último que tocaste.
             if (buttonWatch == null) buttonWatch = InputSystem.onAnyButtonPress.Subscribe(new DeviceWatcher());
@@ -193,12 +189,96 @@ namespace HealingKnight.Gameplay.Player
 
         // ---------- Guardar / esquemas ----------
 
+        /// <summary>
+        /// Guarda los cambios por ACCIÓN y POSICIÓN del binding ("Move|1|&lt;Keyboard&gt;/w"). Antes se guardaba el JSON de
+        /// Unity, que busca cada binding por su id; pero el id es nuevo cada vez que se arman los controles (al darle
+        /// Play), así que lo guardado nunca se encontraba y se regresaba a las flechas aunque hubieras escogido WASD.
+        /// </summary>
         public static void Save(bool custom = true)
         {
-            PlayerPrefs.SetString(BindingsKey, Map.SaveBindingOverridesAsJson());
+            var sb = new System.Text.StringBuilder();
+            foreach (InputAction a in Map.actions)
+                for (int i = 0; i < a.bindings.Count; i++)
+                {
+                    string o = a.bindings[i].overridePath;
+                    if (string.IsNullOrEmpty(o)) continue;
+                    sb.Append(a.name).Append('|').Append(i).Append('|').Append(o).Append('\n');
+                }
+            PlayerPrefs.SetString(SlotsKey, sb.ToString());
+            PlayerPrefs.DeleteKey(BindingsKey);
             if (custom) PlayerPrefs.SetString(PresetKey, "personal");
             PlayerPrefs.Save();
             Changed?.Invoke();
+        }
+
+        /// <summary>Pone los controles guardados (o los del esquema escogido si vienen del formato viejo).</summary>
+        private static void LoadSaved()
+        {
+            if (PlayerPrefs.HasKey(SlotsKey))
+            {
+                foreach (string line in PlayerPrefs.GetString(SlotsKey, "").Split('\n'))
+                {
+                    string[] parts = line.Split('|');
+                    if (parts.Length != 3) continue;
+                    InputAction a = map.FindAction(parts[0], false);
+                    int index;
+                    if (a == null || !int.TryParse(parts[1], out index) || index < 0 || index >= a.bindings.Count) continue;
+                    a.ApplyBindingOverride(index, parts[2]);
+                }
+                return;
+            }
+
+            // Formato viejo: si escogiste un esquema, se vuelve a poner tal cual; si eran teclas a mano, se rescatan.
+            string preset = PlayerPrefs.GetString(PresetKey, "cuphead");
+            string legacy = PlayerPrefs.GetString(BindingsKey, "");
+            if (preset == "clasico")
+            {
+                foreach (Row r in Rows) map.FindAction(r.action, true).ApplyBindingOverride(r.keyboard, r.classic);
+            }
+            else if (preset == "personal" && !string.IsNullOrEmpty(legacy))
+            {
+                try { RescueLegacy(legacy); }
+                catch (Exception e) { Debug.LogWarning("[Controles] No se pudieron leer los controles guardados: " + e.Message); }
+            }
+            else return;
+            Save(preset == "personal");
+            PlayerPrefs.SetString(PresetKey, preset);
+            PlayerPrefs.Save();
+        }
+
+        [Serializable] private class LegacyFile { public LegacyEntry[] bindings; }
+        [Serializable] private class LegacyEntry { public string action; public string path; }
+
+        /// <summary>
+        /// Lee el JSON viejo sin usar los id: Unity guarda los cambios en el orden de los bindings, así que por acción el
+        /// primero de teclado va a la primera posición de teclado (en Mover: arriba, abajo, izquierda, derecha) y el
+        /// primero de control a la del control.
+        /// </summary>
+        private static void RescueLegacy(string json)
+        {
+            LegacyFile file = JsonUtility.FromJson<LegacyFile>(json);
+            if (file == null || file.bindings == null) return;
+            var usedKeyboard = new Dictionary<string, int>();
+            foreach (LegacyEntry e in file.bindings)
+            {
+                if (e == null || string.IsNullOrEmpty(e.action) || string.IsNullOrEmpty(e.path)) continue;
+                string name = e.action.Substring(e.action.LastIndexOf('/') + 1);
+                InputAction a = map.FindAction(name, false);
+                if (a == null) continue;
+                bool pad = e.path.StartsWith("<Gamepad>") || e.path.StartsWith("<XInputController>") || e.path.StartsWith("<DualShockGamepad>");
+                int index;
+                if (name == Move)
+                {
+                    if (pad) continue;
+                    int n;
+                    usedKeyboard.TryGetValue(name, out n);
+                    usedKeyboard[name] = n + 1;
+                    index = MoveUp + n;
+                    if (index > MoveRight) continue;
+                }
+                else index = pad ? GamepadIndex : KeyboardIndex;
+                if (index < a.bindings.Count) a.ApplyBindingOverride(index, e.path);
+            }
         }
 
         /// <summary>Esquema de teclado: "cuphead" (flechas + Z X C V) o "clasico" (W A S D + J K L). El control vuelve a lo de fábrica.</summary>

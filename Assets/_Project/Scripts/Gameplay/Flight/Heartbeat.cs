@@ -35,7 +35,9 @@ namespace HealingKnight.Gameplay.Flight
 
         /// <summary>Latidos por minuto extra (taquicardia). 0 = normal.</summary>
         public float Tachycardia { get; set; }
-        public float Bpm => bpm + Tachycardia;
+        /// <summary>Latidos extra por un rato (adrenalina +, betabloqueador −). Lo pone FlightRoute.</summary>
+        public float Modifier { get; set; }
+        public float Bpm => bpm + Tachycardia + Modifier;
         public float Period => 60f / Mathf.Max(30f, Bpm);
         public int Count => count;
 
