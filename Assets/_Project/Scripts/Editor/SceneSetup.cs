@@ -54,6 +54,7 @@ namespace HealingKnight.EditorTools
         public static string AmigdalasPath => $"{Folder}/Levels/Respiratorio/Respiratorio_Amigdalas.unity";
         public static string ArteriasVenasPath => $"{Folder}/Levels/Circulatorio/Circulatorio_ArteriasVenas.unity";
         public static string BazoPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Bazo.unity";
+        public static string CorazonPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Corazon.unity";
 
         public void Run()
         {
@@ -73,6 +74,7 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(AmigdalasPath, BuildAmigdalas);
             CreateIfMissing(ArteriasVenasPath, BuildArteriasVenas);
             CreateIfMissing(BazoPath, BuildBazo);
+            CreateIfMissing(CorazonPath, BuildCorazon);
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
@@ -95,6 +97,7 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(AmigdalasPath, true),
                 new EditorBuildSettingsScene(ArteriasVenasPath, true),
                 new EditorBuildSettingsScene(BazoPath, true),
+                new EditorBuildSettingsScene(CorazonPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
             EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
@@ -4923,6 +4926,128 @@ namespace HealingKnight.EditorTools
 
             if (manager != null)
                 SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Bazo a salvo! La sangre ya está filtrada. Sigue: ARTERIAS Y VENAS, en la nanocápsula.");
+        }
+
+        // ================= SISTEMA CIRCULATORIO: CORAZÓN (a pie) =================
+
+        private void HeartValveAt(float x, string message) =>
+            Node("ValvulaCardiaca", x, FloorY).AddComponent<BeatValve>().Configure(9f, 0.55f, message);
+
+        private void Ventricle(float fromX, float toX, float ceilingY, float drop) =>
+            Node("Ventriculo", fromX, FloorY).AddComponent<SqueezingChamber>().Configure(fromX, toX, FloorY, ceilingY, drop);
+
+        private void Chordae(float x, float y, float launch = 17f) =>
+            Node("CuerdasTendinosas", x, y).AddComponent<ChordaeTrampoline>().Configure(2.4f, launch);
+
+        private void ElectricRail(float fromX, float toX, float y) =>
+            Node("CaminoElectrico", fromX, y).AddComponent<ElectricPath>().Configure(fromX, toX, y);
+
+        private void VegetationBlock(float x)
+        {
+            var block = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.VegetacionBloqueo.gameObject);
+            block.transform.position = new Vector3(x, FloorY, 0f);
+        }
+
+        private void BuildCorazon()
+        {
+            // Corazón (230 u): todo va al ritmo del LATIDO. Aurícula derecha → válvula tricúspide → ventrículo derecho
+            // (el techo se aprieta) → válvula pulmonar → cuerdas tendinosas (trampolines) → sistema eléctrico (surfear el
+            // impulso) → vegetación de endocarditis → válvula mitral → ventrículo izquierdo → válvula aórtica → miocardio
+            // con el jefe: el Trypanosoma cruzi (Chagas), que causa ARRITMIA.
+            LevelManager manager = BuildLevelBase(230f, new LevelStyle
+            {
+                background = new Color(0.14f, 0.02f, 0.05f),
+                wall = new Color(0.45f, 0.06f, 0.12f),
+                floor = new Color(0.62f, 0.1f, 0.16f),
+                floorEdge = new Color(1f, 0.5f, 0.45f),
+                blob = new Color(0.9f, 0.25f, 0.3f, 0.25f),
+                decor = Decor.Veins,
+                detail = new Color(0.7f, 0.12f, 0.2f, 0.5f),
+                glow = new Color(1f, 0.4f, 0.4f, 0.45f),
+                backdrop = "Fondo_Corazon",
+                tissue = "Corazon",
+                pitLiquid = new Color(0.9f, 0.2f, 0.25f, 1f),
+                liquidDeep = new Color(0.42f, 0.03f, 0.08f, 0.95f),
+                liquidSurface = new Color(0.9f, 0.2f, 0.25f, 0.85f),
+                liquidOutline = new Color(0.2f, 0.02f, 0.05f, 1f),
+                liquidCrest = new Color(1f, 0.6f, 0.6f, 0.95f)
+            }, "NODO: ¡El CORAZÓN! Llegaste por la vena cava a la AURÍCULA DERECHA. Aquí TODO va al ritmo del latido (lub-dub). " +
+               "Detectamos endocarditis... y algo escondido en el músculo.",
+                new Vector2(80f, 12f));
+
+            // El latido manda en todo el nivel (más suave que en el vuelo: aquí vas a pie).
+            Heartbeat beat = new GameObject("Latido").AddComponent<Heartbeat>();
+            beat.Configure(68f);
+            SetupUtils.SetFloat(beat, "shake", 0.025f);
+            SetupUtils.SetFloat(beat, "volume", 0.45f);
+
+            // ---------- Aurícula derecha ----------
+            Arena("Arena_1_Auricula", 8f, 20f, "STREPTOCOCCUS VIRIDANS: vive en la boca y si llega a la sangre se pega a las válvulas (ENDOCARDITIS). Antibiótico.",
+                W(0.6f, E(prefabs.SViridans, data.SViridans, 2)),
+                W(1.0f, E(prefabs.SViridans, data.SViridans, 2, SpawnSide.Both), E(prefabs.Neumococo, data.Neumococo, 1)));
+            Platform(13f, 2.4f, 2.6f);
+            Platform(21f, 3.6f, 2.6f);
+
+            // ---------- Válvula tricúspide ----------
+            Tip(31f, "TRICÚSPIDE", "VÁLVULA TRICÚSPIDE: se abre justo DESPUÉS de cada latido ('lub') y se cierra antes del siguiente. Cruza en el momento.");
+            HeartValveAt(35f, null);
+
+            // ---------- Ventrículo derecho: el techo se aprieta ----------
+            Ventricle(39f, 70f, 7.6f, 3.6f);
+            Platform(45f, 2.2f, 3f);
+            EnemyAt(prefabs.SViridans, 50f, FloorY);
+            Platform(55f, 2.2f, 3f);
+            EnemyAt(prefabs.SViridans, 61f, FloorY);
+            Platform(65f, 2.2f, 3f);
+            Checkpoint(71f);
+            HeartValveAt(74f, "VÁLVULA PULMONAR: de aquí la sangre va a los pulmones por oxígeno.");
+
+            // ---------- Cuerdas tendinosas (trampolines) sobre la sangre ----------
+            Tip(77f, "CUERDAS", "CUERDAS TENDINOSAS: los hilos que sostienen las válvulas. Son elásticas: ¡brinca encima!");
+            Chordae(81.5f, FloorY - 0.4f);
+            Platform(85f, 6.8f, 2.4f);
+            Chordae(88.5f, FloorY - 0.4f, 15f);
+            Platform(92.5f, 5.2f, 2.2f);
+            EnemyAt(prefabs.Neumococo, 96f, FloorY);
+            Checkpoint(100f);
+
+            // ---------- Sistema eléctrico: surfea el impulso ----------
+            Tip(101f, "NODO SINUSAL", "Del NODO SINUSAL sale la chispa que hace latir al corazón: corre por estos CAMINOS ELÉCTRICOS en cada latido. " +
+                "Párate encima cuando pase y te avienta hacia adelante (a los enemigos les da toque).");
+            ElectricRail(103f, 127f, FloorY);
+            EnemyAt(prefabs.SViridans, 112f, FloorY);
+            EnemyAt(prefabs.SViridans, 120f, FloorY);
+            Platform(109f, 3f, 2.4f);
+            Platform(117f, 4.2f, 2.4f);
+            Tip(127.5f, "VEGETACIÓN", "Una VEGETACIÓN: bacterias, plaquetas y fibrina pegadas a la válvula (endocarditis). Antibiótico.");
+            VegetationBlock(130f);
+            HeartValveAt(134f, "VÁLVULA MITRAL: entre la aurícula y el ventrículo IZQUIERDOS. Esta sangre ya trae oxígeno de los pulmones.");
+            Checkpoint(136f);
+
+            // ---------- Ventrículo izquierdo: el más fuerte (aprieta más) ----------
+            Ventricle(138f, 168f, 8f, 4.2f);
+            Platform(150f, 2.4f, 14f);
+            ElectricRail(143.5f, 156.5f, FloorY + 2.4f);
+            Arena("Arena_2_Ventriculo", 140f, 26f, "El ventrículo IZQUIERDO es el más fuerte: manda la sangre a TODO el cuerpo. ¡Cuidado con el techo!",
+                W(0.6f, E(prefabs.SViridans, data.SViridans, 3)),
+                W(1.0f, E(prefabs.SViridans, data.SViridans, 2, SpawnSide.Left), E(prefabs.Meningococo, data.Meningococo, 2)));
+            OralSerum(169f, FloorY + 1f);
+            Checkpoint(171f);
+            HeartValveAt(174f, "VÁLVULA AÓRTICA: por aquí saliste disparado al empezar Arterias y venas.");
+
+            // ---------- Miocardio: el jefe ----------
+            Tip(179f, "MIOCARDIO", "MIOCARDIO: el músculo del corazón. Algo se mueve ADENTRO de él...");
+            Arena("Arena_TCruzi", 184f, 30f, null,
+                W(1.2f, E(prefabs.TCruziJefe, data.TCruziJefe, 1)));
+            Chordae(189f, FloorY);
+            Platform(194.5f, 4f, 2.6f);
+            Chordae(200f, FloorY);
+            Platform(205.5f, 4f, 2.6f);
+            Chordae(211f, FloorY);
+
+            if (manager != null)
+                SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Corazón a salvo y con su ritmo! Pero... con la arritmia se formó un COÁGULO " +
+                    "adentro y se SOLTÓ rumbo al CEREBRO. ¡Hay que perseguirlo!");
         }
 
         private void BuildSandbox()

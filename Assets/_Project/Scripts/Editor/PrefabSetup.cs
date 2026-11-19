@@ -32,6 +32,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth SAureusCoco, OxiuroHuevo;
         public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
         public EnemyHealth PlaquetasBloqueo, EpsteinBarrJefe;
+        public EnemyHealth SViridans, VegetacionBloqueo, TCruziJefe;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -144,6 +145,10 @@ namespace HealingKnight.EditorTools
             // Bazo: montón de plaquetas que tapa el paso (solo el anticoagulante) y el jefe Epstein-Barr.
             PlaquetasBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Plaquetas_Pie.prefab", () => BuildObstacle("Bloqueo_Plaquetas_Pie", data.Plaquetas, true, false));
             EpsteinBarrJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/EpsteinBarr_Bazo.prefab", BuildEpsteinBarr);
+            // Corazón: estreptococo viridans, vegetación en la válvula y el jefe T. cruzi.
+            SViridans = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_SViridans.prefab", BuildSViridans);
+            VegetacionBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Vegetacion.prefab", () => BuildObstacle("Bloqueo_Vegetacion", data.Vegetacion, true, false));
+            TCruziJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/TCruzi_Corazon.prefab", BuildTCruzi);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -1670,6 +1675,54 @@ namespace HealingKnight.EditorTools
                 SetupUtils.SetRef(boss, "attackSprite", art[2]);
                 SetupUtils.SetRef(boss, "deadSprite", art[3]);
             }
+            return root;
+        }
+
+        /// <summary>S. viridans: cadenita de cocos verdes (un "collar") sobre su cuerpo.</summary>
+        private GameObject BuildSViridans()
+        {
+            GameObject go = BuildEnemy("Bacteria_SViridans", data.SViridans, EnemyShape.Blob);
+            Transform visual = go.transform.Find("Visual");
+            Color edge = new Color(0.1f, 0.3f, 0.12f);
+            for (int i = 0; i < 6; i++)
+            {
+                var p = new Vector3(-0.75f + i * 0.3f, 1.05f + Mathf.Sin(i * 1.1f) * 0.12f, 0f);
+                SetupUtils.SpriteChild(visual, "CocoContorno" + i, PlaceholderArt.Circle, edge, p, Vector2.one * 0.34f, 3);
+                SetupUtils.SpriteChild(visual, "Coco" + i, PlaceholderArt.Circle, new Color(0.65f, 0.95f, 0.6f), p, Vector2.one * 0.27f, 4);
+            }
+            return go;
+        }
+
+        /// <summary>T. cruzi (jefe del Corazón): cuerpo largo en segmentos que ondulan, flagelo y ojos enojados.</summary>
+        private GameObject BuildTCruzi()
+        {
+            EnemyData d = data.TCruziJefe;
+            GameObject root = BossRoot("TCruzi_Corazon", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.08f, 0.2f, 0.3f), membrane = new Color(0.7f, 0.9f, 1f, 0.55f);
+            for (int i = 0; i < 8; i++)
+            {
+                float x = 1.6f - i * 0.45f;
+                float size = i < 2 ? 0.95f - i * 0.05f : 0.9f - (i - 2) * 0.09f;
+                GameObject seg = SetupUtils.Child(v, "Segmento" + i, new Vector3(x, 0f, 0f));
+                SetupUtils.SpriteChild(seg.transform, "Membrana", PlaceholderArt.Circle, membrane, new Vector3(0f, 0.3f, 0f), new Vector2(size * 0.9f, size * 0.5f), 0);
+                body.Add(SetupUtils.SpriteChild(seg.transform, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, Vector2.one * size * 1.1f, 1));
+                body.Add(SetupUtils.SpriteChild(seg.transform, "Cuerpo", PlaceholderArt.Circle, d.tint, Vector3.zero, Vector2.one * size, 2));
+            }
+            // Flagelo (el látigo) atrás y el cinetoplasto (el puntito oscuro).
+            for (int i = 0; i < 5; i++)
+                SetupUtils.SpriteChild(v, "Flagelo" + i, PlaceholderArt.Circle, line, new Vector3(-2.2f - i * 0.35f, Mathf.Sin(i) * 0.15f, 0f), Vector2.one * 0.16f, 1);
+            SetupUtils.SpriteChild(v, "Cinetoplasto", PlaceholderArt.Circle, new Color(0.15f, 0.25f, 0.45f), new Vector3(-0.9f, 0f, 0f), Vector2.one * 0.3f, 3);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(1.75f, s * 0.2f, 0f), new Vector2(0.32f, 0.36f), 4);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(1.82f, s * 0.19f, 0f), Vector2.one * 0.16f, 5);
+            }
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(3.6f, 1.2f));
+            var boss = root.AddComponent<TrypanosomaBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
             return root;
         }
 

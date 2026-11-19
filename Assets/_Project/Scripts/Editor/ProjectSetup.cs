@@ -95,6 +95,9 @@ namespace HealingKnight.EditorTools
         [MenuItem("Healing Knight/Abrir escena/Circulatorio · Arterias y venas (vuelo)", priority = 37)]
         private static void OpenArteriasVenas() => Open(SceneSetup.ArteriasVenasPath);
 
+        [MenuItem("Healing Knight/Abrir escena/Circulatorio · Corazón", priority = 38)]
+        private static void OpenCorazon() => Open(SceneSetup.CorazonPath);
+
         [MenuItem("Healing Knight/Abrir escena/Extra · Mundo secreto (prueba)", priority = 41)]
         private static void OpenSecreto() => Open(SceneSetup.SecretoPath);
 

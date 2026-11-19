@@ -32,6 +32,7 @@ namespace HealingKnight.EditorTools
         public EnemyData Plaquetas, Ldl, CelulaEspumosa, PlacaColesterol, AteromaJefe;
         public EnemyData Esporozoito, Merozoito, PlasmodiumJefe;
         public EnemyData LinfocitoInfectado, EpsteinBarrJefe;
+        public EnemyData SViridans, Vegetacion, TCruziJefe;
         public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
 
         public void Run()
@@ -46,6 +47,7 @@ namespace HealingKnight.EditorTools
             CreateCirculatoryEnemies();
             CreateMalariaEnemies();
             CreateSpleenEnemies();
+            CreateHeartEnemies();
             CreateOffspring();
             CreateCatalog();
             CreateBestiary();
@@ -734,6 +736,46 @@ namespace HealingKnight.EditorTools
             });
         }
 
+        /// <summary>Corazón: estreptococo viridans (endocarditis), sus vegetaciones en las válvulas y el T. cruzi.</summary>
+        private void CreateHeartEnemies()
+        {
+            SViridans = Enemy("Bacteria_SViridans", e =>
+            {
+                e.displayName = "Streptococcus viridans";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Bacteria que vive en la boca y, si entra a la sangre, se pega a las VÁLVULAS del corazón: eso es la " +
+                    "ENDOCARDITIS. Por eso hay que lavarse los dientes. Antibiótico.";
+                e.maxHealth = 28f; e.moveSpeed = 2.8f;
+                e.attackDistance = 1.6f; e.attackWindup = 0.6f; e.attackCooldown = 2f; e.attackDamage = 10f; e.attackKnockback = 5f;
+                e.tint = new Color(0.55f, 0.85f, 0.55f);
+            });
+            Vegetacion = Enemy("Bloqueo_Vegetacion", e =>
+            {
+                e.displayName = "Vegetación de la válvula";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Un montón de bacterias, plaquetas y fibrina pegado a una válvula (endocarditis). Tapa el paso: antibiótico.";
+                e.maxHealth = 70f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.tint = new Color(0.85f, 0.85f, 0.6f);
+            });
+            TCruziJefe = Enemy("Jefe_TCruzi", e =>
+            {
+                e.displayName = "Trypanosoma cruzi";
+                e.threat = ThreatType.Parasito;
+                e.biologia = "El parásito de la enfermedad de CHAGAS. Lo pasa la chinche besucona (triatomino), común en México y " +
+                    "Latinoamérica. Se esconde en el músculo del corazón y con los años causa arritmias.";
+                e.maxHealth = 560f;
+                e.meleeDamageTakenMultiplier = 0.6f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
+                e.attackDamage = 9f;
+                e.projectileColor = new Color(0.55f, 0.85f, 0.95f);
+                e.tint = new Color(0.45f, 0.7f, 0.85f);
+                foreach (MedicationData m in new[] { Antiviral, Antiinflamatorio, Mucolitico, Anticonvulsivo, Anticoagulante })
+                    if (m != null) e.weaknesses.Add(new EnemyWeakness { medication = m, result = Effectiveness.Partial });
+            });
+        }
+
         /// <summary>Bazo: el virus de Epstein-Barr y los linfocitos B que infecta.</summary>
         private void CreateSpleenEnemies()
         {
@@ -1055,8 +1097,8 @@ namespace HealingKnight.EditorTools
             CirculatorioArteriasVenas = PlayableLevel("Circulatorio", "02_ArteriasVenas", "circulatorio_arterias_venas", "Arterias y venas",
                 "Circulatorio_ArteriasVenas", false,
                 "Vuela en la nanocápsula: el ventrículo te dispara a la aorta. Avanza con cada latido y deshaz los coágulos con Anticoagulante.");
-            CirculatorioCorazon = Level("Circulatorio", "03_Corazon", "circulatorio_corazon", "Corazón", "", true,
-                "Válvulas al ritmo del latido y el Trypanosoma cruzi (Chagas). Próximamente.");
+            CirculatorioCorazon = PlayableLevel("Circulatorio", "03_Corazon", "circulatorio_corazon", "Corazón", "Circulatorio_Corazon", true,
+                "Válvulas al ritmo del latido, ventrículos que se aprietan, cuerdas tendinosas y el Trypanosoma cruzi (Chagas)."); 
             CirculatorioGranTrombo = Level("Circulatorio", "04_GranTrombo", "circulatorio_gran_trombo", "El gran trombo", "", false,
                 "Persigue al coágulo por la carótida antes de que llegue al cerebro. Próximamente.");
             SystemData circulatorio = MakeSystem("Circulatorio", "circulatorio", "Sistema Circulatorio", "IV", Anticoagulante,

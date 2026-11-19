@@ -38,6 +38,11 @@ namespace HealingKnight.Gameplay.Flight
         /// <summary>Latidos extra por un rato (adrenalina +, betabloqueador −). Lo pone FlightRoute.</summary>
         public float Modifier { get; set; }
         public float Bpm => bpm + Tachycardia + Modifier;
+        /// <summary>ARRITMIA (0..1): cada latido llega a destiempo (unos rápido, otros tarde). La pone el T. cruzi.</summary>
+        public float Irregular { get; set; }
+        /// <summary>Cuánto falta para el próximo latido (para avisos).</summary>
+        public float SecondsToNextBeat => Mathf.Max(0f, (currentPeriod > 0f ? currentPeriod : Period) - sinceBeat);
+        private float currentPeriod;
         public float Period => 60f / Mathf.Max(30f, Bpm);
         public int Count => count;
 
@@ -66,10 +71,14 @@ namespace HealingKnight.Gameplay.Flight
             float dt = Time.deltaTime;
             if (!running) { surge = Mathf.MoveTowards(surge, 0f, dt * 2f); return; }
             sinceBeat += dt;
-            float period = Period;
+            float period = currentPeriod > 0f ? currentPeriod : Period;
             if (sinceBeat >= period)
             {
                 sinceBeat -= period;
+                if (sinceBeat > period) sinceBeat = 0f;
+                // Con arritmia el siguiente latido llega a destiempo.
+                currentPeriod = Irregular > 0.01f ? Period * UnityEngine.Random.Range(1f - 0.5f * Irregular, 1f + 0.9f * Irregular) : Period;
+                period = currentPeriod;
                 count++;
                 dubPlayed = false;
                 Sfx.Effect("Latido_Lub", volume);
