@@ -61,6 +61,9 @@ namespace HealingKnight.Gameplay.Player
             HealthChanged?.Invoke(current, Max);
         }
 
+        /// <summary>Invencible un momento sin parpadear (dash de la nave: pasas entre las balas).</summary>
+        public void GrantInvulnerability(float seconds) => invulnerableUntil = Mathf.Max(invulnerableUntil, Time.time + seconds);
+
         public HitResult ApplyDamage(DamageInfo info)
         {
             if (!IsAlive || info.sourceTeam == Team.Player || Time.time < invulnerableUntil)

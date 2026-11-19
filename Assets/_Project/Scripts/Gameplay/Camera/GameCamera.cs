@@ -24,6 +24,15 @@ namespace HealingKnight.Gameplay.CameraSystem
         private float shakeTimer;
         private float shakeStrength;
 
+        /// <summary>
+        /// Si algo maneja la cámara (vuelo con avance automático: FlightRoute), la cámara va justo donde diga
+        /// y solo le agrega el temblor. null = sigue al jugador como siempre.
+        /// </summary>
+        public static System.Func<Vector2> Override;
+
+        [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetStatics() => Override = null;
+
         private void Awake()
         {
             cam = GetComponent<Camera>();
@@ -32,6 +41,19 @@ namespace HealingKnight.Gameplay.CameraSystem
 
         private void LateUpdate()
         {
+            if (Override != null)
+            {
+                Vector2 forced = Override();
+                Vector3 p = new Vector3(forced.x, forced.y, transform.position.z);
+                if (shakeTimer > 0f)
+                {
+                    shakeTimer -= Time.deltaTime;
+                    p += (Vector3)(Random.insideUnitCircle * shakeStrength);
+                }
+                transform.position = p;
+                return;
+            }
+
             PlayerController player = PlayerController.Current;
             float targetX = transform.position.x;
             float targetY = fixedY;

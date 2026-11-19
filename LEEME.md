@@ -393,6 +393,53 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
   - En `Art/Ojo/`: Macrofago, Cristalino.
   - En `Art/Jefes/Toxoplasma/`: Toxoplasma_Normal, _Mareado, _Ataca, _Derrotado.
 
+## Sistema circulatorio: modo de VUELO (prueba)
+
+Plan completo del sistema (Bazo → Arterias y venas → Corazón → El gran trombo, y el Riñón secreto) en el proyecto de
+Claude: `claude/plan-sistema-circulatorio.md`. Por ahora está hecho el **modo de vuelo** con el primer tramo de
+**Arterias y venas: la Aorta**. Se abre con *Healing Knight → Abrir escena → Circulatorio · Arterias y venas (vuelo)*
+(en el mapa todavía no se puede jugar: va después del Bazo, que aún no existe).
+
+**La nave** (`Gameplay/Flight/ShipFlight.cs`): NODO se vuelve una nanocápsula con el caballero sentado adentro.
+- {mover} vuela en 8 direcciones, sin gravedad. Disparas siempre hacia adelante y las cápsulas llegan más lejos (×1.7).
+- {dash}: empujón rápido hacia donde te mueves, invencible un instante. Mantener {fijar}: la nave se **encoge** (más
+  chica y más lenta).
+- La mitad de atrás de la cápsula y el faro se pintan del medicamento que traes.
+- Un golpe no te aturde: solo parpadeas y te empuja un poco. El área de daño es chica (perdona los roces).
+
+**El latido** (`Heartbeat.cs`): el reloj del nivel (84 por minuto). Suena "lub-dub", la pantalla tiembla y en cada
+sístole la sangre empuja: la pantalla avanza de golpe y luego va lenta. Los enemigos disparan **al ritmo** y se ponen
+rojos medio latido antes. `TachycardiaTrigger` sube el ritmo (taquicardia).
+
+**La pantalla avanza sola** (`FlightRoute.cs`): la cámara sigue una línea de puntos (el centro del vaso) a 2.9 u/s más el
+empujón de cada latido. Al empezar esperas dentro del **ventrículo izquierdo** y el latido te **dispara a la aorta**. Se
+detiene frente a un coágulo que tapa todo y al final. Si mueres, la pantalla regresa al punto de guardado, se borran los
+enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya se veían salen escalonadas).
+
+**Piezas del nivel:**
+- `FlightWave` + `FlightEnemy`: oleadas de los enemigos de siempre (vida, debilidades y dibujo), con su IA de piso
+  apagada. Patrones: `Line` (cruza, con ondas), `Swoop` (picada hacia tu altura), `Hover` (se queda disparando y se va),
+  `Chase` (te persigue un rato). Entran por la derecha, arriba o abajo; con `worldX` salen de la boca de una rama.
+  Con `splitPrefab` se separan al morir (racimo de S. aureus → cocos).
+- `BloodStream`: tráfico de glóbulos rojos (`Art/Respiratorio/GloboRojo.png`). Te empujan suave y **detienen todas las
+  balas**, las tuyas también: sirven de escudo.
+- `ClotGate`: coágulo de plaquetas y fibrina. Solo lo deshace el **ANTICOAGULANTE**, la cápsula regional nueva
+  (turquesa, como la heparina; amenaza `Coagulo`). Completo = la pantalla se detiene hasta disolverlo; pegado a la pared =
+  te lastima si lo tocas.
+- `FlowZone`: corriente que te empuja (abajo de las ramas del arco de la aorta te jala hacia arriba).
+- `HeartPulse`: adornos que laten (el músculo del ventrículo se aprieta, la válvula aórtica se abre, las paredes del vaso
+  se ensanchan con el pulso).
+- Paredes del vaso: `VesselWall` / `VesselWallAlong` en `SceneSetup` (siguen la curva y son sólidas). Tejido nuevo
+  `Tejido_Arteria_*` (`python Tools/Art/generar_tejido.py Arteria`). El fondo es el tema `Blood` de `AmbientLife`:
+  glóbulos lejanos, plasma y rayitas de velocidad que corren más rápido en cada latido.
+
+**El tramo de la Aorta** (370 u, ~1.7 min): ventrículo y válvula → aorta ascendente (sepsis: S. aureus y neumococo,
+tráfico de glóbulos) → arco aórtico (sube; sus tres ramas te jalan y de ellas bajan enemigos) → el primer coágulo completo
+(tutorial del anticoagulante) → aorta descendente (coágulos pegados, taquicardia y el enjambre final de sepsis).
+
+Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
+`Impacto_Anticoagulante`. Falta la música del sistema (synthwave, en el plan).
+
 ## Menú y mapa del cuerpo (estilo caricatura)
 
 Toda la interfaz usa un lienzo de 1920 x 1080 que **nunca se aplasta**: en ventanas más anchas o más altas
@@ -485,6 +532,7 @@ Cada nivel tiene vida de adorno en el fondo (`AmbientLife`). Es solo decoración
 | Hipocampo | burbujas de memoria con orilla tornasol que revientan; impulsos dorados | destellos |
 | Amígdalas | gotas que caen, linfocitos flotando y burbujitas | late y se enrojece como si estuviera inflamado |
 | Ojo | moscas volantes, polvo y **rayos de luz** que salen de la pupila (más fuertes si el ojo está alerta) | el iris te sigue y el ojo parpadea (`EyeBackdrop`) |
+| Arterias y venas | glóbulos rojos lejanos, plasma, plaquetas y rayitas de velocidad que corren hacia atrás | late con el corazón (`Heartbeat`) |
 
 ## Easter egg: el diente
 

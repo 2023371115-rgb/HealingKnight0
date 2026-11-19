@@ -530,6 +530,30 @@ SONIDOS = {
     "Bestiario_Nuevo":          {"dur": 0.70, "caida": 1.3, "vol": 0.45, "reverb": [0.6, 0.25], "capas": [   # patógeno nuevo en el bestiario
         {"onda": "sine", "f0": 784, "f1": 784, "fm": [3.5, 1, 6], "vol": 0.7},
         {"onda": "sine", "f0": 1175, "f1": 1175, "fm": [3.5, 1, 6], "vol": 0.7, "desde": 0.1}]},
+
+    # ---------------- Sistema circulatorio (vuelo) ----------------
+    # Anticoagulante: disparo líquido y suave (como heparina en la sangre), impacto que "deshace".
+    "Disparo_Anticoagulante":   {"dur": 0.18, "caida": 1.7, "capas": [
+        {"onda": "sine", "f0": 1100, "f1": 520, "curva": 0.6, "vol": 1, "fm": [1.5, 1.2, 40]},
+        {"ruido": True, "suave": 1, "vol": 0.25, "filtro": ["bandpass", [1500, 5000]]}]},
+    "Impacto_Anticoagulante":   {"dur": 0.22, "caida": 2.0, "capas": [
+        {"onda": "sine", "f0": 600, "f1": 260, "curva": 0.4, "vol": 1},
+        {"burbujas": 12, "f0": 400, "f1": 1200, "largo": 0.03, "vol": 0.5}]},
+    # Los dos ruidos del corazón: "lub" (se cierran las válvulas de entrada) y "dub" (las de salida, más agudo y corto).
+    "Latido_Lub":               {"dur": 0.30, "caida": 1.0, "ataque": 0.005, "vol": 0.9, "capas": [
+        {"onda": "sine", "f0": 68, "f1": 44, "curva": 0.5, "vol": 1, "decae": 11},
+        {"ruido": True, "suave": 1, "vol": 0.35, "filtro": ["lowpass", 220], "decae": 18}]},
+    "Latido_Dub":               {"dur": 0.20, "caida": 1.0, "ataque": 0.004, "vol": 0.8, "capas": [
+        {"onda": "sine", "f0": 92, "f1": 60, "curva": 0.5, "vol": 1, "decae": 16},
+        {"ruido": True, "suave": 1, "vol": 0.3, "filtro": ["lowpass", 300], "decae": 24}]},
+    "Nave_Despegue":            {"dur": 1.10, "caida": 1.2, "ataque": 0.02, "vol": 0.8, "reverb": [0.5, 0.25], "capas": [   # el ventrículo te dispara
+        {"onda": "sine", "f0": 55, "f1": 35, "curva": 0.5, "vol": 1, "decae": 4},
+        {"ruido": True, "suave": 1, "vol": 0.8, "filtro": ["bandpass", [300, 2500]], "decae": 2.5},
+        {"onda": "saw", "f0": 180, "f1": 900, "curva": 0.6, "vol": 0.35, "filtro": ["lowpass", 2500], "decae": 3}]},
+    "Coagulo_Disuelve":         {"dur": 0.80, "caida": 1.3, "vol": 0.7, "capas": [   # las plaquetas se sueltan
+        {"burbujas": 30, "f0": 300, "f1": 1100, "largo": 0.05, "vol": 0.7},
+        {"ruido": True, "suave": 1, "vol": 0.5, "filtro": ["bandpass", [400, 2500]], "decae": 3},
+        {"onda": "sine", "f0": 330, "f1": 660, "curva": 0.5, "vol": 0.3, "decae": 3}]},
 }
 
 rng = np.random.default_rng(7)

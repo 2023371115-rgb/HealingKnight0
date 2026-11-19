@@ -7,6 +7,7 @@ Todo se repite sin cortes (tileable) para que Unity lo estire con drawMode = Til
 Se dibuja a 3x y se reduce (bordes suaves, sin pixeles).
 
 Uso:  python generar_tejido.py            -> escribe en Assets/_Project/Art/Tejidos/
+      python generar_tejido.py Arteria    -> solo ese órgano
 Para otro órgano: agrega una paleta en PALETAS.
 Requiere: numpy, pillow, scipy.
 """
@@ -92,6 +93,19 @@ PALETAS = {
         "relleno": (54, 38, 96),
         "relleno_mancha": (42, 30, 80),
         "moco": (150, 240, 236),
+    },
+    # Arteria (sistema circulatorio): pared roja brillante (endotelio) con brillo de plasma rosado.
+    # Tiene que verse más clara que la sangre oscura del fondo.
+    "Arteria": {
+        "contorno": (60, 6, 18),
+        "cuerpo": (200, 40, 58),
+        "labio": (240, 98, 108),
+        "brillo": (255, 192, 192),
+        "mancha": (160, 28, 46),
+        "sombra": (170, 30, 48),
+        "relleno": (120, 16, 34),
+        "relleno_mancha": (98, 12, 28),
+        "moco": (255, 156, 166),
     },
     # Médula: índigo-violeta con brillo turquesa (líquido cefalorraquídeo).
     "Medula": {
@@ -337,8 +351,11 @@ def generar(nombre, p):
 
 
 if __name__ == "__main__":
-    for nombre, paleta in PALETAS.items():
-        generar(nombre, paleta)
+    import sys
+    # Sin argumentos: todos los órganos. Con nombres: solo esos (python generar_tejido.py Arteria).
+    pedidos = sys.argv[1:] or list(PALETAS)
+    for nombre in pedidos:
+        generar(nombre, PALETAS[nombre])
     sombra_suave().save(os.path.join(SALIDA, "Sombra_Suave.png"))
     sombra_vertical().save(os.path.join(SALIDA, "Sombra_Vertical.png"))
     print("Listo:", os.path.abspath(SALIDA))

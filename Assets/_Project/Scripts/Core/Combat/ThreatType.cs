@@ -11,7 +11,9 @@ namespace HealingKnight.Core.Combat
         /// <summary>Polen y otros alérgenos (nariz). Se tratan con antihistamínico.</summary>
         Alergeno,
         /// <summary>Neurona hiperexcitada (cerebro): suelta descargas eléctricas. Se calma con anticonvulsivo.</summary>
-        Hiperexcitacion
+        Hiperexcitacion,
+        /// <summary>Coágulo de plaquetas y fibrina (sistema circulatorio). Solo lo deshace el anticoagulante.</summary>
+        Coagulo
     }
 
     /// <summary>Resultado de aplicar un medicamento a una amenaza.</summary>

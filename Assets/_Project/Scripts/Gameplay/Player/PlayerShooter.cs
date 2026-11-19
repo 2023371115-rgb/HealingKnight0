@@ -48,6 +48,8 @@ namespace HealingKnight.Gameplay.Player
         public event Action Stabbed;
 
         public MedicationData Current => loadout.Count > 0 ? loadout[selectedIndex] : null;
+        /// <summary>Multiplica el alcance de las cápsulas (en la nave llegan hasta el otro lado de la pantalla).</summary>
+        public float RangeMultiplier { get; set; } = 1f;
         public IReadOnlyList<MedicationData> Loadout => loadout;
         public int SelectedIndex => selectedIndex;
 
@@ -198,7 +200,7 @@ namespace HealingKnight.Gameplay.Player
                 origin = shoulder + dir * c.muzzleForward * controller.Size,
                 direction = dir,
                 speed = c.capsuleSpeed,
-                range = c.capsuleRange,
+                range = c.capsuleRange * RangeMultiplier,
                 damage = c.capsuleDamage,
                 knockback = c.capsuleKnockback,
                 radius = 0.18f,

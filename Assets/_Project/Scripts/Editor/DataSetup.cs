@@ -13,7 +13,7 @@ namespace HealingKnight.EditorTools
     {
         public const string DataFolder = "Assets/_Project/Data";
 
-        public MedicationData Antibiotico, Antiviral, Antiinflamatorio, Antihistaminico, Antiparasitario, Mucolitico, Anticonvulsivo;
+        public MedicationData Antibiotico, Antiviral, Antiinflamatorio, Antihistaminico, Antiparasitario, Mucolitico, Anticonvulsivo, Anticoagulante;
         public EffectivenessTable Table;
         public PlayerConfig PlayerConfig;
         public EnemyData HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
@@ -29,6 +29,8 @@ namespace HealingKnight.EditorTools
         public LevelData NerviosoMedula, NerviosoCerebro, NerviosoHipocampo;
         public LevelData NerviosoOjo, RespiratorioAmigdalas;
         public EnemyData SarroJefe, SPyogenes, AbscesoJefe, ToxoplasmaJefe;
+        public EnemyData Plaquetas;
+        public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
 
         public void Run()
         {
@@ -39,6 +41,7 @@ namespace HealingKnight.EditorTools
             CreateEnemies();
             CreateRespiratoryEnemies();
             CreateNervousEnemies();
+            CreateCirculatoryEnemies();
             CreateOffspring();
             CreateCatalog();
             CreateBestiary();
@@ -71,6 +74,10 @@ namespace HealingKnight.EditorTools
                 Anticonvulsivo.calmsNeurons = true;
                 UnityEditor.EditorUtility.SetDirty(Anticonvulsivo);
             }
+            // Turquesa: se ve bien contra la sangre roja del sistema circulatorio.
+            Anticoagulante = Med("Anticoagulante", "Anticoagulante", new Color(0.25f, 0.95f, 0.95f), true,
+                "Cápsula regional del Sistema Circulatorio (como la heparina): deshace los coágulos de plaquetas y fibrina. " +
+                "Parcial contra bacterias y virus.");
         }
 
         public const string SfxFolder = "Assets/_Project/Audio/Resources/SFX";
@@ -88,6 +95,7 @@ namespace HealingKnight.EditorTools
             AssignSounds(Antiparasitario, "Antiparasitario");
             AssignSounds(Mucolitico, "Mucolitico");
             AssignSounds(Anticonvulsivo, "Anticonvulsivo");
+            AssignSounds(Anticoagulante, "Anticoagulante");
 
             var audio = SetupUtils.LoadOrCreate<HealingKnight.Gameplay.Audio.CombatAudio>(
                 $"{DataFolder}/Resources/{HealingKnight.Gameplay.Audio.CombatAudio.ResourcePath}.asset", a => { });
@@ -149,6 +157,15 @@ namespace HealingKnight.EditorTools
                 Table.Set(ThreatType.Hiperexcitacion, Anticonvulsivo, Effectiveness.Effective);
                 Table.Set(ThreatType.Bacteria, Anticonvulsivo, Effectiveness.Partial);
                 Table.Set(ThreatType.Virus, Anticonvulsivo, Effectiveness.Partial);
+                UnityEditor.EditorUtility.SetDirty(Table);
+            }
+
+            // Anticoagulante (regional del circulatorio): deshace coágulos; como toda cápsula regional, parcial contra bacterias y virus.
+            if (Table.Evaluate(ThreatType.Coagulo, Anticoagulante) != Effectiveness.Effective)
+            {
+                Table.Set(ThreatType.Coagulo, Anticoagulante, Effectiveness.Effective);
+                Table.Set(ThreatType.Bacteria, Anticoagulante, Effectiveness.Partial);
+                Table.Set(ThreatType.Virus, Anticoagulante, Effectiveness.Partial);
                 UnityEditor.EditorUtility.SetDirty(Table);
             }
 
@@ -634,6 +651,23 @@ namespace HealingKnight.EditorTools
             });
         }
 
+        /// <summary>Sistema circulatorio: por ahora el coágulo de plaquetas (obstáculo de los niveles de vuelo).</summary>
+        private void CreateCirculatoryEnemies()
+        {
+            Plaquetas = Enemy("Bloqueo_Plaquetas", e =>
+            {
+                e.displayName = "Coágulo (plaquetas)";
+                e.threat = ThreatType.Coagulo;
+                e.biologia = "Las plaquetas tapan las heridas pegándose unas a otras y la fibrina las amarra como una red. " +
+                    "Dentro de un vaso sano, un coágulo estorba el paso de la sangre (trombosis). Se deshace con anticoagulante.";
+                e.maxHealth = 50f;
+                e.meleeDamageTakenMultiplier = 0f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.attackDamage = 8f;
+                e.tint = new Color(0.8f, 0.6f, 0.9f);
+            });
+        }
+
         private void CreateNervousEnemies()
         {
             // Sistema Nervioso (GDD: virus y bacterias entre neuronas sanas). Patógenos reales del sistema nervioso.
@@ -865,11 +899,26 @@ namespace HealingKnight.EditorTools
                 UnityEditor.EditorUtility.SetDirty(nervioso);
             }
 
-            SystemData circulatorio = MakeSystem("Circulatorio", "circulatorio", "Sistema Circulatorio", "IV", null,
+            // De menos vital a más vital: sin bazo se puede vivir, sin corazón no. Ver el plan en el proyecto.
+            CirculatorioBazo = Level("Circulatorio", "01_Bazo", "circulatorio_bazo", "Bazo", "", false,
+                "El filtro de la sangre: ranuras, macrófagos y la reserva de plaquetas. Próximamente.");
+            CirculatorioArteriasVenas = PlayableLevel("Circulatorio", "02_ArteriasVenas", "circulatorio_arterias_venas", "Arterias y venas",
+                "Circulatorio_ArteriasVenas", false,
+                "Vuela en la nanocápsula: el ventrículo te dispara a la aorta. Avanza con cada latido y deshaz los coágulos con Anticoagulante.");
+            CirculatorioCorazon = Level("Circulatorio", "03_Corazon", "circulatorio_corazon", "Corazón", "", true,
+                "Válvulas al ritmo del latido y el Trypanosoma cruzi (Chagas). Próximamente.");
+            CirculatorioGranTrombo = Level("Circulatorio", "04_GranTrombo", "circulatorio_gran_trombo", "El gran trombo", "", false,
+                "Persigue al coágulo por la carótida antes de que llegue al cerebro. Próximamente.");
+            SystemData circulatorio = MakeSystem("Circulatorio", "circulatorio", "Sistema Circulatorio", "IV", Anticoagulante,
                 new Color(0.9f, 0.2f, 0.25f), new Vector2(0.45f, 0.65f),
                 "La Cepa Madre bombea variantes resistentes a todo el cuerpo.",
-                Level("Circulatorio", "01_Venas", "circulatorio_venas", "Venas y arterias", "", false, ""),
-                Level("Circulatorio", "02_Corazon", "circulatorio_corazon", "Corazón", "", true, ""));
+                CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo);
+            if (circulatorio.regionalMedication != Anticoagulante || !circulatorio.levels.Contains(CirculatorioArteriasVenas))
+            {
+                circulatorio.regionalMedication = Anticoagulante;
+                circulatorio.levels = new List<LevelData> { CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo };
+                UnityEditor.EditorUtility.SetDirty(circulatorio);
+            }
 
             Catalog = SetupUtils.LoadOrCreate<GameCatalog>($"{DataFolder}/Resources/{GameCatalog.ResourcePath}.asset", c =>
             {
@@ -903,7 +952,7 @@ namespace HealingKnight.EditorTools
         {
             Bestiary = SetupUtils.LoadOrCreate<Bestiary>($"{DataFolder}/Resources/{Bestiary.ResourcePath}.asset", null);
             Bestiary.table = Table;
-            Bestiary.medications = new List<MedicationData> { Antibiotico, Antiviral, Antiparasitario, Antiinflamatorio, Antihistaminico, Mucolitico, Anticonvulsivo };
+            Bestiary.medications = new List<MedicationData> { Antibiotico, Antiviral, Antiparasitario, Antiinflamatorio, Antihistaminico, Mucolitico, Anticonvulsivo, Anticoagulante };
             const string D = "Digestivo", R = "Respiratorio", N = "Nervioso";
             var list = new List<BestiaryEntry>
             {

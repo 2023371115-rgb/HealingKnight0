@@ -25,7 +25,7 @@ namespace HealingKnight.Gameplay.Level
     public class AmbientLife : MonoBehaviour
     {
         // Nuevos temas siempre al final (las escenas guardan el número).
-        public enum Theme { Air, Lungs, Acid, Gut, Colon, Mouth, Nerve, Memory, Throat, Eye, Trachea, Spine }
+        public enum Theme { Air, Lungs, Acid, Gut, Colon, Mouth, Nerve, Memory, Throat, Eye, Trachea, Spine, Blood }
 
         [SerializeField] private Theme theme = Theme.Air;
         [SerializeField] private int count = 30;
@@ -92,7 +92,7 @@ namespace HealingKnight.Gameplay.Level
             if (theme == Theme.Lungs) BuildAlveoli(cam);
 
             // Viñeta: oscurece un poco las orillas de la pintura (no el juego).
-            float dark = theme == Theme.Eye ? 0.4f : theme == Theme.Air || theme == Theme.Trachea ? 0.28f : 0.38f;
+            float dark = theme == Theme.Eye ? 0.4f : theme == Theme.Blood ? 0.5f : theme == Theme.Air || theme == Theme.Trachea ? 0.28f : 0.38f;
             vignette = CodeSprites.Add(layer, CodeSprites.Vignette, new Color(0.04f, 0f, 0.05f, dark), OrderVignette, Vector2.zero, new Vector2(w * 2.1f, h * 2.1f), "Vineta").transform;
 
             // Manchas de luz desenfocadas por delante (muy tenues). En el Ojo no: ahí hay que ver todo claro.
@@ -128,6 +128,7 @@ namespace HealingKnight.Gameplay.Level
                 case Theme.Gut: return new Color(1f, 0.85f, 0.5f, 1f);
                 case Theme.Nerve: case Theme.Spine: case Theme.Memory: return new Color(0.7f, 0.6f, 1f, 1f);
                 case Theme.Lungs: case Theme.Air: case Theme.Trachea: return new Color(0.85f, 0.95f, 1f, 1f);
+                case Theme.Blood: return new Color(1f, 0.6f, 0.6f, 1f);
                 default: return new Color(1f, 0.85f, 0.88f, 1f);
             }
         }
@@ -149,6 +150,7 @@ namespace HealingKnight.Gameplay.Level
                 case Theme.Memory: return v < 0.5f ? Kind.Bubble : v < 0.75f ? Kind.Mote : Kind.Spark;
                 case Theme.Throat: return v < 0.3f ? Kind.Drip : v < 0.6f ? Kind.Lymph : v < 0.8f ? Kind.Bubble : Kind.Mote;
                 case Theme.Eye: return v < 0.35f ? Kind.Floater : Kind.Mote;
+                case Theme.Blood: return v < 0.45f ? Kind.Cell : v < 0.75f ? Kind.Streak : Kind.Mote;
                 default: return Kind.Mote;
             }
         }
@@ -188,6 +190,7 @@ namespace HealingKnight.Gameplay.Level
                 case Theme.Memory: return new Color(1f, 0.85f, 0.5f, 1f);
                 case Theme.Throat: return new Color(1f, 0.92f, 0.95f, 1f);
                 case Theme.Eye: return new Color(0.7f, 0.85f, 1f, 1f);
+                case Theme.Blood: return Random.value < 0.25f ? new Color(0.8f, 0.6f, 1f, 1f) : new Color(1f, 0.78f, 0.8f, 1f);   // plasma y plaquetas
             }
             return Color.white;
         }
@@ -320,7 +323,8 @@ namespace HealingKnight.Gameplay.Level
                     b.alpha = Random.Range(0.35f, 0.6f);
                     b.vel = new Vector2(Random.Range(0.5f, 1.1f), Random.Range(-0.1f, 0.1f));
                     b.maxLife = Random.Range(10f, 16f);
-                    b.pos = new Vector2(anywhere ? Random.Range(-w, w) : -w - 0.5f, Random.Range(-h * 0.5f, h * 0.85f));
+                    // En la arteria tú vas más rápido que ellos: entran por la derecha y los vas rebasando.
+                    b.pos = new Vector2(anywhere ? Random.Range(-w, w) : theme == Theme.Blood ? w + 0.5f : -w - 0.5f, Random.Range(-h * 0.5f, h * 0.85f));
                     b.rim.enabled = true;                         // el centro hundido del glóbulo
                     b.rim.sprite = CodeSprites.Circle;
                     b.rim.transform.localScale = Vector3.one * 0.45f;
@@ -495,6 +499,7 @@ namespace HealingKnight.Gameplay.Level
                 case Theme.Throat: return Mathf.Pow(Mathf.Abs(Mathf.Sin(t * 1.4f)), 6f);   // pulso de inflamación
                 case Theme.Gut: case Theme.Colon: case Theme.Acid: return 0.5f + 0.5f * Mathf.Sin(t * 0.7f);   // peristalsis lenta
                 case Theme.Spine: return Mathf.Pow(Mathf.Abs(Mathf.Sin(t * 1.2f)), 8f);    // pulso del líquido cefalorraquídeo
+                case Theme.Blood: return Flight.Heartbeat.SurgeNow;                         // el latido del corazón
                 default: return 0f;
             }
         }
@@ -521,7 +526,7 @@ namespace HealingKnight.Gameplay.Level
 
             // Latido / respiración del fondo (LevelBackdrop ya puso la escala base este cuadro).
             float pulse = Pulse();
-            float amount = theme == Theme.Lungs ? 0.035f : theme == Theme.Throat ? 0.015f : theme == Theme.Air || theme == Theme.Trachea ? 0.012f : 0.01f;
+            float amount = theme == Theme.Lungs ? 0.035f : theme == Theme.Blood ? 0.02f : theme == Theme.Throat ? 0.015f : theme == Theme.Air || theme == Theme.Trachea ? 0.012f : 0.01f;
             Vector3 s = transform.localScale * (1f + pulse * amount);
             if (theme == Theme.Gut || theme == Theme.Colon) s.y *= 1f + Mathf.Sin(time * 0.7f + 1.2f) * 0.008f;   // apretón de la peristalsis
             transform.localScale = s;
@@ -535,7 +540,7 @@ namespace HealingKnight.Gameplay.Level
             }
             if (backdropRenderer != null)
             {
-                float k = 1f + flash * 0.18f + (theme == Theme.Lungs ? pulse * 0.05f : 0f) + (theme == Theme.Throat ? pulse * 0.04f : 0f);
+                float k = 1f + flash * 0.18f + (theme == Theme.Lungs ? pulse * 0.05f : 0f) + (theme == Theme.Throat ? pulse * 0.04f : 0f) + (theme == Theme.Blood ? pulse * 0.12f : 0f);
                 Color tint = backdropBase;
                 if (theme == Theme.Throat) tint = Color.Lerp(backdropBase, new Color(1f, 0.85f, 0.85f, backdropBase.a), pulse * 0.5f);
                 backdropRenderer.color = new Color(Mathf.Min(1f, tint.r * k), Mathf.Min(1f, tint.g * k), Mathf.Min(1f, tint.b * k), tint.a);
@@ -566,12 +571,15 @@ namespace HealingKnight.Gameplay.Level
                 float parallax = Mathf.Lerp(0.08f, 0.4f, b.depth);
                 switch (b.kind)
                 {
-                    case Kind.Streak: v.x = Mathf.Abs(b.vel.x) * airDir; break;
+                    case Kind.Streak:
+                        // Sangre: rayitas de velocidad que pasan hacia atrás, más rápidas en cada latido.
+                        v.x = theme == Theme.Blood ? -Mathf.Abs(b.vel.x) * (0.6f + pulse * 1.6f) : Mathf.Abs(b.vel.x) * airDir;
+                        break;
                     case Kind.Mote:
                         if (theme == Theme.Lungs) v.x += BreathingCycle.Flow * 0.8f;          // el aire las lleva
                         if (theme == Theme.Air || theme == Theme.Trachea) v.x = b.vel.x * 0.3f + airDir * 0.6f;
                         break;
-                    case Kind.Cell: v.x += BreathingCycle.Flow * 0.4f; break;
+                    case Kind.Cell: v.x += theme == Theme.Blood ? pulse * 1.5f : BreathingCycle.Flow * 0.4f; break;
                     case Kind.Drip:
                         if (b.life < b.hang) v = Vector2.zero;                                // colgando: se va formando
                         else { b.falling = true; v.y = b.vel.y - 9f * Mathf.Lerp(0.5f, 1f, b.depth) * (b.life - b.hang); }
@@ -627,7 +635,8 @@ namespace HealingKnight.Gameplay.Level
                     case Kind.Cell:
                     {
                         // Oscuro (sin oxígeno) → rojo vivo cuando el pulmón se llena de aire.
-                        Color body = Color.Lerp(new Color(0.55f, 0.15f, 0.32f), new Color(0.95f, 0.18f, 0.2f), pulse);
+                        Color body = theme == Theme.Blood ? Color.Lerp(new Color(0.75f, 0.1f, 0.15f), new Color(0.95f, 0.2f, 0.22f), pulse)
+                            : Color.Lerp(new Color(0.55f, 0.15f, 0.32f), new Color(0.95f, 0.18f, 0.2f), pulse);
                         b.r.color = new Color(body.r, body.g, body.b, a);
                         b.rim.color = new Color(body.r * 0.7f, body.g * 0.7f, body.b * 0.7f, a);
                         b.t.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(time + b.seed) * 30f);
@@ -636,7 +645,7 @@ namespace HealingKnight.Gameplay.Level
                     }
                     case Kind.Streak:
                         scale = new Vector2(b.hang, b.size);
-                        a *= Mathf.Abs(airDir);
+                        a *= theme == Theme.Blood ? 0.35f + pulse * 0.65f : Mathf.Abs(airDir);
                         break;
                     case Kind.Glob:
                     {
@@ -670,7 +679,7 @@ namespace HealingKnight.Gameplay.Level
                 b.t.localPosition = new Vector3(b.pos.x, b.pos.y, 0f);
 
                 // Las que flotan dan la vuelta por los lados (así no "se acaban" al caminar).
-                bool wraps = b.kind == Kind.Mote || b.kind == Kind.Floater || b.kind == Kind.Rod || b.kind == Kind.Lymph || b.kind == Kind.Nutrient || b.kind == Kind.Bubble;
+                bool wraps = (b.kind == Kind.Cell && theme == Theme.Blood) || b.kind == Kind.Mote || b.kind == Kind.Floater || b.kind == Kind.Rod || b.kind == Kind.Lymph || b.kind == Kind.Nutrient || b.kind == Kind.Bubble;
                 if (wraps)
                 {
                     if (b.pos.x < -w - 1f) b.pos.x += 2f * w + 2f;

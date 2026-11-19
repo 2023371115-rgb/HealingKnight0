@@ -3,6 +3,7 @@ using System.IO;
 using HealingKnight.Core.Progression;
 using HealingKnight.Gameplay.CameraSystem;
 using HealingKnight.Gameplay.Enemies;
+using HealingKnight.Gameplay.Flight;
 using HealingKnight.Gameplay.Hazards;
 using HealingKnight.Gameplay.Level;
 using HealingKnight.Gameplay.Movement;
@@ -51,6 +52,7 @@ namespace HealingKnight.EditorTools
         public static string HipocampoPath => $"{Folder}/Levels/Nervioso/Nervioso_Hipocampo.unity";
         public static string OjoPath => $"{Folder}/Levels/Nervioso/Nervioso_Ojo.unity";
         public static string AmigdalasPath => $"{Folder}/Levels/Respiratorio/Respiratorio_Amigdalas.unity";
+        public static string ArteriasVenasPath => $"{Folder}/Levels/Circulatorio/Circulatorio_ArteriasVenas.unity";
 
         public void Run()
         {
@@ -68,6 +70,7 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(HipocampoPath, BuildHipocampo);
             CreateIfMissing(OjoPath, BuildOjo);
             CreateIfMissing(AmigdalasPath, BuildAmigdalas);
+            CreateIfMissing(ArteriasVenasPath, BuildArteriasVenas);
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
@@ -88,6 +91,7 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(HipocampoPath, true),
                 new EditorBuildSettingsScene(OjoPath, true),
                 new EditorBuildSettingsScene(AmigdalasPath, true),
+                new EditorBuildSettingsScene(ArteriasVenasPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
             EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
@@ -287,6 +291,8 @@ namespace HealingKnight.EditorTools
             /// los genera Tools/Art/generar_tejido.py). Vacío o sin PNG = bloques de color de siempre.
             /// </summary>
             public string tissue;
+            /// <summary>Nivel de VUELO (sistema circulatorio): sin piso ni pared de fondo; el vaso lo arma su nivel.</summary>
+            public bool flight;
         }
 
         private const string TissueFolder = "Assets/_Project/Art/Tejidos";
@@ -493,7 +499,7 @@ namespace HealingKnight.EditorTools
                 AddAmbientLife(back, style.backdrop);
                 style.decor = Decor.None; // la imagen ya trae su decorado
             }
-            else
+            else if (!style.flight)
             {
                 SetupUtils.SpriteChild(environment, "BackWall", PlaceholderArt.Square, style.wall,
                     new Vector3(startX + length * 0.5f, FloorY, 0f), new Vector2(length + 30f, 10f), -200);
@@ -511,13 +517,13 @@ namespace HealingKnight.EditorTools
             int index = 0;
             foreach (Vector2 cut in cuts)
             {
-                FloorSegment($"Floor_{index++}", segmentStart, cut.x);
+                if (!style.flight) FloorSegment($"Floor_{index++}", segmentStart, cut.x);
                 segmentStart = Mathf.Max(segmentStart, cut.x + cut.y);
             }
-            FloorSegment($"Floor_{index}", segmentStart, endX + 15f);
+            if (!style.flight) FloorSegment($"Floor_{index}", segmentStart, endX + 15f);
 
             // Sombra de contacto: el fondo se oscurece justo arriba del piso (el piso deja de verse "pegado").
-            if (tissueFloor != null && verticalShadow != null)
+            if (!style.flight && tissueFloor != null && verticalShadow != null)
             {
                 Vector2 aoSize = verticalShadow.bounds.size;
                 var aoColor = new Color(ShadowColor.r, ShadowColor.g, ShadowColor.b, 0.6f);
@@ -747,7 +753,7 @@ namespace HealingKnight.EditorTools
             var managerGo = new GameObject("LevelManager");
             var manager = managerGo.AddComponent<LevelManager>();
             // yMin = altura de caída al vacío.
-            SetupUtils.SetRect(manager, "levelBounds", new Rect(startX, FloorY - 6f, length, 20f));
+            SetupUtils.SetRect(manager, "levelBounds", style.flight ? new Rect(startX, FloorY - 30f, length, 70f) : new Rect(startX, FloorY - 6f, length, 20f));
             SetupUtils.SetVector2(manager, "spawnPoint", spawn);
             SetupUtils.SetFloat(manager, "exitX", endX - 4f);
             SetupUtils.SetRef(manager, "playerPrefab", prefabs.Player);
@@ -3565,6 +3571,335 @@ namespace HealingKnight.EditorTools
             go.transform.position = new Vector3(x, FloorY, 0f);
             var trigger = go.AddComponent<MessageTrigger>();
             SetupUtils.SetString(trigger, "message", text);
+        }
+
+        // ---------- Sistema circulatorio: Arterias y venas (VUELO) ----------
+
+        private const float AortaRadius = 3.9f;
+
+        /// <summary>Interpola suave (curva S) entre puntos clave (x, valor).</summary>
+        private static float SmoothKeys(float[] xs, float[] ys, float x)
+        {
+            if (x <= xs[0]) return ys[0];
+            for (int i = 1; i < xs.Length; i++)
+            {
+                if (x > xs[i]) continue;
+                float k = Mathf.InverseLerp(xs[i - 1], xs[i], x);
+                return Mathf.Lerp(ys[i - 1], ys[i], k * k * (3f - 2f * k));
+            }
+            return ys[ys.Length - 1];
+        }
+
+        /// <summary>Centro del vaso (y de la cámara): plano en la aorta ascendente, sube al ARCO y baja a la descendente.</summary>
+        private static float AortaCenterY(float x) =>
+            SmoothKeys(new[] { -40f, 92f, 114f, 160f, 188f, 500f }, new[] { 2.5f, 2.5f, 8f, 8f, 1f, 1f }, x);
+
+        /// <summary>Radio del vaso: ancho en el ventrículo, angosto en la válvula aórtica y luego la aorta.</summary>
+        private static float AortaRadiusAt(float x) =>
+            SmoothKeys(new[] { -40f, 0.5f, 5.2f, 6.8f, 10f, 500f }, new[] { 4.8f, 4.8f, 3.2f, 3.2f, AortaRadius, AortaRadius }, x);
+
+        /// <summary>
+        /// Pared del vaso de 'a' a 'b' (tramo recto). La orilla brillante (endotelio) queda a la IZQUIERDA del recorrido
+        /// (hacia adentro del vaso) y el grosor hacia la derecha. Es sólida (la nave choca) y su dibujo late un poquito.
+        /// </summary>
+        private void VesselWall(Vector2 a, Vector2 b, float depth = 7f)
+        {
+            Vector2 d = b - a;
+            float len = d.magnitude + 0.3f;
+            if (len < 0.35f) return;
+            var go = new GameObject("ParedVaso");
+            go.transform.SetParent(environment, false);
+            go.transform.position = (Vector3)((a + b) * 0.5f);
+            go.transform.rotation = Quaternion.Euler(0f, 0f, Mathf.Atan2(d.y, d.x) * Mathf.Rad2Deg);
+            go.layer = PhysicsLayers.Ground;
+            var box = go.AddComponent<BoxCollider2D>();
+            box.size = new Vector2(len, depth);
+            box.offset = new Vector2(0f, -depth * 0.5f);
+
+            var art = new GameObject("Dibujo").transform;
+            art.SetParent(go.transform, false);
+            art.gameObject.AddComponent<HeartPulse>().Configure(HeartPulse.Mode.Throb, -0.07f);
+            if (tissueFloor != null && tissueFill != null)
+            {
+                float strip = tissueFloor.bounds.size.y;
+                TiledChild(art, "Tejido", tissueFloor, Vector3.zero, new Vector2(len, strip), -99, Color.white);
+                TiledChild(art, "Relleno", tissueFill, new Vector3(0f, -strip + 0.01f, 0f), new Vector2(len, depth + 1f - strip), -100, Color.white);
+            }
+            else
+            {
+                SetupUtils.SpriteChild(art, "Relleno", PlaceholderArt.Square, new Color(0.55f, 0.08f, 0.14f), new Vector3(0f, -depth, 0f), new Vector2(len, depth), -100);
+                SetupUtils.SpriteChild(art, "Orilla", PlaceholderArt.Square, new Color(0.95f, 0.35f, 0.4f), new Vector3(0f, -0.25f, 0f), new Vector2(len, 0.25f), -99);
+            }
+        }
+
+        /// <summary>
+        /// Una pared que sigue una curva: se muestrea cada unidad y se juntan los tramos casi rectos (menos piezas).
+        /// 'points' va en el sentido en que la orilla queda a la izquierda.
+        /// </summary>
+        private void VesselWallAlong(List<Vector2> points, float depth = 7f)
+        {
+            if (points.Count < 2) return;
+            int start = 0;
+            for (int end = 2; end <= points.Count; end++)
+            {
+                bool last = end == points.Count;
+                bool straight = !last;
+                if (!last)
+                {
+                    Vector2 a = points[start], b = points[end];
+                    for (int k = start + 1; k < end && straight; k++)
+                    {
+                        // Distancia del punto intermedio a la línea a→b.
+                        Vector2 ab = b - a, ap = points[k] - a;
+                        float dist = Mathf.Abs(ab.x * ap.y - ab.y * ap.x) / Mathf.Max(0.001f, ab.magnitude);
+                        straight = dist < 0.025f && ab.magnitude < 24f;
+                    }
+                }
+                if (straight) continue;
+                VesselWall(points[start], points[end - 1], depth);
+                start = end - 1;
+            }
+        }
+
+        /// <summary>Coágulo de plaquetas (lo dibuja aquí con figuras de relleno). 'full' tapa todo el vaso.</summary>
+        private void Clot(float x, float centerY, Vector2 size, bool full, string message)
+        {
+            GameObject go = Node(full ? "CoaguloCompleto" : "CoaguloPegado", x, centerY);
+            var art = new GameObject("Dibujo").transform;
+            art.SetParent(go.transform, false);
+            var rnd = new System.Random(Mathf.RoundToInt(x * 13f));
+            Color outline = new Color(0.32f, 0.12f, 0.36f), platelet = new Color(0.82f, 0.62f, 0.92f), light = new Color(0.95f, 0.82f, 1f);
+            int count = Mathf.RoundToInt(size.x * size.y * 1.6f);
+            for (int i = 0; i < count; i++)
+            {
+                float px = ((float)rnd.NextDouble() - 0.5f) * size.x * 0.9f;
+                float py = ((float)rnd.NextDouble() - 0.5f) * size.y * 0.95f;
+                float s = 0.45f + (float)rnd.NextDouble() * 0.45f;
+                SetupUtils.SpriteChild(art, "Plaqueta", PlaceholderArt.Circle, outline, new Vector3(px, py, 0f), new Vector2(s * 1.25f, s * 1.05f), 3);
+                SetupUtils.SpriteChild(art, "Plaqueta", PlaceholderArt.Circle, platelet, new Vector3(px, py, 0f), new Vector2(s, s * 0.8f), 4);
+                SetupUtils.SpriteChild(art, "Brillo", PlaceholderArt.Circle, light, new Vector3(px - s * 0.15f, py + s * 0.12f, 0f), new Vector2(s * 0.3f, s * 0.18f), 5);
+            }
+            // Hilos de fibrina que amarran a las plaquetas.
+            for (int i = 0; i < Mathf.RoundToInt(size.y * 1.5f); i++)
+            {
+                float py = ((float)rnd.NextDouble() - 0.5f) * size.y;
+                float ang = ((float)rnd.NextDouble() - 0.5f) * 70f;
+                SetupUtils.SpriteChild(art, "Fibrina", PlaceholderArt.SquareCentered, new Color(1f, 0.95f, 0.8f, 0.85f),
+                    new Vector3(0f, py, 0f), new Vector2(size.x * 1.1f, 0.07f), 6).transform.localRotation = Quaternion.Euler(0f, 0f, ang);
+            }
+
+            var health = go.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.Plaquetas);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            var hurt = go.AddComponent<HealingKnight.Gameplay.Combat.Hurtbox>();
+            SetupUtils.SetVector2(hurt, "offset", Vector2.zero);
+            SetupUtils.SetVector2(hurt, "size", size);
+            if (full)
+            {
+                go.layer = PhysicsLayers.Ground;
+                go.AddComponent<BoxCollider2D>().size = size;
+            }
+            go.AddComponent<ClotGate>().Configure(full, size, message);
+        }
+
+        private FlightWaveSpec Spec(EnemyHealth prefab, int count, FlightPattern pattern, float entry, float step, float speed)
+        {
+            return new FlightWaveSpec
+            {
+                prefab = prefab, count = count, pattern = pattern, entry = entry, entryStep = step, speed = speed,
+                projectilePrefab = prefabs.EnemyProjectile
+            };
+        }
+
+        private void FlightWaveAt(float triggerX, FlightWaveSpec spec) =>
+            Node("OleadaVuelo", triggerX, AortaCenterY(triggerX)).AddComponent<FlightWave>().Configure(spec);
+
+        private void BuildArteriasVenas()
+        {
+            // Primer tramo (prueba del modo de vuelo): el VENTRÍCULO IZQUIERDO te dispara a la AORTA.
+            //  1) Ventrículo (inicio quieto) y válvula aórtica que se abre con cada latido.
+            //  2) Aorta ascendente: sepsis (S. aureus, neumococo) entre el tráfico de glóbulos rojos.
+            //  3) Arco aórtico: sube, de arriba salen sus ramas (te jalan) y de ahí bajan enemigos.
+            //     Al bajar, el primer COÁGULO completo: tutorial del ANTICOAGULANTE.
+            //  4) Aorta descendente: coágulos pegados a la pared, TAQUICARDIA y el enjambre final.
+            // Todo es relativo a la cámara, que avanza sola por el centro del vaso (FlightRoute).
+            const float length = 370f;
+            const float startX = -10f, endX = startX + length;
+            LevelManager manager = BuildLevelBase(length, new LevelStyle
+            {
+                background = new Color(0.2f, 0.02f, 0.05f),
+                wall = new Color(0.35f, 0.04f, 0.08f),
+                floor = new Color(0.6f, 0.1f, 0.15f),
+                floorEdge = new Color(0.95f, 0.35f, 0.4f),
+                decor = Decor.None,
+                tissue = "Arteria",
+                flight = true
+            }, "NODO: Sistema circulatorio. Estás DENTRO del ventrículo izquierdo del corazón, en la NANOCÁPSULA. " +
+               "{mover} para volar, {disparar} dispara, {dash} hace un dash y mantener {fijar} te ENCOGE. Espera el latido...");
+
+            // Fondo: sangre oscura que late, glóbulos lejanos y rayitas de velocidad (AmbientLife, tema Blood).
+            var back = new GameObject("Fondo");
+            back.transform.SetParent(environment, false);
+            var backRenderer = back.AddComponent<SpriteRenderer>();
+            backRenderer.sprite = PlaceholderArt.SquareCentered;
+            backRenderer.color = new Color(0.36f, 0.04f, 0.08f);
+            backRenderer.sortingOrder = -300;
+            back.AddComponent<LevelBackdrop>().Configure(startX, endX);
+            back.AddComponent<AmbientLife>().Configure(AmbientLife.Theme.Blood, 40);
+
+            new GameObject("Latido").AddComponent<Heartbeat>().Configure(84f);
+
+            // Camino de la cámara (= centro del vaso) y paredes que lo siguen.
+            var path = new List<Vector2>();
+            for (float x = -0.4f; x < endX - 6f; x += 2f) path.Add(new Vector2(x, AortaCenterY(x)));
+            path.Add(new Vector2(endX - 6f, AortaCenterY(endX - 6f)));
+            new GameObject("RutaDeVuelo").AddComponent<FlightRoute>().Configure(path.ToArray(), 2.9f, 2.2f);
+
+            float[] branches = { 121f, 134f, 147f };   // tronco braquiocefálico, carótida y subclavia izquierdas
+            const float branchHalf = 1.4f;
+            var bottom = new List<Vector2>();
+            for (float x = -40f; x <= endX + 25f; x += 1f) bottom.Add(new Vector2(x, AortaCenterY(x) - AortaRadiusAt(x)));
+            VesselWallAlong(bottom);
+            // Pared de arriba: de derecha a izquierda (la orilla queda hacia adentro), con huecos en las ramas.
+            var top = new List<Vector2>();
+            for (float x = endX + 25f; x >= -40f; x -= 1f)
+            {
+                bool inBranch = false;
+                foreach (float b in branches) if (x > b - branchHalf && x < b + branchHalf) inBranch = true;
+                if (inBranch)
+                {
+                    if (top.Count > 0) VesselWallAlong(top);
+                    top.Clear();
+                    continue;
+                }
+                top.Add(new Vector2(x, AortaCenterY(x) + AortaRadiusAt(x)));
+            }
+            VesselWallAlong(top);
+            foreach (float b in branches)
+            {
+                float y = AortaCenterY(b) + AortaRadius;
+                // Tubito de la rama: dos paredes que suben (las orillas miran hacia adentro del tubo).
+                VesselWall(new Vector2(b - branchHalf, y + 7f), new Vector2(b - branchHalf, y - 0.3f), 1.4f);
+                VesselWall(new Vector2(b + branchHalf, y - 0.3f), new Vector2(b + branchHalf, y + 7f), 1.4f);
+                // La sangre que se va por la rama te jala hacia arriba.
+                Node("CorrienteRama", b, y - 1.6f).AddComponent<FlowZone>().Configure(new Vector2(branchHalf * 2f + 0.6f, 3.4f), new Vector2(0f, 7f));
+            }
+
+            // Ventrículo: músculo grueso que se aprieta con cada latido, y la válvula aórtica (dos valvas).
+            for (int i = 0; i < 6; i++)
+            {
+                float x = -12f + i * 2.6f;
+                foreach (int side in new[] { -1, 1 })
+                {
+                    float y = AortaCenterY(x) + side * (AortaRadiusAt(x) + 0.2f);
+                    GameObject m = SetupUtils.Child(environment, "Musculo", new Vector3(x, y, 0f));
+                    SetupUtils.SpriteChild(m.transform, "Contorno", PlaceholderArt.Circle, new Color(0.28f, 0.03f, 0.07f), Vector3.zero, new Vector2(3.4f, 2.6f), -90);
+                    SetupUtils.SpriteChild(m.transform, "Carne", PlaceholderArt.Circle, new Color(0.72f, 0.14f, 0.2f), Vector3.zero, new Vector2(3.1f, 2.3f), -89);
+                    SetupUtils.SpriteChild(m.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 0.5f, 0.5f, 0.45f), new Vector3(-0.5f, side * -0.5f, 0f), new Vector2(1f, 0.35f), -88);
+                    m.AddComponent<HeartPulse>().Configure(HeartPulse.Mode.Squeeze, 0.12f);
+                }
+            }
+            foreach (int side in new[] { -1, 1 })
+            {
+                float hingeY = AortaCenterY(6f) + side * 3.2f;
+                GameObject hinge = SetupUtils.Child(environment, "ValvaAortica", new Vector3(5.6f, hingeY, 0f));
+                hinge.transform.localRotation = Quaternion.Euler(0f, 0f, side > 0 ? -90f : 90f);   // cerrada: apunta al centro
+                SetupUtils.SpriteChild(hinge.transform, "Contorno", PlaceholderArt.Capsule, new Color(0.3f, 0.04f, 0.08f), new Vector3(1.4f, 0f, 0f), new Vector2(3f, 0.62f), -60);
+                SetupUtils.SpriteChild(hinge.transform, "Valva", PlaceholderArt.Capsule, new Color(0.96f, 0.55f, 0.6f), new Vector3(1.4f, 0f, 0f), new Vector2(2.8f, 0.46f), -59);
+                hinge.AddComponent<HeartPulse>().Configure(HeartPulse.Mode.Valve, 0f, side > 0 ? 72f : -72f);
+            }
+
+            // Tráfico de glóbulos rojos en todo el tramo.
+            Sprite cellArt = PrefabSetup.ArtByWidth($"{RespArt}/GloboRojo.png", 1f);
+            new GameObject("GlobulosRojos").AddComponent<BloodStream>().Configure(14f, endX - 8f, 7, 2.5f, cellArt);
+
+            // ---------- 2) Aorta ascendente ----------
+            SetMessage("Cada LATIDO empuja la sangre: la pantalla avanza de golpe y luego va lento. Los GLÓBULOS ROJOS detienen las balas... las tuyas también.", 14f);
+            var w1 = Spec(prefabs.SAureus, 3, FlightPattern.Line, 1.6f, -1.6f, 2.6f);
+            w1.amplitude = 0.6f; w1.frequency = 0.4f; w1.splitPrefab = prefabs.SAureusCoco; w1.splitCount = 2;
+            w1.message = "S. aureus en la sangre: eso es SEPSIS. Antibiótico. Al romper el racimo, los cocos salen disparados.";
+            FlightWaveAt(32f, w1);
+            var w2 = Spec(prefabs.Neumococo, 4, FlightPattern.Swoop, 5f, 1.4f, 3.4f);
+            w2.edge = FlightEdge.Top; w2.interval = 0.5f;
+            w2.message = "Neumococo: de los pulmones también puede pasar a la sangre (bacteriemia). Antibiótico.";
+            FlightWaveAt(50f, w2);
+            var w3 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 2f, -4f, 2.5f);
+            w3.hoverX = 5.5f; w3.hoverTime = 5f; w3.fireEveryBeats = 2; w3.shotSpeed = 5.5f; w3.interval = 0.2f;
+            w3.splitPrefab = prefabs.SAureusCoco; w3.splitCount = 2;
+            w3.message = "¡Disparan AL RITMO del latido! Se ponen rojos medio latido antes: muévete o usa el DASH ({dash}).";
+            FlightWaveAt(66f, w3);
+            var w4 = Spec(prefabs.Neumococo, 5, FlightPattern.Line, 2.8f, -1.4f, 3.2f);
+            w4.interval = 0.35f;
+            FlightWaveAt(82f, w4);
+            Checkpoint(92f);
+
+            // ---------- 3) Arco aórtico ----------
+            SetMessage("El ARCO de la aorta: de arriba salen las arterias que van a la cabeza y a los brazos. La sangre que se va por ahí te JALA.", 106f);
+            var w5 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 0f, 0f, 2.6f);
+            w5.edge = FlightEdge.Top; w5.worldX = branches[0]; w5.interval = 0.7f;
+            FlightWaveAt(branches[0] + 3f, w5);
+            var w6 = Spec(prefabs.SAureus, 3, FlightPattern.Swoop, 0f, 0f, 2.4f);
+            w6.edge = FlightEdge.Top; w6.worldX = branches[1]; w6.interval = 0.8f; w6.splitPrefab = prefabs.SAureusCoco; w6.splitCount = 2;
+            FlightWaveAt(branches[1] + 3f, w6);
+            var w7 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, -2f, 3.5f, 2.5f);
+            w7.edge = FlightEdge.Bottom; w7.hoverX = 4.5f; w7.hoverTime = 5f; w7.fireEveryBeats = 2; w7.shots = 3; w7.spreadDegrees = 30f; w7.shotSpeed = 5f;
+            FlightWaveAt(152f, w7);
+            // Al bajar del arco: un coágulo tapa todo. La pantalla se detiene hasta que lo disuelvas.
+            float gateX = 174f;
+            Clot(gateX, AortaCenterY(gateX), new Vector2(2.4f, AortaRadius * 2f + 1f), true,
+                "¡Un COÁGULO tapa la aorta! Las plaquetas se pegaron. Cambia al ANTICOAGULANTE ({medicamento}) y dispárale: las demás cápsulas rebotan.");
+            Checkpoint(178f);
+
+            // ---------- 4) Aorta descendente ----------
+            var w8 = Spec(prefabs.SAureus, 4, FlightPattern.Line, 0f, 0f, 2.8f);
+            w8.amplitude = 2f; w8.frequency = 0.35f; w8.interval = 0.6f; w8.splitPrefab = prefabs.SAureusCoco; w8.splitCount = 2;
+            FlightWaveAt(196f, w8);
+            Clot(206f, AortaCenterY(206f) + AortaRadius - 1.1f, new Vector2(2.2f, 2.6f), false,
+                "Coágulos PEGADOS a la pared: si los tocas te lastiman. Pasa por el hueco o disuélvelos.");
+            Clot(220f, AortaCenterY(220f) - AortaRadius + 1.1f, new Vector2(2.2f, 2.6f), false, null);
+            var w9 = Spec(prefabs.Neumococo, 2, FlightPattern.Chase, 1.5f, -3f, 2.4f);
+            w9.hoverTime = 6f; w9.interval = 0.4f;
+            w9.message = "¡Estos te persiguen! Dispárales antes de que te alcancen.";
+            FlightWaveAt(226f, w9);
+            var w10 = Spec(prefabs.SAureus, 3, FlightPattern.Hover, 2.6f, -2.6f, 2.5f);
+            w10.hoverX = 5f; w10.hoverTime = 5f; w10.fireEveryBeats = 2; w10.shots = 3; w10.spreadDegrees = 26f; w10.interval = 0.3f;
+            FlightWaveAt(242f, w10);
+            Checkpoint(254f);
+
+            Node("Taquicardia", 262f, AortaCenterY(262f)).AddComponent<TachycardiaTrigger>().Configure(20f,
+                "¡TAQUICARDIA! Con la infección el corazón late más rápido: la sangre empuja más seguido y disparan más rápido.");
+            var w11 = Spec(prefabs.Neumococo, 6, FlightPattern.Line, 2.5f, -1f, 3.4f);
+            w11.interval = 0.25f;
+            FlightWaveAt(270f, w11);
+            var w12 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 4f, 1.6f, 3f);
+            w12.edge = FlightEdge.Bottom; w12.interval = 0.45f;
+            FlightWaveAt(286f, w12);
+            var w13 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 1.8f, -3.6f, 2.5f);
+            w13.hoverX = 5.5f; w13.hoverTime = 4.5f; w13.fireEveryBeats = 1; w13.interval = 0.2f;
+            FlightWaveAt(292f, w13);
+            Clot(304f, AortaCenterY(304f) + AortaRadius - 1.1f, new Vector2(2.4f, 2.8f), false, null);
+            Clot(304f, AortaCenterY(304f) - AortaRadius + 1.1f, new Vector2(2.4f, 2.8f), false, null);
+            Checkpoint(310f);
+
+            // Enjambre final: sepsis por todos lados.
+            var w14 = Spec(prefabs.SAureus, 5, FlightPattern.Line, 2.6f, 0f, 3f);
+            w14.amplitude = 0.8f; w14.interval = 0.5f; w14.splitPrefab = prefabs.SAureusCoco; w14.splitCount = 2;
+            w14.message = "¡Un enjambre de SEPSIS! Aguanta: ya casi llegas a la bifurcación de la aorta.";
+            FlightWaveAt(320f, w14);
+            var w15 = Spec(prefabs.Neumococo, 5, FlightPattern.Line, -2.6f, 0f, 3.6f);
+            w15.amplitude = 0.8f; w15.interval = 0.5f;
+            FlightWaveAt(323f, w15);
+            var w16 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 3f, -6f, 2.5f);
+            w16.hoverX = 6f; w16.hoverTime = 4f; w16.fireEveryBeats = 1; w16.shots = 3; w16.spreadDegrees = 30f; w16.interval = 0.2f;
+            FlightWaveAt(334f, w16);
+            SetMessage("¡Lo lograste! Aquí la aorta se divide hacia las piernas... (fin del primer tramo: lo que sigue es la bifurcación).", endX - 18f);
+
+            // Inicio dentro del ventrículo.
+            var spawn = new Vector2(startX + 4f, AortaCenterY(startX) - 0.6f);
+            SetupUtils.SetVector2(manager, "spawnPoint", spawn);
+            var player = Object.FindAnyObjectByType<HealingKnight.Gameplay.Player.PlayerController>();
+            if (player != null) player.transform.position = spawn;
+            SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Aorta desinfectada! (Prueba del modo de vuelo terminada.)");
         }
 
         private void BuildSandbox()

@@ -72,6 +72,11 @@ namespace HealingKnight.Gameplay.Player
             {
                 tBt = tBk = tFt = tFk = 0f; tBob = 0f;
             }
+            else if (controller != null && controller.IsFlying)
+            {
+                // Sentado en la nave: muslos hacia adelante y rodillas dobladas (las piernas quedan dentro del casco).
+                tFt = 82f; tFk = -96f; tBt = 74f; tBk = -90f; tBob = 0f;
+            }
             else if (controller != null && controller.IsDashing)
             {
                 tFt = dashFront.x; tFk = dashFront.y; tBt = dashBack.x; tBk = dashBack.y; tBob = -0.04f;

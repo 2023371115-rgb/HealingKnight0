@@ -51,6 +51,13 @@ namespace HealingKnight.Gameplay.Combat
             offset = new Vector2(baseOffset.x, size.y * 0.5f + (baseOffset.y - baseSize.y * 0.5f));
         }
 
+        /// <summary>Cambia el rectángulo completo (la nave del vuelo es ancha y bajita).</summary>
+        public void SetBox(Vector2 newOffset, Vector2 newSize)
+        {
+            offset = newOffset;
+            size = newSize;
+        }
+
         /// <summary>Para enemigos que se mueven por script (jefe): coloca el rectángulo en otra parte.</summary>
         public void SetOffset(Vector2 newOffset) => offset = newOffset;
 

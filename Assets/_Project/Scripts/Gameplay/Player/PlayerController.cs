@@ -62,6 +62,17 @@ namespace HealingKnight.Gameplay.Player
         /// <summary>Al empezar un dash (sonido y rastro).</summary>
         public event Action Dashed;
 
+        /// <summary>Al reaparecer (después de morir). El vuelo lo usa para regresar la pantalla al punto de guardado.</summary>
+        public event Action<Vector2> Respawned;
+
+        /// <summary>
+        /// Modo NAVE (niveles de vuelo del sistema circulatorio). Mientras esté activo, ShipFlight mueve al jugador
+        /// en 8 direcciones sin gravedad y aquí solo se dispara (siempre hacia adelante), se cambia de medicamento y se
+        /// lanzan bombas. null o inactivo = el caballero de siempre.
+        /// </summary>
+        public HealingKnight.Gameplay.Flight.ShipFlight Flight { get; set; }
+        public bool IsFlying => Flight != null && Flight.Active;
+
         public PlayerConfig Config => config;
         public CharacterMotor2D Motor => motor;
         public PlayerInputReader Input => input;
@@ -147,6 +158,20 @@ namespace HealingKnight.Gameplay.Player
 
             if (dashing && (state != State.Normal || Swinging)) EndDash();
 
+            if (IsFlying)
+            {
+                // Nave: sin gravedad, sin caídas al vacío; el golpe no aturde (solo parpadea).
+                if (state == State.Hurt)
+                {
+                    stateTimer -= dt;
+                    if (stateTimer <= 0f) state = State.Normal;
+                }
+                Flight.Tick(dt);
+                if (state != State.Dead) UpdateFlightAttack();
+                UpdateSize(dt);
+                return;
+            }
+
             switch (state)
             {
                 case State.Normal: UpdateNormal(); break;
@@ -165,7 +190,7 @@ namespace HealingKnight.Gameplay.Player
 
         private void UpdateSize(float dt)
         {
-            float target = crouching ? config.crouchHeightFactor : 1f;
+            float target = IsFlying ? (Flight.Shrunk ? Flight.ShrinkFactor : 1f) : crouching ? config.crouchHeightFactor : 1f;
             size = Mathf.MoveTowards(size, target, config.shrinkSpeed * dt);
             if (bodyVisual != null) bodyVisual.localScale = bodyVisualBaseScale * size;
         }
@@ -300,6 +325,23 @@ namespace HealingKnight.Gameplay.Player
         }
 
 
+        /// <summary>Disparo de la nave: siempre hacia adelante (como el avioncito de Cuphead).</summary>
+        private void UpdateFlightAttack()
+        {
+            aim = Vector2.right;
+            motor.SetFacing(1);
+            bool shielding = shield != null && shield.IsActive;
+            if (shooter != null)
+            {
+                if (input.MedicationStep != 0) shooter.CycleMedication(input.MedicationStep);
+                if (input.DirectMedicationIndex >= 0) shooter.SelectMedication(input.DirectMedicationIndex);
+            }
+            if (shield != null) shield.SetWantsBlock(input.ShieldHeld);
+            if (shielding || Flight.IsDashing) return;
+            if (shooter != null && (input.ShootPressed || input.ShootHeld)) shooter.TryShoot(aim, false);
+            if (bombs != null && input.BombPressed) bombs.TryThrow();
+        }
+
         private bool CanDash(bool shielding)
         {
             if (shielding || Carrying || Swinging || Time.time < dashReadyAt || config.dashDuration <= 0f) return false;
@@ -385,6 +427,14 @@ namespace HealingKnight.Gameplay.Player
         public void OnHurt(float knockbackDirection, float knockbackForce)
         {
             if (state == State.Dead) return;
+            if (IsFlying)
+            {
+                // En la nave el golpe solo empuja un poco hacia atrás (no te saca de control).
+                state = State.Hurt;
+                stateTimer = 0.12f;
+                Flight.OnHurt(knockbackDirection);
+                return;
+            }
             EndDash();
             state = State.Hurt;
             stateTimer = config.hurtStunTime;
@@ -411,6 +461,7 @@ namespace HealingKnight.Gameplay.Player
             health?.ResetHealth();
             shield?.ResetEnergy();
             bombs?.Refill(); // como en Metal Slug: vida nueva, bombas completas
+            Respawned?.Invoke(position);
         }
     }
 }
