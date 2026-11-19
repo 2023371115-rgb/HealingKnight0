@@ -11,6 +11,8 @@ namespace HealingKnight.Core.Progression
 
         public int version = CurrentVersion;
         public bool prologueSeen;
+        /// <summary>Ya se mostró el FINAL (los cuatro sistemas desinfectados).</summary>
+        public bool endingSeen;
         public List<string> completedLevels = new List<string>();
         public List<string> formulas = new List<string>();
         public List<string> secrets = new List<string>();

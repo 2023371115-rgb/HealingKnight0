@@ -111,10 +111,56 @@ namespace HealingKnight.UI
 
             if (focus == null) focus = back;
 
+            // FINAL del juego: la primera vez que los cuatro sistemas quedan desinfectados.
+            bool allDone = catalog.systems.Count > 0 && catalog.systems.TrueForAll(sys => sys == null || progress.IsSystemCompleted(sys));
+            if (allDone && !GameSession.Save.endingSeen) BuildEnding(canvas.transform);
+
             Image fade = UIFactory.Panel(canvas.transform, "Fundido", Color.black);
             UIFactory.Stretch(fade.rectTransform);
             fade.raycastTarget = false;
             fade.gameObject.AddComponent<UIFadeIn>();
+        }
+
+        /// <summary>
+        /// Pantalla del FINAL: el paciente está sano. Cuenta qué hizo el caballero en cada sistema, recuerda que solo un
+        /// médico puede recetar y deja seguir explorando (secretos, bestiario).
+        /// </summary>
+        private void BuildEnding(Transform parent)
+        {
+            Image shade = UIFactory.Panel(parent, "Final", new Color(0.05f, 0.01f, 0.04f, 0.94f));
+            UIFactory.Stretch(shade.rectTransform);
+            Image glow = CartoonUI.Image(shade.transform, "Luz", CartoonUI.Glow, new Color(1f, 0.75f, 0.45f, 0.35f));
+            UIFactory.Place(glow.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 160f), new Vector2(1600f, 900f));
+
+            TextMeshProUGUI title = CartoonUI.Text(shade.transform, "¡PACIENTE 001: SANO!", 76f, CartoonUI.Cream, true, TextAlignmentOptions.Center, 0.2f);
+            UIFactory.Place(title.rectTransform, new Vector2(0.5f, 1f), new Vector2(0.5f, 1f), new Vector2(0f, -110f), new Vector2(1600f, 110f));
+
+            string story =
+                "Los patógenos entraron en cápsulas y se escondieron en todo el cuerpo... y el caballero los fue a buscar uno por uno.\n\n" +
+                "<b>Digestivo:</b> sacaste a H. pylori del estómago, a la tenia y a la lombriz de los intestinos.\n" +
+                "<b>Respiratorio:</b> limpiaste la nariz, la tráquea y los pulmones (¡hasta la tuberculosis!).\n" +
+                "<b>Nervioso:</b> protegiste la médula, el cerebro y el hipocampo de la rabia.\n" +
+                "<b>Circulatorio:</b> filtraste el bazo, diste la vuelta completa por arterias y venas, le devolviste el ritmo al corazón " +
+                "y deshiciste el gran trombo antes de que llegara al cerebro.\n\n" +
+                "Recuerda: en la vida real solo un MÉDICO puede decir qué tienes y qué medicina tomar. Lo demás depende de ti: " +
+                "lávate las manos, come bien, muévete, vacúnate y descansa.";
+            TextMeshProUGUI body = CartoonUI.Text(shade.transform, story, 28f, TextSoft, false, TextAlignmentOptions.Center, 0f);
+            UIFactory.Place(body.rectTransform, new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, 20f), new Vector2(1500f, 560f));
+
+            TextMeshProUGUI thanks = CartoonUI.Text(shade.transform, "¡Gracias por jugar Healing Knight!  ·  Te faltan secretos y fichas del bestiario por encontrar.",
+                24f, CartoonUI.Sky, false, TextAlignmentOptions.Center, 0f);
+            UIFactory.Place(thanks.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 190f), new Vector2(1600f, 40f));
+
+            Button close = null;
+            close = CartoonUI.Button(shade.transform, "Seguir explorando", () =>
+            {
+                GameSession.Save.endingSeen = true;
+                SaveSystem.Write(GameSession.Save);
+                Destroy(shade.gameObject);
+                UIFactory.Select(focus);
+            }, new Vector2(440f, 84f), new Color(0.3f, 0.6f, 0.45f), 34f);
+            UIFactory.Place((RectTransform)close.transform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 80f), new Vector2(440f, 84f));
+            focus = close;
         }
 
         /// <summary>El primer órgano jugable que no se ha completado (en el orden del catálogo).</summary>
