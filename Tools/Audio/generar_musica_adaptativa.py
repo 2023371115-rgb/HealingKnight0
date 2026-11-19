@@ -10,10 +10,12 @@ Versión 5: cada sistema con SU género (el que quedó en el LEEME) y una produc
     Nervioso      -> NEUROFUNK (drum & bass): breakbeat, bajo reese que se mueve, campanas eléctricas.
                      Médula 172 (rodante), Cerebro 174, Hipocampo 174 (memoria), Jefe 176;
                      Ojo (secreto, sigilo) 160 en LIQUID drum & bass.
-    Circulatorio  -> SYNTHWAVE (outrun de los 80): bajo en corcheas que salta de octava, caja con reverb
-                     "cortada", arpegios y pads anchos = la sangre que corre por las autopistas del cuerpo.
-                     Arterias y venas 118 (outrun), Bazo 100 (noche), Corazón 136 (latido: 2 tiempos por
-                     latido a 68), Riñón 104 (agua, secreto), Gran trombo 128 y Jefe 140 en DARKSYNTH.
+    Circulatorio  -> TRIBAL en los órganos (el corazón es un tambor: taikos, djembes, marimba, coro y gritos)
+                     e INDUSTRIAL en los tubos (los vasos son tuberías: bombo saturado, metales, vapor, bajo EBM).
+                     Bazo 112 (tribal, aldea), Arterias y venas 124 (industrial, tubería), Corazón 136 (tribal,
+                     latido: el taiko hace lub-dub cada 2 tiempos = 68 por minuto), Riñón 108 (industrial, planta
+                     de agua, secreto), Gran trombo 130 (industrial, máquina) y Jefe 140 (tribal + industrial).
+                     (El género "synth" —synthwave— sigue disponible en el generador, pero ningún nivel lo usa.)
 
 Cada nivel tiene su canción, separada en 6 CAPAS que duran exactamente lo mismo y se tocan a la vez.
 El juego (Scripts/Gameplay/Audio/AdaptiveMusic.cs) sube y baja cada capa según lo que pasa:
@@ -95,7 +97,7 @@ class Nivel:
     acordes: list        # grados de la escala para los acordes (cambian cada 2 compases)
     motivo: list         # grados de la melodía (sobre el acorde que suena)
     ritmo: list          # en qué dieciseisavos del compás cae cada nota del motivo
-    genero: str          # acid, trance, psy, neuro, liquid, synth
+    genero: str          # acid, trance, psy, neuro, liquid, synth, tribal, industrial
     sabor: str = ""      # variante dentro del género (ver NIVELES)
     swing: float = 0.0   # cuánto se atrasan los dieciseisavos impares (0 recto, 0.2 = shuffle de house)
 
@@ -121,13 +123,13 @@ NIVELES = {
     "Nervioso_Hipocampo":         Nivel(174, 46, MENOR,            [0, 2, 5, 3], [4, 7, 6, 2, 3, 1], [0, 4, 6, 10, 12, 15], "neuro", "memoria"),
     "Nervioso_Ojo":               Nivel(160, 42, MENOR_ARMONICA,   [0, 5, 3, 4], [4, 2, 1, 0, 1, 2], [0, 6, 8, 12, 14, 15], "liquid", "sigilo", 0.08),
     "Nervioso_Jefe":              Nivel(176, 40, LOCRIO_TENSO,     [0, 1, 4, 6], [0, 4, 6, 1, 5, 0], [0, 1, 5, 8, 12, 14], "neuro", "jefe"),
-    # ---- Circulatorio: SYNTHWAVE (Gran trombo y jefe en DARKSYNTH)
-    "Circulatorio_ArteriasVenas": Nivel(118, 45, MENOR,            [0, 5, 2, 6], [0, 2, 4, 7, 4, 2], [0, 3, 6, 8, 10, 14], "synth", "outrun"),
-    "Circulatorio_Bazo":          Nivel(100, 40, DORICO,           [0, 3, 5, 4], [4, 2, 0, 2, 4, 5], [0, 4, 6, 8, 12, 14], "synth", "noche"),
-    "Circulatorio_Corazon":       Nivel(136, 43, MENOR,            [0, 6, 5, 4], [0, 4, 2, 4, 5, 4], [0, 2, 6, 8, 10, 14], "synth", "latido"),
-    "Circulatorio_Rinon":         Nivel(104, 48, LIDIO,            [0, 4, 1, 5], [4, 6, 7, 4, 2, 1], [0, 4, 7, 8, 11, 14], "synth", "agua"),
-    "Circulatorio_GranTrombo":    Nivel(128, 38, FRIGIO,           [0, 1, 5, 6], [0, 1, 4, 3, 1, 0], [0, 3, 6, 8, 11, 14], "synth", "oscuro"),
-    "Circulatorio_Jefe":          Nivel(140, 40, FRIGIO_DOMINANTE, [0, 1, 0, 5], [0, 4, 1, 6, 4, 1], [0, 2, 6, 8, 10, 14], "synth", "jefe"),
+    # ---- Circulatorio: TRIBAL (órganos) e INDUSTRIAL (vasos); el jefe mezcla los dos
+    "Circulatorio_Bazo":          Nivel(112, 43, DORICO,           [0, 3, 0, 6], [0, 2, 3, 4, 2, 0], [0, 3, 6, 8, 12, 14], "tribal", "aldea"),
+    "Circulatorio_ArteriasVenas": Nivel(124, 45, FRIGIO,           [0, 1, 0, 5], [0, 1, 4, 0, 6, 4], [0, 3, 6, 8, 11, 14], "industrial", "tuberia"),
+    "Circulatorio_Corazon":       Nivel(136, 40, MENOR,            [0, 5, 6, 4], [4, 3, 2, 0, 2, 3], [0, 4, 6, 8, 12, 14], "tribal", "latido"),
+    "Circulatorio_Rinon":         Nivel(108, 47, DORICO,           [0, 3, 5, 4], [4, 2, 0, 2, 4, 6], [0, 4, 7, 8, 11, 14], "industrial", "planta"),
+    "Circulatorio_GranTrombo":    Nivel(130, 38, LOCRIO,           [0, 1, 5, 4], [0, 1, 4, 3, 1, 0], [0, 3, 6, 8, 11, 14], "industrial", "maquina"),
+    "Circulatorio_Jefe":          Nivel(140, 40, FRIGIO_DOMINANTE, [0, 1, 0, 6], [0, 4, 1, 6, 4, 1], [0, 2, 6, 8, 10, 14], "tribal", "guerra"),
 }
 
 
@@ -398,13 +400,16 @@ def bombo(tipo="house"):
         "house": (0.42, 52, 125, 36, 7.5, 0.35), "techno": (0.6, 46, 110, 30, 4.5, 0.3),
         "trance": (0.38, 50, 150, 42, 8.5, 0.4), "psy": (0.3, 54, 260, 55, 12, 0.5),
         "dnb": (0.34, 55, 170, 45, 10, 0.45), "liquid": (0.3, 52, 120, 40, 11, 0.2),
-        "synth": (0.5, 49, 115, 32, 6.5, 0.32)}[tipo]
+        "synth": (0.5, 49, 115, 32, 6.5, 0.32), "tribal": (0.7, 50, 60, 20, 4.0, 0.15),
+        "industrial": (0.55, 44, 150, 28, 5.0, 0.55)}[tipo]
     n = int(dur * SR)
     t = np.arange(n) / SR
     f = f0 + salto * np.exp(-t * rapidez)
     cuerpo = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * caida)
     golpe = filtro(np.random.default_rng(5).normal(0, 1, n), 1500.0, "highpass") * np.exp(-t * 500) * click
     x = satura(cuerpo + golpe, 1.6)
+    if tipo == "industrial":   # saturado como un martillo
+        x = satura(x * 2.2, 3.0)
     if tipo == "techno":   # retumbo grave detrás (el "rumble" del techno oscuro)
         retumbo = filtro(np.random.default_rng(6).normal(0, 1, n), 110.0) * np.exp(-t * 4) * 6 * (t > 0.05)
         x = x + satura(retumbo, 2) * 0.25
@@ -428,7 +433,8 @@ def caja(tipo="dnb", variante=0):
     n = int(0.3 * SR)
     t = np.arange(n) / SR
     tono, caida, caida_ruido, brillo, dureza = {"dnb": (185, 28, 15, 1600, 1.8), "house": (200, 30, 22, 2200, 1.3),
-                                                "liquid": (210, 32, 20, 2500, 1.2), "synth": (180, 20, 9, 1400, 1.5)}[tipo]
+                                                "liquid": (210, 32, 20, 2500, 1.2), "synth": (180, 20, 9, 1400, 1.5),
+                                                "industrial": (165, 24, 11, 900, 2.8)}[tipo]
     f = tono + 70 * np.exp(-t * 70)
     cuerpo = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * caida)
     cuerpo = cuerpo + 0.4 * np.sin(2 * np.pi * tono * 1.75 * t) * np.exp(-t * caida * 1.5)
@@ -447,6 +453,124 @@ def caja_cortada(variante=0):
     puerta = np.clip((0.3 - np.arange(m) / SR) / 0.04, 0, 1)
     y = x + cola * 1.6 * puerta[:, None]
     return (y / max(np.max(np.abs(y)), 1e-9) * 0.9).astype(np.float32)
+
+
+# ---------------------------------------------------------------- tribal e industrial
+
+@lru_cache(maxsize=48)
+def tambor(tipo="taiko", variante=0):
+    """Tambores. taiko: grave y largo (el corazón); surdo: grave seco; djembe_bajo / _tono / _golpe (el slap);
+    palo: clave de madera."""
+    rng = np.random.default_rng(60 + variante + len(tipo))
+    if tipo == "palo":
+        n = int(0.08 * SR)
+        t = np.arange(n) / SR
+        x = np.sin(2 * np.pi * 2300 * (1 + 0.02 * variante) * t) * np.exp(-t * 70) + 0.3 * np.sin(2 * np.pi * 5100 * t) * np.exp(-t * 120)
+        return (x * env(n, 0.0005, 0.01)).astype(np.float32)
+    dur, f0, salto, rapidez, caida, piel, brillo = {
+        "taiko": (1.1, 58, 40, 18, 3.2, 0.35, 900.0), "surdo": (0.7, 52, 25, 25, 5.5, 0.25, 700.0),
+        "djembe_bajo": (0.45, 78, 30, 30, 11, 0.3, 1200.0), "djembe_tono": (0.3, 210, 25, 40, 16, 0.35, 2600.0),
+        "djembe_golpe": (0.18, 380, 60, 60, 30, 1.0, 4500.0)}[tipo]
+    n = int(dur * SR)
+    t = np.arange(n) / SR
+    f = f0 * (1 + 0.03 * variante) + salto * np.exp(-t * rapidez)
+    cuerpo = np.sin(2 * np.pi * np.cumsum(f) / SR) * np.exp(-t * caida)
+    cuerpo = cuerpo + 0.3 * np.sin(2 * np.pi * np.cumsum(f * 1.58) / SR) * np.exp(-t * caida * 1.6)   # 2o modo de la piel
+    golpe = filtro(rng.normal(0, 1, n), brillo) * np.exp(-t * (35 if tipo == "djembe_golpe" else 80)) * piel
+    return (satura(cuerpo + golpe, 1.4) * env(n, 0.0008, 0.03)).astype(np.float32)
+
+
+@lru_cache(maxsize=1024)
+def marimba(midi, dur):
+    """Marimba: el tono, su parcial de ~4 veces (así suenan las teclas de madera) y un golpecito de la baqueta."""
+    n = max(2, int(dur * SR))
+    t = np.arange(n) / SR
+    f = float(hz(midi))
+    x = np.sin(2 * np.pi * f * t) * np.exp(-t * 4.5) + 0.35 * np.sin(2 * np.pi * f * 3.93 * t) * np.exp(-t * 14)
+    x = x + 0.12 * np.sin(2 * np.pi * f * 9.2 * t) * np.exp(-t * 40)
+    x = x + filtro(np.random.default_rng(int(midi)).normal(0, 1, n), 3000.0) * np.exp(-t * 300) * 0.2
+    return (x * env(n, 0.001, 0.05)).astype(np.float32)
+
+
+@lru_cache(maxsize=512)
+def flauta(midi, dur):
+    """Flauta de madera: seno con soplido y un vibrato que entra despacio."""
+    n = max(2, int(dur * SR))
+    t = np.arange(n) / SR
+    f0 = float(hz(midi))
+    f = f0 * (1 + 0.008 * np.sin(2 * np.pi * 5 * t) * np.clip((t - 0.2) / 0.3, 0, 1))
+    fase = 2 * np.pi * np.cumsum(f) / SR
+    x = np.sin(fase) + 0.25 * np.sin(2 * fase)
+    soplo = filtro(np.random.default_rng(int(midi) + 9).normal(0, 1, n), [f0 * 1.5, min(f0 * 4, 16000)], "bandpass") * 0.35
+    return ((x * 0.8 + soplo) * env(n, 0.06, 0.15, 0.2, 0.8)).astype(np.float32)
+
+
+VOCALES = {"a": (800, 1150), "o": (450, 800), "u": (325, 700), "e": (400, 2000)}
+
+
+@lru_cache(maxsize=256)
+def canto(midi, dur, vocal="o", voces=3, ataque=0.25):
+    """Coro que canta una vocal: ondas desafinadas por dos FORMANTES (lo que hace que suene a "o" o a "a"). Estéreo."""
+    n = max(2, int(dur * SR))
+    t = np.arange(n) / SR
+    rng = np.random.default_rng(int(midi) * 3 + voces)
+    f1, f2 = VOCALES[vocal]
+    L, R = np.zeros(n), np.zeros(n)
+    for k, d in enumerate(np.linspace(-1, 1, voces)):
+        vib = 1 + 0.006 * np.sin(2 * np.pi * (4.6 + 0.5 * k) * t + rng.random() * 6)
+        fuente = sierra(float(hz(midi + d * 0.12)) * vib, None, rng.random())
+        v = filtro(fuente, [f1 * 0.8, f1 * 1.25], "bandpass") + 0.6 * filtro(fuente, [f2 * 0.85, f2 * 1.2], "bandpass")
+        pan = d * 0.7
+        L += v * np.sqrt((1 - pan) / 2)
+        R += v * np.sqrt((1 + pan) / 2)
+    x = np.stack([L, R], 1) / np.sqrt(voces) * 3
+    return (x * env(n, ataque, 0.3)[:, None]).astype(np.float32)
+
+
+@lru_cache(maxsize=16)
+def grito(vocal="a", variante=0):
+    """¡HEY! / ¡HA!: grito corto de guerra de la tribu (varias voces, sube un poquito y se corta)."""
+    x = canto(57 + (0, 2, -2)[variante % 3], 0.32, vocal, 4, 0.006).astype(float)
+    t = np.arange(len(x)) / SR
+    return (satura(x * 1.5, 1.6) * np.exp(-t * 7)[:, None]).astype(np.float32)
+
+
+@lru_cache(maxsize=48)
+def metal(f0=420.0, caida=7.0, variante=0):
+    """Golpe de METAL (yunque, tubo, lámina): parciales que no son armónicos, como una pieza de fierro."""
+    n = int(min(2.5, 6.0 / caida) * SR)
+    t = np.arange(n) / SR
+    rng = np.random.default_rng(70 + variante)
+    x = np.zeros(n)
+    for k, (r, g) in enumerate(((1, 1.0), (2.76, 0.6), (5.40, 0.4), (8.93, 0.25), (13.3, 0.12))):
+        x += g * np.sin(2 * np.pi * f0 * r * (1 + rng.uniform(-0.01, 0.01)) * t + rng.random() * 6) * np.exp(-t * caida * (1 + k * 0.5))
+    x += filtro(rng.normal(0, 1, n), 2500.0, "highpass") * np.exp(-t * 200) * 0.5
+    return (satura(x * 0.6, 1.3) * env(n, 0.0005, 0.03)).astype(np.float32)
+
+
+@lru_cache(maxsize=16)
+def vapor(largo=0.25, variante=0):
+    """Chorro de VAPOR / pistón hidráulico: ruido agudo que sale de golpe y se apaga."""
+    n = int(largo * SR)
+    t = np.arange(n) / SR
+    x = filtro(np.random.default_rng(80 + variante).normal(0, 1, n), [1800, 9000], "bandpass")
+    return (x * np.minimum(1, t / 0.004) * np.exp(-t * (4 / largo)) * env(n, 0.001, 0.02)).astype(np.float32)
+
+
+def bajo_saturado(midi, dur, brillo=1.2, caida=14.0):
+    """Bajo EBM / industrial: el bajo pulsado pasado por un amplificador al máximo."""
+    return satura(bajo_pluck(midi, dur, brillo, caida).astype(float) * 2.2, 2.4).astype(np.float32)
+
+
+def golpes_lub_dub(p, c, g=0.5):
+    """Un lub-dub grave muy bajito cada medio compás (a 136 BPM son 68 latidos por minuto)."""
+    for compas in range(c.compases):
+        for s in (0, 8):
+            for d, fuerza in ((0, 1.0), (1.6, 0.6)):
+                m = int(0.18 * SR)
+                tt = np.arange(m) / SR
+                golpe = np.sin(2 * np.pi * (50 * tt + 30 * (1 - np.exp(-tt * 25)) / 25)) * np.exp(-tt * 18) * fuerza
+                p.poner("Ambiente", golpe, compas * 16 + s + d, g, 0.0, rev=0.2)
 
 
 _METAL = (205.3, 304.4, 369.6, 522.7, 540.0, 800.0)   # frecuencias de los platillos de la caja de ritmos 808
@@ -864,6 +988,54 @@ def ambiente(p, c):
             ret = en_bucle(lambda m: satura(filtro(rng.normal(0, 1, m), 110.0) * 12, 2) * (0.4 + 0.6 * lfo_loop(p, 8, 0, m)), n)
             p.continua("Ambiente", ret, 0.3, rev=0.2)
 
+    elif c.g == "tribal":
+        # El "didgeridoo": un zumbido grave cuya boca se abre y se cierra (un formante que se mueve).
+        f = f_bucle(p, float(hz(c.raiz)))
+        ciclos = c.compases * (2 if c.s == "latido" else 1)
+        didge = en_bucle(lambda m: filtro_movil(sierra(f, m), 300 + 500 * lfo_loop(p, ciclos, 0, m) ** 2, 4.0, "bp"), n)
+        p.continua("Ambiente", didge, 0.4, rev=0.3)
+        # Palo de lluvia cada 4 compases: semillitas que caen.
+        for compas in range(0, c.compases, 4):
+            m = int(p.paso * 16 * SR)
+            tt = np.arange(m) / SR
+            granos = np.zeros(m)
+            idx = rng.integers(0, m, int(m / SR * 300))
+            granos[idx] = rng.uniform(-1, 1, len(idx))
+            lluvia = filtro(granos, [2500, 9000], "bandpass") * np.sin(np.pi * tt / tt[-1]) ** 2 * 6
+            p.poner("Ambiente", lluvia, compas * 16 + 8, 0.35, float(rng.uniform(-0.6, 0.6)), rev=0.5)
+        if c.s == "latido":
+            golpes_lub_dub(p, c)
+        if c.s == "guerra":   # retumbo grave y fierros lejanos: la tribu contra la máquina
+            ret = en_bucle(lambda m: satura(filtro(rng.normal(0, 1, m), 110.0) * 12, 2) * (0.4 + 0.6 * lfo_loop(p, 8, 0, m)), n)
+            p.continua("Ambiente", ret, 0.3, rev=0.2)
+            for _ in range(c.compases // 2):
+                p.poner("Ambiente", metal(float(rng.uniform(180, 420)), 3.0, int(rng.integers(0, 6))),
+                        float(rng.integers(0, c.compases * 16)), 0.15, float(rng.uniform(-0.8, 0.8)), rev=0.8)
+
+    elif c.g == "industrial":
+        # Zumbido de fábrica (la corriente con sus armónicos, un poco saturada) que sube y baja.
+        f = f_bucle(p, float(hz(c.raiz + 12)))
+        zumbido = satura(sum(np.sin(2 * np.pi * f * k * t) / k for k in (1, 2, 3, 5)) * 0.7, 2.0) * (0.7 + 0.3 * lfo_loop(p, 4))
+        p.continua("Ambiente", zumbido, 0.25 if c.s != "planta" else 0.15, rev=0.2)
+        # Golpes de metal lejanos con mucha reverb y vapor que se escapa.
+        for _ in range(c.compases):
+            p.poner("Ambiente", metal(float(rng.uniform(180, 520)), 3.0, int(rng.integers(0, 6))),
+                    float(rng.integers(0, c.compases * 16)), 0.18, float(rng.uniform(-0.8, 0.8)), rev=0.8)
+        for _ in range(c.compases // 2):
+            p.poner("Ambiente", vapor(0.6, int(rng.integers(0, 4))), float(rng.integers(0, c.compases * 16)), 0.12,
+                    float(rng.uniform(-0.8, 0.8)), rev=0.5)
+        if c.s == "planta":   # Riñón: agua que corre por los tubos de la planta y gotas
+            flujo = en_bucle(lambda m: filtro_movil(rng.normal(0, 1, m), 700 + 400 * lfo_loop(p, c.compases / 2, 0, m), 0.8, "bp"), n)
+            p.continua("Ambiente", flujo, 0.35, pan=-0.3, rev=0.4)
+            for _ in range(c.compases * 2):
+                m = int(0.12 * SR)
+                tt = np.arange(m) / SR
+                gota = np.sin(2 * np.pi * np.cumsum(rng.uniform(900, 1600) * np.exp(-tt * 14) + 380) / SR) * np.exp(-tt * 25)
+                p.poner("Ambiente", gota, rng.uniform(0, c.compases * 16), rng.uniform(0.08, 0.18), rng.uniform(-0.8, 0.8), rev=0.8, recto=True)
+        if c.s == "maquina":   # retumbo de máquina grande
+            ret = en_bucle(lambda m: satura(filtro(rng.normal(0, 1, m), 110.0) * 12, 2) * (0.4 + 0.6 * lfo_loop(p, 8, 0, m)), n)
+            p.continua("Ambiente", ret, 0.35, rev=0.2)
+
     else:   # liquid (Ojo): gotas que caen en un lugar húmedo y silencioso
         for _ in range(c.compases * 2):
             m = int(0.12 * SR)
@@ -970,6 +1142,26 @@ def armonia(p, c):
             if c.s == "oscuro" and compas % 2 == 1:   # golpe de sintetizador oscuro con eco
                 p.poner("Armonia", stab(pad_base + 12 + c.grado(ac), pa * 3, True), ini + 6, 0.25, -0.3, rev=0.3, eco=0.5)
 
+        elif c.g == "tribal":
+            if nuevo:   # el coro de la tribu: una vocal larga en el acorde
+                vocal = "u" if c.s == "latido" else "o"
+                for j in ((0, 2, 4) if c.s == "aldea" else (0, 4)):
+                    p.poner("Armonia", canto(pad_base + c.grado(ac + j), pa * 32 + 0.5, vocal, 3, 0.6), ini, 0.2, (j - 2) * 0.25, rev=0.5)
+            if sec >= 1 and compas % 4 == 3:   # ¡HEY! al final de cada frase
+                p.poner("Armonia", grito("e" if c.s == "aldea" else "a", compas % 3), ini + 12, 0.25, float(rng.uniform(-0.4, 0.4)), rev=0.4, eco=0.3)
+            if c.s == "guerra" and compas % 2 == 1:   # golpe de máquina oscuro con eco
+                p.poner("Armonia", stab(pad_base + 12 + c.grado(ac), pa * 3, True), ini + 6, 0.22, -0.3, rev=0.3, eco=0.4)
+
+        elif c.g == "industrial":
+            if nuevo:   # pad oscuro de fábrica (el de la planta de agua, más claro)
+                brillo = 2200.0 if c.s == "planta" else 1100.0
+                for j in (0, 2, 4):
+                    p.poner("Armonia", supersaw(pad_base + c.grado(ac + j), pa * 32 + 0.5, 5, 0.2, brillo, 0.6, 0.6, c.semilla),
+                            ini, 0.18, (j - 2) * 0.3, rev=0.45)
+            if sec >= 1 and c.s != "planta":   # golpes metálicos en el contratiempo
+                for s in ((6, 14) if compas % 2 else (6,)):
+                    p.poner("Armonia", stab(pad_base + 12 + c.grado(ac), pa * 1.5, True), ini + s, 0.2, 0.3 if s == 6 else -0.3, rev=0.25, eco=0.35)
+
         else:   # liquid: rhodes con acordes de 4 notas y un pad suave
             for s, largo in ((0, 10), (10, 6)) if sec >= 1 else ((0, 16),):
                 for j in (0, 2, 4, 6):
@@ -1001,6 +1193,8 @@ def armonia(p, c):
 ARPEGIO = [0, 2, 4, 7, 4, 2, 4, 7, 0, 2, 4, 9, 7, 4, 2, 4]          # grados sobre el acorde (trance)
 ARPEGIO_PSY = [0, 0, 1, 0, 4, 0, 1, 7, 0, 0, 1, 0, 4, 7, 1, 0]      # psy: tónica insistente con la 2a menor
 ARPEGIO_SYNTH = [0, 4, 7, 9, 7, 4, 2, 4, 0, 4, 7, 11, 9, 7, 4, 2]   # synthwave: sube y baja como luces de neón
+ARPEGIO_TRIBAL = [0, 2, 3, 4, 2, 0, 3, 4, 0, 2, 4, 6, 4, 3, 2, 0]   # pentatónica (grados 0, 2, 3, 4 y 6)
+ARPEGIO_MAQUINA = [0, 0, 7, 0, 1, 0, 4, 0, 0, 7, 0, 1, 4, 0, 6, 0]  # industrial: insistente como una máquina
 
 
 def melodia(p, c):
@@ -1025,6 +1219,29 @@ def melodia(p, c):
                 else:
                     x = pluck_trance(nota, largo + 0.1, 1.3 if c.s == "aire" else 1.0)
                 p.poner("Melodia", x, ini + s, 0.22 * fuerza, (0.35 if s % 4 == 2 else -0.15), rev=0.25, eco=0.35, bombeo=True)
+            continue
+        if c.g == "tribal":
+            for s in range(16):
+                if s % 2 and (sec == 0 or c.s == "latido"):
+                    continue
+                if sec == 0 and s % 4 == 2:
+                    continue
+                g = ARPEGIO_TRIBAL[s] + (7 if sec == 3 and s >= 8 else 0)
+                p.poner("Melodia", marimba(base + c.grado(ac + g), pa * 3), ini + s, 0.26 if s % 4 == 0 else 0.18,
+                        0.5 * np.sin(s * 0.9), rev=0.25, eco=0.2)
+            if sec >= 2 and c.s in ("aldea", "guerra"):   # la flauta canta la frase arriba
+                for s, g, largo, fuerza in frase(c, compas):
+                    p.poner("Melodia", flauta(base + 12 + c.grado(ac + g), pa * min(largo, 4) + 0.1), ini + s, 0.18 * fuerza, 0.0, rev=0.45, eco=0.3)
+            continue
+        if c.g == "industrial":
+            for s in range(16):
+                if s % 2 and sec < 2:
+                    continue
+                if c.s == "planta" and s % 4:
+                    continue
+                g = ARPEGIO_MAQUINA[s]
+                x = campana(base + c.grado(ac + g), pa * 2.5, 1.41 if c.s != "planta" else 2.0, 2.2, 3.0)
+                p.poner("Melodia", x, ini + s, 0.22 if s % 4 == 0 else 0.15, 0.45 * np.sin(s * 1.3), rev=0.3, eco=0.35, bombeo=True)
             continue
         if c.g == "synth":
             lento = c.s in ("noche", "agua")
@@ -1237,6 +1454,36 @@ def bajo(p, c):
                 x = bajo_pluck(c.raiz + c.grado(ac) + octv, largo, 0.8 if c.s != "jefe" else 1.1, 7.0 if c.s != "agua" else 3.0)
                 p.poner("Bajo", x, compas * 16 + s, 0.42 if not octv else 0.34, bombeo=True)
 
+    elif c.g == "tribal":
+        # Bajo de madera grave en el ritmo 3-3-2 que lleva la danza (en el Corazón, al ritmo del latido).
+        golpes = (0, 2, 8, 10) if c.s == "latido" else (0, 3, 6, 8, 11, 14)
+        for compas in range(c.compases):
+            ac, sec = c.acorde(compas), c.seccion(compas)
+            for k, s in enumerate(golpes):
+                octv = 12 if (sec >= 2 and k == 2) else 0
+                x = bajo_pluck(c.raiz + c.grado(ac) + octv, pa * 2.2, 0.5, 6.0)
+                p.poner("Bajo", x, compas * 16 + s, 0.45 if k == 0 else 0.36, bombeo=True)
+            if c.s == "guerra" and sec >= 1:   # y el bajo de máquina en los huecos
+                for s in (1, 5, 9, 13):
+                    p.poner("Bajo", bajo_saturado(c.raiz + c.grado(ac) + 12, pa * 0.8), compas * 16 + s, 0.22, bombeo=True)
+
+    elif c.g == "industrial":
+        # EBM: dieciseisavos saturados que golpean fuera del bombo (en la planta, corcheas más tranquilas).
+        for compas in range(c.compases):
+            ac, sec = c.acorde(compas), c.seccion(compas)
+            for s in range(16):
+                if c.s == "planta":
+                    if s % 2 or s in (0, 10):
+                        continue
+                elif s % 4 == 0:
+                    continue
+                octv = 12 if (s % 8 == 7 and sec >= 1) else 0
+                if c.s == "planta":   # la planta de agua: bajo limpio y redondo
+                    x = bajo_pluck(c.raiz + c.grado(ac) + octv, pa * 1.6, 0.7, 8.0)
+                else:
+                    x = bajo_saturado(c.raiz + c.grado(ac) + octv, pa * 0.85)
+                p.poner("Bajo", x, compas * 16 + s, 0.38, bombeo=True)
+
     else:   # neuro y liquid: sub limpio + reese que se mueve
         notas = notas_reese(c)
         sub = render_linea(p, notas, sint_sub, puerta=0.92, suavizar=60.0)
@@ -1355,6 +1602,62 @@ def percusion(p, c):
             if fin8:   # redoble de toms que baja (marca de los 80)
                 for k, s in enumerate((12, 13, 14, 15)):
                     p.poner("Percusion", tom(-k * 3), ini + s, 0.22, (k - 1.5) * 0.5, rev=0.35)
+
+        elif c.g == "tribal":
+            # Taiko: el golpe grande. En el Corazón hace "lub-dub" cada medio compás (un latido).
+            if c.s == "latido":
+                for s in (0, 8):
+                    p.bombo("Percusion", tambor("taiko"), ini + s, 0.6)
+                    p.poner("Percusion", tambor("taiko", 2), ini + s + 1.5, 0.38)
+            else:
+                for s in ((0, 10) if compas % 2 == 0 else (0, 6, 10)):
+                    p.bombo("Percusion", tambor("taiko" if s == 0 else "surdo"), ini + s, 0.55 if s == 0 else 0.4)
+            # Djembe: bajo, tonos y golpes (slaps).
+            patron = {0: "djembe_bajo", 2: "djembe_tono", 3: "djembe_tono", 4: "djembe_golpe", 7: "djembe_tono",
+                      10: "djembe_tono", 11: "djembe_tono", 12: "djembe_golpe", 14: "djembe_golpe", 15: "djembe_tono"}
+            for s, tipo in patron.items():
+                if sec == 0 and s in (3, 11, 15):
+                    continue
+                p.poner("Percusion", tambor(tipo, s % 3), ini + s, 0.3 if "golpe" in tipo else 0.24,
+                        -0.35 if "tono" in tipo else 0.25, rev=0.15)
+            for s in range(16):   # sonajas
+                p.poner("Percusion", platos("shaker"), ini + s, 0.06 if s % 4 == 2 else 0.035, 0.45)
+            if sec >= 1:   # clave 3-2 (de dos compases)
+                for s in ((0, 6, 12) if compas % 2 == 0 else (4, 8)):
+                    p.poner("Percusion", tambor("palo", 1), ini + s, 0.12, -0.5, rev=0.2)
+            if c.s == "guerra":   # la máquina: caja industrial con metal en 2 y 4
+                for s in (4, 12):
+                    p.poner("Percusion", caja("industrial", compas % 2), ini + s, 0.25, rev=0.25)
+                    p.poner("Percusion", metal(620.0, 9.0, 1), ini + s, 0.1, 0.2, rev=0.3)
+            if fin8:   # redoble de tambores que crece
+                for k, s in enumerate((8, 10, 12, 13, 14, 15)):
+                    p.poner("Percusion", tambor("djembe_bajo" if k < 3 else "taiko", k % 3), ini + s, 0.18 + 0.05 * k,
+                            (k % 2 - 0.5) * 0.6, rev=0.25)
+
+        elif c.g == "industrial":
+            planta = c.s == "planta"
+            for s in ((0, 10) if planta else (0, 4, 8, 12)):
+                if fin8 and s == 12:
+                    continue
+                p.bombo("Percusion", bombo("industrial"), ini + s, 0.55)
+            for s in (4, 12):   # caja con un golpe de lámina encima
+                p.poner("Percusion", caja("industrial", compas % 2), ini + s, 0.32 if not planta else 0.24, rev=0.25)
+                p.poner("Percusion", metal(620.0, 9.0, 1), ini + s, 0.12, 0.2, rev=0.3)
+            for s in range(0, 16, 1 if (sec >= 1 and not planta) else 2):
+                p.poner("Percusion", platos("cerrado"), ini + s, 0.06 if s % 4 == 2 else 0.035, 0.3)
+            for s in (2, 6, 10, 14):   # pistones de vapor en el contratiempo
+                if planta and s in (6, 14):
+                    continue
+                p.poner("Percusion", vapor(0.12, s % 3), ini + s, 0.12, -0.3)
+            if sec >= 2:   # yunque
+                for s in (3, 7, 11):
+                    if rng.random() < 0.6:
+                        p.poner("Percusion", metal(880.0, 12.0, 2), ini + s, 0.08, 0.5, rev=0.2)
+            if compas % 8 == 0:
+                p.poner("Percusion", platos("crash"), ini, 0.1, rev=0.3)
+            if fin8:   # metales que bajan
+                for k, s in enumerate((12, 13, 14, 15)):
+                    p.poner("Percusion", metal(700.0 - 120 * k, 8.0, k), ini + s, 0.16, (k - 1.5) * 0.4, rev=0.3)
 
         else:   # liquid: más suave y con shaker
             for s in ([0, 10] if compas % 4 != 3 else [0, 10, 13]):
@@ -1476,6 +1779,51 @@ def combate(p, c):
                 p.bombo("Combate", bombo("dnb"), ini + 13, 0.25)
         subidas(p, c, "Combate")
 
+    elif c.g == "tribal":
+        # Ensamble de guerra: tambores en corcheas (dieciseisavos en la parte B), gritos y la flauta (o el lead) arriba.
+        for compas in range(c.compases):
+            ac, sec, ini = c.acorde(compas), c.seccion(compas), compas * 16
+            for s in range(16):
+                if s % 2 and sec < 2:
+                    continue
+                p.poner("Combate", tambor("djembe_tono" if s % 4 else "surdo", s % 3), ini + s, 0.12 if s % 4 else 0.2,
+                        0.5 * np.sin(s), rev=0.2)
+            if compas % 2 == 1:
+                p.poner("Combate", grito("a", compas % 3), ini + 4, 0.22, -0.3, rev=0.35)
+                p.poner("Combate", grito("e", (compas + 1) % 3), ini + 12, 0.18, 0.3, rev=0.35)
+            for s, g, largo, fuerza in frase(c, compas):
+                nota = c.raiz + 36 + c.grado(ac + g) + (12 if sec >= 2 else 0)
+                dur = pa * min(largo, 4) + 0.1
+                if c.s == "guerra":
+                    x = satura(lead_synth(nota, dur, True).astype(float) * 2.5, 3.0)
+                else:
+                    x = flauta(nota, dur)
+                p.poner("Combate", x, ini + s, 0.2 * fuerza, 0.0, rev=0.4, eco=0.3)
+            if c.s == "guerra":
+                for s in range(2, 16, 4):
+                    p.poner("Combate", metal(1100.0, 16.0, s % 4), ini + s, 0.06, 0.5 * np.sin(s), rev=0.15)
+        subidas(p, c, "Combate", 0.25)
+
+    elif c.g == "industrial":
+        # La máquina a todo: un lead saturado que grita la melodía, metales en dieciseisavos y vapor.
+        planta = c.s == "planta"
+        for compas in range(c.compases):
+            ac, sec, ini = c.acorde(compas), c.seccion(compas), compas * 16
+            for s, g, largo, fuerza in frase(c, compas):
+                nota = c.raiz + 36 + c.grado(ac + g) + (12 if sec >= 2 else 0)
+                x = lead_synth(nota, pa * min(largo, 4) + 0.1, not planta).astype(float)
+                if not planta:
+                    x = satura(x * 2.5, 3.0)
+                p.poner("Combate", x, ini + s, 0.18 * fuerza, 0.0, rev=0.3, eco=0.3, bombeo=True)
+            for s in range(1, 16, 2):
+                p.poner("Combate", metal(1200.0 + 200 * (s % 3), 18.0, s % 4), ini + s, 0.05, 0.5 * np.sin(s), rev=0.1)
+            if compas % 2:
+                p.poner("Combate", vapor(0.35, compas % 4), ini + 14, 0.14, float(rng.uniform(-0.6, 0.6)), rev=0.3)
+            if compas % 8 == 7:
+                for s in range(8, 16):
+                    p.poner("Combate", caja("industrial", 5), ini + s, 0.05 + 0.025 * (s - 8), rev=0.3)
+        subidas(p, c, "Combate", 0.25)
+
     elif c.g == "synth":
         # El lead de los 80 cantando la melodía (una octava arriba en la parte B), y dieciseisavos de hi-hat.
         oscuro = c.s in ("oscuro", "jefe")
@@ -1508,8 +1856,8 @@ def combate(p, c):
 
 
 BOMBEO = {"acid": (0.32, 0.12), "trance": (0.55, 0.16), "psy": (0.3, 0.1), "neuro": (0.25, 0.1), "liquid": (0.18, 0.12),
-          "synth": (0.35, 0.15)}
-ECO = {"acid": 3, "trance": 3, "psy": 3, "neuro": 3, "liquid": 6, "synth": 3}   # en dieciseisavos (3 = corchea con puntillo)
+          "synth": (0.35, 0.15), "tribal": (0.22, 0.14), "industrial": (0.4, 0.12)}
+ECO = {"acid": 3, "trance": 3, "psy": 3, "neuro": 3, "liquid": 6, "synth": 3, "tribal": 3, "industrial": 3}   # en dieciseisavos (3 = corchea con puntillo)
 
 
 def componer(nombre, nivel, compases):
@@ -1588,12 +1936,18 @@ def remate_victoria(c, nivel):
             sig = bajo_pluck(nota, paso * 2, 2.5, 18.0)
         elif c.g == "synth":
             sig = pluck(nota, paso * 3)
+        elif c.g == "tribal":
+            sig = marimba(nota, paso * 4)
+        elif c.g == "industrial":
+            sig = campana(nota, paso * 4, 1.41, 2.0, 3.0)
         else:
             sig = campana(nota + 12, paso * 6, 2.0 if c.g == "liquid" else 3.5, 2.0, 2.0)
         ev.append((k * 2 * paso, sig, 0.5, (k % 2 - 0.5) * 0.6, 0.3))
     golpe = 14 * paso
     for j in (0, 4, 7):
-        if c.g in ("trance", "psy", "synth"):
+        if c.g == "tribal":
+            acorde = canto(c.raiz + 36 + c.grado(j), paso * 18, "a", 3, 0.02)
+        elif c.g in ("trance", "psy", "synth", "industrial"):
             acorde = supersaw(c.raiz + 24 + c.grado(j), paso * 18, 7, 0.2, 5000.0, 0.01, 0.6, 1)
         elif c.g == "acid":
             acorde = organo(c.raiz + 36 + c.grado(j), paso * 12)
@@ -1602,9 +1956,12 @@ def remate_victoria(c, nivel):
                 c.raiz + 24 + c.grado(j), paso * 18, 5, 0.15, 2500.0, 0.01, 0.6, 1)
         ev.append((golpe, acorde, 0.35, (j - 3) * 0.15, 0.5))
     ev.append((golpe, platos("crash"), 0.4, 0.0, 0.3))
-    tipo = {"acid": "house", "trance": "trance", "psy": "psy", "neuro": "dnb", "liquid": "liquid", "synth": "synth"}[c.g]
+    tipo = {"acid": "house", "trance": "trance", "psy": "psy", "neuro": "dnb", "liquid": "liquid", "synth": "synth",
+            "tribal": "tribal", "industrial": "industrial"}[c.g]
     ev.append((golpe, bombo(tipo), 0.8, 0.0, 0.0))
-    ev.append((golpe, caja_cortada() if c.g == "synth" else caja("dnb") if c.g in ("neuro", "liquid") else palmada(), 0.5, 0.0, 0.4))
+    remate = {"synth": caja_cortada, "tribal": lambda: tambor("taiko"), "industrial": lambda: caja("industrial")}.get(
+        c.g, (lambda: caja("dnb")) if c.g in ("neuro", "liquid") else palmada)()
+    ev.append((golpe, remate, 0.5, 0.0, 0.4))
     return _mezcla_remate(n, ev)
 
 

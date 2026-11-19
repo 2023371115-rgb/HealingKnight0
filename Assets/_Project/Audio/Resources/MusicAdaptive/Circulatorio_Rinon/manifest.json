@@ -1,9 +1,9 @@
 {
   "level": "Circulatorio_Rinon",
-  "bpm": 104,
+  "bpm": 108,
   "bars": 32,
   "sampleRate": 44100,
-  "samples": 3256615,
+  "samples": 3136000,
   "layers": [
     "Ambiente",
     "Armonia",

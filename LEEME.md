@@ -506,7 +506,7 @@ queda al descubierto 5.5 s (antiparasitario). Después se mete a otro. Al vencer
 Datos nuevos: `Plasmodium_Esporozoito`, `Plasmodium_Merozoito`, `Jefe_Plasmodium`.
 
 Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`, `Disparo_Anticoagulante` e
-`Impacto_Anticoagulante`. Música: **synthwave** (ver "Música adaptativa").
+`Impacto_Anticoagulante`. Música: **tribal** en los órganos e **industrial** en los vasos (ver "Música adaptativa").
 
 ### Bazo (a pie, 220 u)
 - **Pulpa roja:** el piso es un río lento de glóbulos (`BloodConveyor`: banda transportadora; a favor vas rapidísimo).
@@ -768,12 +768,12 @@ La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
 | Hipocampo | Neurofunk | 174 | Memoria: campanas de vidrio con mucho eco y recuerdos al revés |
 | Ojo (secreto) | Liquid drum & bass | 160 | Sigilo: rhodes, sub tibio, batería suave |
 | Jefe nervioso | Neurofunk pesado | 176 | Batería partida, reese y growl más duros |
-| Arterias y venas | Synthwave (outrun) | 118 | Bajo en corcheas que salta de octava, caja con reverb cortada, arpegio de neón |
-| Bazo | Synthwave (noche) | 100 | Más lento: pad de 4 notas, bajo en negras |
-| Corazón | Synthwave (latido) | 136 | Dos tiempos por latido (68): un lub-dub grave en el ambiente, bajo en dieciseisavos |
-| Riñón (secreto) | Chillwave (agua) | 104 | Lidio, campanitas, gotas de agua |
-| El gran trombo | Darksynth | 128 | Frigio, retumbo grave y stabs oscuros |
-| Jefe circulatorio | Darksynth pesado | 140 | Acordes picados rápidos y lead oscuro (Plasmodium y otros jefes del sistema) |
+| Bazo | Tribal (aldea) | 112 | Taikos y djembes, marimba pentatónica, coro "ooo", gritos ¡HEY! y flauta en la parte B |
+| Arterias y venas | Industrial (tubería) | 124 | Bombo saturado, bajo EBM en dieciseisavos, metales, pistones de vapor, campanas metálicas |
+| Corazón | Tribal (latido) | 136 | El taiko hace lub-dub cada 2 tiempos (= 68 latidos por minuto), coro "uuu", didgeridoo |
+| Riñón (secreto) | Industrial (planta de agua) | 108 | Más tranquilo: bajo limpio, agua que corre por los tubos, gotas |
+| El gran trombo | Industrial (máquina) | 130 | Locrio, retumbo de máquina grande, lead saturado |
+| Jefe circulatorio | Tribal + industrial (guerra) | 140 | Tambores de guerra con caja de fierro, bajo de máquina y lead saturado (todos los jefes del sistema) |
 
 - Producción v5: arreglo de 32 compases (A, A', B, B') con la melodía que cambia, redobles al final de cada 8,
   subidas de ruido y platillo antes de cada parte nueva, reverb y eco que dan la vuelta al loop (no se nota el corte),
