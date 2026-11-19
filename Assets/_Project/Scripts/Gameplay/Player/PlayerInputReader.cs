@@ -4,32 +4,14 @@ using UnityEngine.InputSystem;
 namespace HealingKnight.Gameplay.Player
 {
     /// <summary>
-    /// Controles (teclado + mouse y gamepad). Las acciones se crean aquí en código
-    /// para que se vean todos los controles en un solo lugar.
-    ///
-    ///   Acción                         Teclado / mouse              Gamepad
-    ///   Mover                          A / D, flechas               Stick izq. / cruceta
-    ///   Apuntar libre                  MOVER EL MOUSE               Stick der.
-    ///   Apuntar en 8 direcciones*      W (+ A o D), S en el aire    Stick izq. (si no usas el der.)
-    ///   Encogerse                      S                            Abajo
-    ///   Disparar (mantener)            J / clic izquierdo           X / gatillo der.
-    ///   Escudo burbuja (mantener)      K / clic derecho             Gatillo izq.
-    ///   Saltar / doble salto           Espacio                      A / LB
-    ///   Caída lenta                    mantener Espacio al caer     mantener A / LB
-    ///   Bomba de medicamento           L / F                        B / RB
-    ///   Fijar (quieto)                 U / Shift izq.               Clic del stick der.
-    ///   Medicamento anterior/siguiente Q / E, rueda del mouse       — / Y
-    ///   Medicamento directo            1 a 5                        —
-    ///   Herramienta (hilo dental)      R / clic central             Clic del stick izq. / Select
-    ///   Pausa                          Esc                          Start
-    ///
-    ///   * Si mueves el mouse apuntas con el mouse; si presionas W vuelves a apuntar con teclas.
+    /// Lee los controles del jugador (estilo Cuphead). Las teclas y botones viven en PlayerControls, que también
+    /// usa el menú de Controles para cambiarlos. La tabla completa está en PlayerControls.
     /// </summary>
     [DefaultExecutionOrder(-100)]
     public class PlayerInputReader : MonoBehaviour
     {
         private InputActionMap map;
-        private InputAction move, jump, shoot, aimLock, bomb, shield, prevMed, nextMed, pause, gadget;
+        private InputAction move, jump, shoot, aimLock, dash, bomb, shield, prevMed, nextMed, pause, gadget;
         private InputAction pointer, pointerDelta, aimStick, gamepadMove, scroll;
         private bool mouseAim;
         private InputAction[] directMed;
@@ -37,11 +19,13 @@ namespace HealingKnight.Gameplay.Player
         /// <summary>Dirección (incluye arriba/abajo para apuntar y encogerse).</summary>
         public Vector2 Move { get; private set; }
         public bool JumpHeld { get; private set; }
-        /// <summary>Botón de fijar: quieto y apuntando en 8 direcciones.</summary>
+        /// <summary>Botón de fijar (Cuphead): quieto y apuntando en 8 direcciones.</summary>
         public bool LockHeld { get; private set; }
         public bool JumpPressed { get; private set; }
         public bool ShootPressed { get; private set; }
         public bool ShootHeld { get; private set; }
+        /// <summary>Dash de Cuphead.</summary>
+        public bool DashPressed { get; private set; }
         public bool BombPressed { get; private set; }
         public bool ShieldHeld { get; private set; }
         public int MedicationStep { get; private set; }   // -1, 0 o 1
@@ -63,82 +47,33 @@ namespace HealingKnight.Gameplay.Player
 
         private void Awake()
         {
-            map = new InputActionMap("Gameplay");
-
-            move = map.AddAction("Move", InputActionType.Value);
-            move.AddCompositeBinding("2DVector")
-                .With("Up", "<Keyboard>/w").With("Down", "<Keyboard>/s")
-                .With("Left", "<Keyboard>/a").With("Right", "<Keyboard>/d");
-            move.AddCompositeBinding("2DVector")
-                .With("Up", "<Keyboard>/upArrow").With("Down", "<Keyboard>/downArrow")
-                .With("Left", "<Keyboard>/leftArrow").With("Right", "<Keyboard>/rightArrow");
-            move.AddBinding("<Gamepad>/leftStick");
-            move.AddBinding("<Gamepad>/dpad");
-
-            shoot = map.AddAction("Shoot", InputActionType.Button);
-            shoot.AddBinding("<Keyboard>/j");
-            shoot.AddBinding("<Mouse>/leftButton");
-            shoot.AddBinding("<Gamepad>/buttonWest");
-            shoot.AddBinding("<Gamepad>/rightTrigger");
-
-            aimLock = map.AddAction("Lock", InputActionType.Button);
-            aimLock.AddBinding("<Keyboard>/u");
-            aimLock.AddBinding("<Keyboard>/leftShift");
-            aimLock.AddBinding("<Gamepad>/rightStickPress");
-
-            jump = map.AddAction("Jump", InputActionType.Button);
-            jump.AddBinding("<Keyboard>/space");
-            jump.AddBinding("<Gamepad>/buttonSouth");
-            jump.AddBinding("<Gamepad>/leftShoulder");
-
-            bomb = map.AddAction("Bomb", InputActionType.Button);
-            bomb.AddBinding("<Keyboard>/l");
-            bomb.AddBinding("<Keyboard>/f");
-            bomb.AddBinding("<Gamepad>/buttonEast");
-            bomb.AddBinding("<Gamepad>/rightShoulder");
-
-            shield = map.AddAction("Shield", InputActionType.Button);
-            shield.AddBinding("<Keyboard>/k");
-            shield.AddBinding("<Mouse>/rightButton");
-            shield.AddBinding("<Gamepad>/leftTrigger");
-
-            prevMed = map.AddAction("PrevMedication", InputActionType.Button);
-            prevMed.AddBinding("<Keyboard>/q");
-
-            nextMed = map.AddAction("NextMedication", InputActionType.Button);
-            nextMed.AddBinding("<Keyboard>/e");
-            nextMed.AddBinding("<Gamepad>/buttonNorth");
-
-            // Apuntado libre.
-            pointer = map.AddAction("Pointer", InputActionType.Value, "<Mouse>/position");
-            pointerDelta = map.AddAction("PointerDelta", InputActionType.Value, "<Mouse>/delta");
-            aimStick = map.AddAction("AimStick", InputActionType.Value, "<Gamepad>/rightStick");
-            gamepadMove = map.AddAction("GamepadMove", InputActionType.Value, "<Gamepad>/leftStick");
-            scroll = map.AddAction("Scroll", InputActionType.Value, "<Mouse>/scroll");
-
-            gadget = map.AddAction("Gadget", InputActionType.Button);
-            gadget.AddBinding("<Keyboard>/r");
-            gadget.AddBinding("<Mouse>/middleButton");
-            gadget.AddBinding("<Gamepad>/leftStickPress");
-            gadget.AddBinding("<Gamepad>/select");
-
-            pause = map.AddAction("Pause", InputActionType.Button);
-            pause.AddBinding("<Keyboard>/escape");
-            pause.AddBinding("<Gamepad>/start");
-
+            map = PlayerControls.Map;
+            move = map.FindAction(PlayerControls.Move, true);
+            jump = map.FindAction(PlayerControls.Jump, true);
+            shoot = map.FindAction(PlayerControls.Shoot, true);
+            aimLock = map.FindAction(PlayerControls.Lock, true);
+            dash = map.FindAction(PlayerControls.Dash, true);
+            bomb = map.FindAction(PlayerControls.Bomb, true);
+            shield = map.FindAction(PlayerControls.Shield, true);
+            prevMed = map.FindAction(PlayerControls.PrevMed, true);
+            nextMed = map.FindAction(PlayerControls.NextMed, true);
+            gadget = map.FindAction(PlayerControls.Gadget, true);
+            pause = map.FindAction(PlayerControls.Pause, true);
+            pointer = map.FindAction("Pointer", true);
+            pointerDelta = map.FindAction("PointerDelta", true);
+            aimStick = map.FindAction("AimStick", true);
+            gamepadMove = map.FindAction("GamepadMove", true);
+            scroll = map.FindAction("Scroll", true);
             directMed = new InputAction[5];
-            for (int i = 0; i < directMed.Length; i++)
-            {
-                directMed[i] = map.AddAction("Medication" + (i + 1), InputActionType.Button);
-                directMed[i].AddBinding("<Keyboard>/" + (i + 1));
-            }
+            for (int i = 0; i < directMed.Length; i++) directMed[i] = map.FindAction("Medication" + (i + 1), true);
         }
 
         private void UpdateAimSource()
         {
-            // Mover el mouse activa el apuntado con mouse; presionar arriba (W) o usar el stick
-            // izquierdo del control regresa al apuntado de 8 direcciones.
-            if (pointerDelta.ReadValue<Vector2>().sqrMagnitude > 4f) mouseAim = true;
+            // Con "Apuntar con el mouse" activado en Controles, mover el mouse apunta con él; presionar arriba o
+            // usar el stick izquierdo del control regresa al apuntado de 8 direcciones (como Cuphead).
+            if (!PlayerControls.MouseAim) mouseAim = false;
+            else if (pointerDelta.ReadValue<Vector2>().sqrMagnitude > 4f) mouseAim = true;
             else if (Move.y > 0.5f || gamepadMove.ReadValue<Vector2>().sqrMagnitude > 0.25f) mouseAim = false;
 
             Vector2 stick = aimStick.ReadValue<Vector2>();
@@ -156,9 +91,9 @@ namespace HealingKnight.Gameplay.Player
             else AimSource = AimSource.Directional;
         }
 
+        // El mapa es compartido (PlayerControls): no se destruye con el jugador.
         private void OnEnable() => map?.Enable();
         private void OnDisable() => map?.Disable();
-        private void OnDestroy() => map?.Dispose();
 
         private void Update()
         {
@@ -169,14 +104,18 @@ namespace HealingKnight.Gameplay.Player
             {
                 Move = Vector2.zero;
                 JumpHeld = LockHeld = false;
-                JumpPressed = ShootPressed = ShootHeld = BombPressed = ShieldHeld = false;
+                JumpPressed = ShootPressed = ShootHeld = BombPressed = ShieldHeld = DashPressed = false;
                 GadgetPressed = GadgetHeld = false;
                 MedicationStep = 0;
                 DirectMedicationIndex = -1;
                 return;
             }
 
+            // Mientras el menú de Controles escucha una tecla nueva, el mapa está apagado.
+            if (!map.enabled) { Move = Vector2.zero; JumpPressed = ShootPressed = BombPressed = DashPressed = GadgetPressed = false; return; }
+
             Vector2 m = move.ReadValue<Vector2>();
+            if (gamepadMove.ReadValue<Vector2>().sqrMagnitude > 0.3f && !PlayerControls.UsingGamepad) PlayerControls.UsingGamepad = true;
             Move = m.sqrMagnitude > 1f ? m.normalized : m;
             JumpPressed = jump.WasPressedThisFrame();
             JumpHeld = jump.IsPressed();
@@ -184,6 +123,7 @@ namespace HealingKnight.Gameplay.Player
             ShootPressed = shoot.WasPressedThisFrame();
             ShootHeld = shoot.IsPressed();
             BombPressed = bomb.WasPressedThisFrame();
+            DashPressed = dash.WasPressedThisFrame();
             ShieldHeld = shield.IsPressed();
             GadgetPressed = gadget.WasPressedThisFrame();
             GadgetHeld = gadget.IsPressed();
@@ -214,7 +154,7 @@ namespace HealingKnight.Gameplay.Player
 
     public enum AimSource
     {
-        /// <summary>8 direcciones con W/A/S/D o el stick izquierdo (como Metal Slug).</summary>
+        /// <summary>8 direcciones con las flechas o el stick izquierdo (como Cuphead).</summary>
         Directional,
         /// <summary>Libre hacia el mouse.</summary>
         Mouse,

@@ -40,6 +40,16 @@ namespace HealingKnight.Gameplay.Player
         [Tooltip("Velocidad horizontal en el aire mientras fijas (0 = te quedas en tu X).")]
         public float lockedAirSpeed = 0f;
 
+        [Header("Dash (como Cuphead: rápido, recto y sin caer; uno por salto en el aire)")]
+        [Tooltip("Distancia del dash en unidades.")]
+        public float dashDistance = 3.4f;
+        [Tooltip("Lo que tarda el dash en segundos.")]
+        public float dashDuration = 0.26f;
+        [Tooltip("Espera entre dashes en el suelo.")]
+        public float dashCooldown = 0.2f;
+        [Tooltip("Dashes en el aire antes de volver a pisar el suelo.")]
+        [Min(0)] public int airDashes = 1;
+
         [Header("Encogerse (abajo)")]
         [Tooltip("Tamaño al encogerse (abajo): 0.55 = a poco más de la mitad. También baja el colisionador.")]
         [Range(0.3f, 1f)] public float crouchHeightFactor = 0.55f;

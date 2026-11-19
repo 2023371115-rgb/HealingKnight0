@@ -33,6 +33,8 @@ namespace HealingKnight.Gameplay.Movement
         public float FallGravityScale { get; set; } = 1f;
         /// <summary>Límite extra de velocidad de caída (caída lenta). 0 o menos = sin límite extra.</summary>
         public float FallSpeedLimit { get; set; }
+        /// <summary>Sin gravedad (dash de Cuphead: va recto aunque esté en el aire).</summary>
+        public bool SuspendGravity { get; set; }
 
         public Rigidbody2D Body => rb;
         public BoxCollider2D Collider => box;
@@ -64,7 +66,7 @@ namespace HealingKnight.Gameplay.Movement
             Vector2 v = rb.linearVelocity;
             float g = useJumpGravity ? jumpGravity : gravity;
             if (v.y < 0f) g *= fallGravityMultiplier * FallGravityScale;
-            if (!grounded || v.y > 0f) v.y -= g * Time.fixedDeltaTime;
+            if (!SuspendGravity && (!grounded || v.y > 0f)) v.y -= g * Time.fixedDeltaTime;
             float limit = FallSpeedLimit > 0f ? Mathf.Min(maxFallSpeed, FallSpeedLimit) : maxFallSpeed;
             if (v.y < -limit)
             {

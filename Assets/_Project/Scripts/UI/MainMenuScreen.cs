@@ -125,15 +125,18 @@ namespace HealingKnight.UI
 
             var column = new GameObject("Botones", typeof(RectTransform));
             column.transform.SetParent(menuRoot.transform, false);
-            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -205f), new Vector2(560f, 440f));
-            UIFactory.VerticalLayout(column, 20f);
+            UIFactory.Place(UIFactory.Rect(column), new Vector2(0.5f, 0.5f), new Vector2(0.5f, 0.5f), new Vector2(0f, -228f), new Vector2(560f, 500f));
+            UIFactory.VerticalLayout(column, 14f);
 
             playButton = CartoonUI.Button(column.transform, "¡JUGAR!", OnPlay, new Vector2(500f, 120f), CartoonUI.Red, 58f);
             Button bestiaryButton = null;
             bestiaryButton = CartoonUI.Button(column.transform, "Bestiario", () => BestiaryScreen.Open(() => UIFactory.Select(bestiaryButton)),
-                new Vector2(420f, 80f), new Color(0.35f, 0.55f, 0.6f), 34f);
-            CartoonUI.Button(column.transform, "Borrar progreso", ShowConfirm, new Vector2(420f, 80f), new Color(0.75f, 0.35f, 0.55f), 34f);
-            CartoonUI.Button(column.transform, "Salir", Quit, new Vector2(420f, 80f), new Color(0.55f, 0.3f, 0.5f), 34f);
+                new Vector2(420f, 76f), new Color(0.35f, 0.55f, 0.6f), 32f);
+            Button controlsButton = null;
+            controlsButton = CartoonUI.Button(column.transform, "Controles", () => ControlsScreen.Open(() => UIFactory.Select(controlsButton)),
+                new Vector2(420f, 76f), new Color(0.95f, 0.6f, 0.25f), 32f);
+            CartoonUI.Button(column.transform, "Borrar progreso", ShowConfirm, new Vector2(420f, 76f), new Color(0.75f, 0.35f, 0.55f), 32f);
+            CartoonUI.Button(column.transform, "Salir", Quit, new Vector2(420f, 76f), new Color(0.55f, 0.3f, 0.5f), 32f);
 
             TextMeshProUGUI footer = CartoonUI.Text(menuRoot.transform, "PACIENTE 001  ·  AURELIS NANOMEDICINA  ·  PROGRAMA CENTINELA", 22f, new Color(1f, 0.85f, 0.88f, 0.75f), false, TextAlignmentOptions.Center, 0.12f);
             UIFactory.Place(footer.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 34f), new Vector2(1600f, 40f));

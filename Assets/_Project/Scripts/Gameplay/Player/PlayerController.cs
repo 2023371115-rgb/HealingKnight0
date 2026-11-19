@@ -8,9 +8,9 @@ using UnityEngine;
 namespace HealingKnight.Gameplay.Player
 {
     /// <summary>
-    /// Cerebro de Healing Knight (estilo Metal Slug): correr a velocidad constante, salto de altura fija,
-    /// encogerse, apuntar en 8 direcciones (diagonal = dos teclas), disparar, cuchillazo automático,
-    /// bomba de medicamento y escudo burbuja. Cada habilidad vive en su propio componente.
+    /// Cerebro de Healing Knight (controles de Cuphead): correr a velocidad constante, salto de altura fija,
+    /// encogerse, apuntar en 8 direcciones, FIJAR (quieto apuntando a donde quieras), DASH, disparar,
+    /// cuchillazo automático, bomba de medicamento (EX) y escudo burbuja. Cada habilidad vive en su componente.
     /// </summary>
     [RequireComponent(typeof(CharacterMotor2D), typeof(PlayerInputReader))]
     public class PlayerController : MonoBehaviour
@@ -43,6 +43,11 @@ namespace HealingKnight.Gameplay.Player
         private Vector2 aim = Vector2.right;
         private Vector2 lastSafePosition;
         private Vector3 bodyVisualBaseScale = Vector3.one;
+        private bool dashing;
+        private float dashTimer;
+        private float dashReadyAt;
+        private int dashDir = 1;
+        private int airDashesUsed;
 
         /// <summary>El jugador actual (el juego es para un jugador).</summary>
         public static PlayerController Current { get; private set; }
@@ -54,6 +59,9 @@ namespace HealingKnight.Gameplay.Player
         /// <summary>Al rebotar en un alvéolo inflado.</summary>
         public event Action Bounced;
 
+        /// <summary>Al empezar un dash (sonido y rastro).</summary>
+        public event Action Dashed;
+
         public PlayerConfig Config => config;
         public CharacterMotor2D Motor => motor;
         public PlayerInputReader Input => input;
@@ -63,6 +71,8 @@ namespace HealingKnight.Gameplay.Player
         public PlayerHealth Health => health;
         public State CurrentState => state;
         public bool IsCrouching => crouching;
+        /// <summary>Haciendo dash (no dispara ni cae).</summary>
+        public bool IsDashing => dashing;
 
         /// <summary>
         /// Tamaño actual del caballero (1 = normal). Al presionar abajo se ENCOGE (lore: el nanocaballero cambia de tamaño)
@@ -104,7 +114,8 @@ namespace HealingKnight.Gameplay.Player
             health = GetComponent<PlayerHealth>();
             hurtbox = GetComponent<Hurtbox>();
             if (bodyVisual != null) bodyVisualBaseScale = bodyVisual.localScale;
-            if (GetComponent<PlayerAudio>() == null) gameObject.AddComponent<PlayerAudio>(); // salto, daño, escudo, bombas
+            if (GetComponent<PlayerAudio>() == null) gameObject.AddComponent<PlayerAudio>(); // salto, daño, escudo, bombas, dash
+            if (GetComponent<PlayerDashTrail>() == null) gameObject.AddComponent<PlayerDashTrail>();
 
             if (config == null) Debug.LogError("[PlayerController] Falta asignar PlayerConfig.", this);
         }
@@ -134,6 +145,8 @@ namespace HealingKnight.Gameplay.Player
             slowFalling = false;
             if (motor.IsGrounded) slowFallLeft = config.slowFallDuration;
 
+            if (dashing && (state != State.Normal || Swinging)) EndDash();
+
             switch (state)
             {
                 case State.Normal: UpdateNormal(); break;
@@ -161,9 +174,15 @@ namespace HealingKnight.Gameplay.Player
         {
             Vector2 move = input.Move;
             bool shielding = shield != null && shield.IsActive;
+
+            // Dash (Cuphead): recto, rápido y sin caer. En el suelo cuando quieras; en el aire uno por salto.
+            if (motor.IsGrounded && !dashing) airDashesUsed = 0;
+            if (dashing) { UpdateDash(); return; }
+            if (input.DashPressed && CanDash(shielding)) { StartDash(move); return; }
+
             locked = input.LockHeld && !shielding;
 
-            // Encogerse (abajo: solo en el suelo y sin fijar; fijado, S apunta en diagonal abajo).
+            // Encogerse (abajo: solo en el suelo y sin fijar; fijado, abajo apunta en diagonal abajo).
             SetCrouch(motor.IsGrounded && move.y < -0.5f && !shielding && !locked);
 
             // Hacia dónde mira.
@@ -224,7 +243,8 @@ namespace HealingKnight.Gameplay.Player
             // Apuntar.
             //  - Mouse / stick derecho: libre en cualquier ángulo y miras hacia donde apuntas
             //    (puedes correr hacia atrás disparando).
-            //  - Teclas: 8 direcciones como Metal Slug (arriba, diagonales con dos teclas, abajo en el aire).
+            //  - Flechas / stick izq.: 8 direcciones como Cuphead (arriba, diagonal corriendo, abajo en el aire;
+            //    con FIJAR te quedas quieto y apuntas a cualquiera de las 8, también diagonal abajo en el suelo).
             switch (input.AimSource)
             {
                 case AimSource.Mouse:
@@ -280,6 +300,45 @@ namespace HealingKnight.Gameplay.Player
         }
 
 
+        private bool CanDash(bool shielding)
+        {
+            if (shielding || Carrying || Swinging || Time.time < dashReadyAt || config.dashDuration <= 0f) return false;
+            return motor.IsGrounded || airDashesUsed < config.airDashes;
+        }
+
+        private void StartDash(Vector2 move)
+        {
+            dashing = true;
+            dashTimer = config.dashDuration;
+            dashDir = Mathf.Abs(move.x) > 0.3f ? (move.x > 0f ? 1 : -1) : motor.Facing;
+            motor.SetFacing(dashDir);
+            if (!motor.IsGrounded) airDashesUsed++;
+            SetCrouch(false);
+            locked = false;
+            slowFalling = false;
+            motor.SuspendGravity = true;
+            motor.SetVelocity(new Vector2(dashDir * config.dashDistance / config.dashDuration, 0f));
+            Dashed?.Invoke();
+        }
+
+        private void UpdateDash()
+        {
+            dashTimer -= Time.deltaTime;
+            motor.SetVelocity(new Vector2(dashDir * config.dashDistance / config.dashDuration, 0f));
+            if (motor.IsGrounded) lastSafePosition = motor.Position;
+            if (dashTimer <= 0f) EndDash();
+        }
+
+        private void EndDash()
+        {
+            if (!dashing) return;
+            dashing = false;
+            motor.SuspendGravity = false;
+            dashReadyAt = Time.time + config.dashCooldown;
+            // Como en Cuphead: al terminar se frena en seco (si sigues presionando, vuelve a correr).
+            motor.SetVelocity(new Vector2(0f, Mathf.Min(0f, motor.Velocity.y)));
+        }
+
         private void SetCrouch(bool value)
         {
             if (crouching == value) return;
@@ -307,6 +366,7 @@ namespace HealingKnight.Gameplay.Player
         public void Bounce(float height, float velocity)
         {
             if (state == State.Dead) return;
+            EndDash();
             SetCrouch(false);
             motor.Jump(height, 2f * height / velocity);
             bounceAirborne = true;
@@ -325,6 +385,7 @@ namespace HealingKnight.Gameplay.Player
         public void OnHurt(float knockbackDirection, float knockbackForce)
         {
             if (state == State.Dead) return;
+            EndDash();
             state = State.Hurt;
             stateTimer = config.hurtStunTime;
             SetCrouch(false);
@@ -333,6 +394,7 @@ namespace HealingKnight.Gameplay.Player
 
         public void OnDied()
         {
+            EndDash();
             state = State.Dead;
             SetCrouch(false);
             motor.SetHorizontalVelocity(0f);
@@ -341,6 +403,7 @@ namespace HealingKnight.Gameplay.Player
 
         public void Respawn(Vector2 position)
         {
+            EndDash();
             motor.Teleport(position);
             motor.SetFacing(1);
             lastSafePosition = position;

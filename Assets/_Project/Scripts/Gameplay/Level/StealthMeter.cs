@@ -21,7 +21,7 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private float uveitisTime = 6f;
         [SerializeField] private EnemyHealth reinforcement;
         [SerializeField] private EnemyData reinforcementData;
-        [SerializeField, TextArea] private string tutorial = "NODO: El ojo no tolera la inflamación. Que NO te vean: escóndete agachado (S) detrás de las cosas y dispara solo si hace falta.";
+        [SerializeField, TextArea] private string tutorial = "NODO: El ojo no tolera la inflamación. Que NO te vean: escóndete agachado ({abajo}) detrás de las cosas y dispara solo si hace falta.";
 
         public static StealthMeter Current { get; private set; }
         public float Level { get; private set; }

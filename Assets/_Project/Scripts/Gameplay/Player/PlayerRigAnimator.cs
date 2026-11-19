@@ -10,6 +10,7 @@ namespace HealingKnight.Gameplay.Player
     ///  - Saltar (subiendo): pierna de enfrente recogida, la de atrás estirada hacia atrás.
     ///  - Caer: piernas un poco abiertas y rodillas flojas.
     ///  - Quieto: respira (el torso sube y baja muy poco).
+    ///  - Dash: piernas abiertas como zancada larga y el torso inclinado hacia adelante.
     /// Los ángulos son en grados; positivo = hacia adelante (hacia donde mira).
     /// </summary>
     public class PlayerRigAnimator : MonoBehaviour
@@ -36,13 +37,19 @@ namespace HealingKnight.Gameplay.Player
         [SerializeField] private Vector2 fallFront = new Vector2(14f, -22f);
         [SerializeField] private Vector2 fallBack = new Vector2(-12f, -14f);
 
+        [Header("Dash")]
+        [SerializeField] private Vector2 dashFront = new Vector2(48f, -55f);
+        [SerializeField] private Vector2 dashBack = new Vector2(-52f, -18f);
+        [Tooltip("Inclinación del torso hacia adelante durante el dash (grados).")]
+        [SerializeField] private float dashLean = 16f;
+
         [Tooltip("Qué tan rápido pasa de una pose a otra.")]
         [SerializeField] private float blend = 16f;
 
         private PlayerController controller;
         private CharacterMotor2D motor;
         private float phase;
-        private float bt, bk, ft, fk, bob;
+        private float bt, bk, ft, fk, bob, lean;
         private Vector3 upperBase;
 
         private void Awake()
@@ -58,12 +65,17 @@ namespace HealingKnight.Gameplay.Player
             float dt = Time.deltaTime;
             Vector2 v = motor.Velocity;
 
-            float tBt, tBk, tFt, tFk, tBob;
+            float tBt, tBk, tFt, tFk, tBob, tLean = 0f;
             bool dead = controller != null && controller.Health != null && !controller.Health.IsAlive;
 
             if (dead)
             {
                 tBt = tBk = tFt = tFk = 0f; tBob = 0f;
+            }
+            else if (controller != null && controller.IsDashing)
+            {
+                tFt = dashFront.x; tFk = dashFront.y; tBt = dashBack.x; tBk = dashBack.y; tBob = -0.04f;
+                tLean = -dashLean;   // negativo = hacia adelante (el dibujo se voltea con el personaje)
             }
             else if (!motor.IsGrounded)
             {
@@ -95,12 +107,17 @@ namespace HealingKnight.Gameplay.Player
             bt = Mathf.Lerp(bt, tBt, k); bk = Mathf.Lerp(bk, tBk, k);
             ft = Mathf.Lerp(ft, tFt, k); fk = Mathf.Lerp(fk, tFk, k);
             bob = Mathf.Lerp(bob, tBob, k);
+            lean = Mathf.Lerp(lean, tLean, 1f - Mathf.Exp(-blend * 1.5f * dt));
 
             backThigh.localRotation = Quaternion.Euler(0f, 0f, bt);
             frontThigh.localRotation = Quaternion.Euler(0f, 0f, ft);
             if (backKnee != null) backKnee.localRotation = Quaternion.Euler(0f, 0f, bk);
             if (frontKnee != null) frontKnee.localRotation = Quaternion.Euler(0f, 0f, fk);
-            if (upper != null) upper.localPosition = upperBase + new Vector3(0f, bob, 0f);
+            if (upper != null)
+            {
+                upper.localPosition = upperBase + new Vector3(0f, bob, 0f);
+                upper.localRotation = Quaternion.Euler(0f, 0f, lean);
+            }
         }
     }
 }

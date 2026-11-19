@@ -29,6 +29,7 @@ namespace HealingKnight.Gameplay.Player
             if (controller != null)
             {
                 controller.Jumped += OnJumped;
+                controller.Dashed += OnDashed;
                 if (controller.Health != null)
                 {
                     controller.Health.Damaged += OnDamaged;
@@ -49,6 +50,7 @@ namespace HealingKnight.Gameplay.Player
             if (controller != null)
             {
                 controller.Jumped -= OnJumped;
+                controller.Dashed -= OnDashed;
                 if (controller.Health != null)
                 {
                     controller.Health.Damaged -= OnDamaged;
@@ -66,6 +68,7 @@ namespace HealingKnight.Gameplay.Player
 
         private void LateUpdate() => suppressBlock = false;
 
+        private void OnDashed() => Sfx.Effect("Jugador_Dash", 0.8f);
         private void OnJumped(bool airJump) => Sfx.Effect(airJump ? "Jugador_SaltoDoble" : "Jugador_Salto", 0.8f);
         private void OnDamaged() => Sfx.Effect("Jugador_Herido");
         private void OnDied() => Sfx.Effect("Jugador_Muere");

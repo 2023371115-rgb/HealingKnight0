@@ -19,7 +19,7 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private float minLength = 1.8f;
         [SerializeField] private float maxLength = 8.5f;
         [SerializeField] private float releaseBoost = 4.5f;
-        [SerializeField, TextArea] private string tutorial = "HILO DENTAL: acércate a un gancho y aprieta R (clic central / Select). A/D para columpiarte, salta para soltarte.";
+        [SerializeField, TextArea] private string tutorial = "HILO DENTAL: acércate a un gancho y aprieta {herramienta}. {mover} para columpiarte, {arriba}/{abajo} para subir o bajar, {saltar} para soltarte.";
 
         private FlossHook hook;
         private float length;

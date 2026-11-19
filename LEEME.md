@@ -25,26 +25,36 @@ Si cambia la estructura del proyecto base (nuevos enemigos, niveles, etc.) y tod
 
 ## Controles
 
-Apuntas **libre con el mouse** (o el stick derecho del control). Si no usas el mouse, apuntas en 8 direcciones como en Metal Slug: W arriba, W + A/D en diagonal, S abajo en el aire. Mover el mouse cambia al apuntado con mouse; presionar W regresa al de teclas.
+Son los de **Cuphead**. Se cambian en **Controles** (menú principal o pausa): ahí eliges el esquema de teclado
+(Cuphead o Clásico), puedes poner la tecla o el botón que quieras en cada acción (si ya lo usaba otra, se
+intercambian) y activar **Apuntar con mouse**. Se guarda solo y se aplica al momento.
 
-| Acción | Teclado / mouse | Gamepad |
-|---|---|---|
-| Moverse | A / D | Stick izq. / cruceta |
-| Apuntar libre (miras hacia donde apuntas) | Mouse | Stick der. |
-| Apuntar en 8 direcciones | W, W + A/D, S en el aire | Stick izq. |
-| Encogerse (se hace pequeño y esquiva disparos altos) | S | Abajo |
-| Disparar (mantener = ráfaga). Si un enemigo está pegado, **cuchillazo** automático. Disparar hacia abajo en el aire frena la caída | J / clic izquierdo | X / gatillo der. |
-| Escudo burbuja (mantener) — levántalo justo antes del golpe para hacer **parry** | K / clic derecho | Gatillo izq. |
-| Saltar (altura fija) · **doble salto** en el aire | Espacio | A / LB |
-| **Caída lenta**: mantén saltar mientras caes (1.5 s, se recarga al pisar el suelo) | mantener Espacio | mantener A / LB |
-| **Bomba de medicamento** (granada). Empiezas con 5; la barra bajo el contador se llena con daño efectivo, cuchillazos y parry, y al llenarse ganas otra (máx. 10) | L / F | B / RB |
-| **Fijar** (mantener): te quedas quieto para apuntar con calma | U / Shift izq. | Clic del stick der. |
-| Medicamento anterior / siguiente | Rueda del mouse / Q / E | — / Y |
-| Medicamento directo | 1 a 5 | — |
-| **Herramienta** (hilo dental en la Boca): engancharte / soltarte | R / clic central | Clic del stick izq. / Select |
-| Pausa | Esc | Start |
+Apuntas en 8 direcciones como en Cuphead: arriba, diagonal arriba mientras corres, abajo y diagonal abajo en el aire.
+Mantén **Fijar** para quedarte quieto y apuntar a cualquiera de las 8 (también diagonal abajo en el suelo).
+El stick derecho apunta libre; el mouse, solo si lo activas en Controles.
 
-Los controles se definen en `Scripts/Gameplay/Player/PlayerInputReader.cs`.
+| Acción | Cuphead (teclado) | Clásico (teclado) | Control (Xbox) |
+|---|---|---|---|
+| Moverse · apuntar | Flechas | W A S D | Stick izq. / cruceta |
+| Encogerse (se hace pequeño y esquiva disparos altos) | Flecha abajo | S | Abajo |
+| Saltar (altura fija) · **doble salto** · mantener al caer = **caída lenta** (1.5 s) | Z | Espacio | A |
+| Disparar (mantener = ráfaga). Si un enemigo está pegado, **cuchillazo** automático. Hacia abajo en el aire frena la caída | X | J | X |
+| **Fijar** (mantener): quieto y apuntando en 8 direcciones | C | U | RB |
+| **Dash**: rápido y recto, sin caer; en el aire uno por salto | Shift izq. | Shift izq. | Y |
+| **Bomba de medicamento** (el EX). Empiezas con 5; se recargan con daño efectivo, cuchillazos y parry (máx. 10) | V | L | B |
+| Escudo burbuja (mantener) — levántalo justo antes del golpe para hacer **parry** | A | K | LT |
+| Cambiar medicamento | Tab | E | LB |
+| Medicamento anterior | Q | Q | Select |
+| **Herramienta** (hilo dental en la Boca): engancharte / soltarte | S | R | RT |
+| Medicamento directo | 1 a 5 | 1 a 5 | — |
+| Pausa | Esc | Esc | Start |
+
+El mouse siempre sirve para clic izq. disparar, clic der. escudo, clic central herramienta y la rueda para cambiar de
+medicamento; para **apuntar** con él activa **Apuntar con mouse** en Controles.
+
+Los controles se definen en `Scripts/Gameplay/Player/PlayerControls.cs` (el menú está en `UI/ControlsScreen.cs`).
+En los mensajes de NODO escribe `{saltar}`, `{disparar}`, `{fijar}`, `{dash}`, `{bomba}`, `{escudo}`, `{medicamento}`,
+`{herramienta}`, `{mover}`, `{arriba}`, `{abajo}` o `{pausa}` y el juego pone la tecla o el botón que tenga el jugador.
 
 ---
 

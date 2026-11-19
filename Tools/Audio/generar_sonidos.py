@@ -104,6 +104,9 @@ SONIDOS = {
     "Jugador_SaltoDoble":       {"dur": 0.16, "caida": 1.5, "vol": 0.6, "capas": [
         {"onda": "square", "f0": 420, "f1": 980, "curva": 0.7, "vol": 1},
         {"ruido": True, "suave": 0.6, "vol": 0.3}]},
+    "Jugador_Dash":             {"dur": 0.26, "caida": 1.3, "ataque": 0.02, "vol": 0.55, "capas": [   # zumbido de aire (dash de Cuphead)
+        {"ruido": True, "suave": 0.35, "polos": 2, "vol": 1},
+        {"onda": "sine", "f0": 900, "f1": 260, "curva": 0.6, "vol": 0.35}]},
     "Jugador_Herido":           {"dur": 0.30, "caida": 1.6, "capas": [
         {"onda": "saw", "f0": 520, "f1": 140, "curva": 0.5, "vol": 1, "vibrato": [30, 40]},
         {"ruido": True, "suave": 0.3, "vol": 0.5}]},

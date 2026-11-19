@@ -1352,7 +1352,7 @@ namespace HealingKnight.EditorTools
                 pitLiquid = new Color(0.5f, 1f, 0.15f, 1f),
                 drip = new Color(0.55f, 1f, 0.2f, 0.9f),
                 glow = new Color(0.45f, 1f, 0.2f, 1f)
-            }, "NODO: Estás en el estómago. Muévete con A/D, salta con K o Espacio. Apunta con W (W + A/D = diagonal).");
+            }, "NODO: Estás en el estómago. Muévete con {mover}, salta con {saltar} y dispara con {disparar}. Mantén {fijar} para quedarte quieto y apuntar a donde quieras; {dash} hace un dash.");
 
             // Recorrido (cada parte agrega algo nuevo):
             //  1) Entrada seca (tutorial).
@@ -1368,7 +1368,7 @@ namespace HealingKnight.EditorTools
             Platform(0f, 2.2f, 3f);
             Platform(4.5f, 3.6f, 2.5f);
             Arena("Arena_1_Tutorial", 8f, 14f,
-                "H. pylori: una bacteria que se entierra en el moco y sale debajo de ti (enterrada no le haces daño). Cambia de cápsula con Q/E hasta encontrar la que funciona.",
+                "H. pylori: una bacteria que se entierra en el moco y sale debajo de ti (enterrada no le haces daño). Cambia de cápsula con {medicamento} hasta encontrar la que funciona.",
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 1)),
                 W(0.8f, E(prefabs.HPylori, data.HPylori, 2)));
 
@@ -1389,7 +1389,7 @@ namespace HealingKnight.EditorTools
 
             // ----- 3) Arena de la colonia -----
             Arena("Arena_2_Colonia", 56f, 18f,
-                "NODO: ¡Una colonia de H. pylori! Destruye a la MADRE o no dejará de soltar crías. La H. pylori turquesa neutraliza el ácido: cerca de ella no te quema. Escudo: Shift (o I); justo antes del golpe = PARRY.",
+                "NODO: ¡Una colonia de H. pylori! Destruye a la MADRE o no dejará de soltar crías. La H. pylori turquesa neutraliza el ácido: cerca de ella no te quema. Escudo: {escudo}; justo antes del golpe = PARRY.",
                 W(0.6f, E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1), E(prefabs.HPylori, data.HPylori, 2, SpawnSide.Left)),
                 W(1.0f, E(prefabs.HPyloriMadre, data.HPyloriMadre, 1), E(prefabs.HPyloriUreasa, data.HPyloriUreasa, 1, SpawnSide.Left)));
             Food("Hamburguesa", 59.6f, 0.95f, FloatingFood.FoodKind.Sinking);
@@ -2213,7 +2213,7 @@ namespace HealingKnight.EditorTools
                 liquidSurface = new Color(0.82f, 0.94f, 1f, 0.75f),
                 liquidOutline = new Color(0.2f, 0.28f, 0.42f, 1f),
                 liquidCrest = new Color(1f, 1f, 1f, 0.95f)
-            }, "NIVEL SECRETO · BOCA. NODO: Placa bacteriana detectada. Te traje HILO DENTAL: botón R (clic central / Select).",
+            }, "NIVEL SECRETO · BOCA. NODO: Placa bacteriana detectada. Te traje HILO DENTAL: botón {herramienta}.",
                 new Vector2(24f, 6f), new Vector2(40f, 8f), new Vector2(54f, 9f), new Vector2(97f, 22f));
 
             Floss();
@@ -2225,7 +2225,7 @@ namespace HealingKnight.EditorTools
             Platform(17f, 2.2f, 2f);
 
             // Tutorial del hilo: un hueco de saliva que solo se cruza columpiándose.
-            SetMessage("Hueco de saliva: lanza el HILO DENTAL (R) al gancho del diente, columpiate con A/D y salta para soltarte.", 21f);
+            SetMessage("Hueco de saliva: lanza el HILO DENTAL ({herramienta}) al gancho del diente, columpiate con {mover} y salta ({saltar}) para soltarte.", 21f);
             Hook(27f, 7.2f);
 
             // Placa entre dientes: solo se quita jalándola con el hilo.
@@ -2375,7 +2375,7 @@ namespace HealingKnight.EditorTools
             Stealth();
 
             // Córnea y humor acuoso: tutorial de esconderse.
-            SetMessage("Ese VIGILANTE es un macrófago del ojo. Si te ve en su cono de luz, sube la inflamación. Agáchate (S) detrás de los pliegues.", 4f);
+            SetMessage("Ese VIGILANTE es un macrófago del ojo. Si te ve en su cono de luz, sube la inflamación. Agáchate ({abajo}) detrás de los pliegues.", 4f);
             Cover(11f);
             WatcherAt(14f, 24f);
             Cover(19f);
@@ -2836,7 +2836,7 @@ namespace HealingKnight.EditorTools
                 new Vector2(36f, 3f), new Vector2(44f, 3.5f), new Vector2(53f, 3f), new Vector2(66f, 22f), new Vector2(118f, 20f));
 
             new GameObject("SaludDelCerebro").AddComponent<BrainHealth>();
-            SetMessage("Tu cápsula regional es el ANTICONVULSIVO: calma neuronas rojas. Su bomba (L/F) protege a las neuronas 8 s.", 1f);
+            SetMessage("Tu cápsula regional es el ANTICONVULSIVO: calma neuronas rojas. Su bomba ({bomba}) protege a las neuronas 8 s.", 1f);
 
             // Tramo 1
             Arena("Tramo_1_Meningitis", 8f, 20f, "Acaba rápido con los virus: si sus disparos pegan en las neuronas, el cerebro sufre y se infectan.",

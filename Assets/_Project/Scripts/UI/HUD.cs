@@ -51,6 +51,7 @@ namespace HealingKnight.UI
             GameplayEvents.ArenaStarted += OnArenaStarted;
             GameplayEvents.BossStarted += OnBossStarted;
             GameplayEvents.BossEnded += OnBossEnded;
+            PlayerControls.Changed += RefreshControlsHint;
             if (PlayerController.Current != null) Bind(PlayerController.Current);
         }
 
@@ -62,6 +63,7 @@ namespace HealingKnight.UI
             GameplayEvents.ArenaStarted -= OnArenaStarted;
             GameplayEvents.BossStarted -= OnBossStarted;
             GameplayEvents.BossEnded -= OnBossEnded;
+            PlayerControls.Changed -= RefreshControlsHint;
             Unbind();
             if (brain != null) brain.Changed -= OnBrainChanged;
         }
@@ -148,8 +150,10 @@ namespace HealingKnight.UI
 
             // Controles (abajo, desaparece solo)
             controlsText = UIFactory.Text(root,
-                "Mover A/D · Apuntar con el MOUSE (o W/S) · Disparar J / clic izq. · Escudo K / clic der. · Saltar Espacio (x2 doble, mantener = caída lenta) · Bomba L/F · Fijar U/Shift · Medicamento rueda, Q/E o 1-5 · Pausa Esc",
-                24f, new Color(1f, 1f, 1f, 0.7f));
+                PlayerControls.HelpLine(), 24f, new Color(1f, 1f, 1f, 0.7f));
+            controlsText.enableAutoSizing = true;
+            controlsText.fontSizeMin = 14f;
+            controlsText.fontSizeMax = 24f;
             UIFactory.Place(controlsText.rectTransform, new Vector2(0.5f, 0f), new Vector2(0.5f, 0f), new Vector2(0f, 25f), new Vector2(1800f, 40f));
         }
 
@@ -207,9 +211,15 @@ namespace HealingKnight.UI
             medicationSwatch.color = med.color;
         }
 
+        // Si cambias de teclado a control (o cambias una tecla en el menú), la ayuda dice los botones nuevos.
+        private void RefreshControlsHint()
+        {
+            if (controlsText != null) controlsText.text = PlayerControls.HelpLine();
+        }
+
         private void ShowMessage(string text)
         {
-            messageText.text = text;
+            messageText.text = PlayerControls.Format(text);   // {saltar}, {disparar}... = tu tecla o botón
             messageText.alpha = 1f;
             messageTimer = 3f;
         }
