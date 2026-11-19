@@ -31,6 +31,7 @@ namespace HealingKnight.EditorTools
         public EnemyData SarroJefe, SPyogenes, AbscesoJefe, ToxoplasmaJefe;
         public EnemyData Plaquetas, Ldl, CelulaEspumosa, PlacaColesterol, AteromaJefe;
         public EnemyData Esporozoito, Merozoito, PlasmodiumJefe;
+        public EnemyData LinfocitoInfectado, EpsteinBarrJefe;
         public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo;
 
         public void Run()
@@ -44,6 +45,7 @@ namespace HealingKnight.EditorTools
             CreateNervousEnemies();
             CreateCirculatoryEnemies();
             CreateMalariaEnemies();
+            CreateSpleenEnemies();
             CreateOffspring();
             CreateCatalog();
             CreateBestiary();
@@ -732,6 +734,36 @@ namespace HealingKnight.EditorTools
             });
         }
 
+        /// <summary>Bazo: el virus de Epstein-Barr y los linfocitos B que infecta.</summary>
+        private void CreateSpleenEnemies()
+        {
+            LinfocitoInfectado = Enemy("Linfocito_Infectado", e =>
+            {
+                e.displayName = "Linfocito B infectado";
+                e.threat = ThreatType.Virus;
+                e.biologia = "Un linfocito B (de los tuyos) con el virus de Epstein-Barr adentro: ya no te ayuda. Cúralo con antiviral.";
+                e.maxHealth = 28f;
+                e.meleeDamageTakenMultiplier = 1f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 0;
+                e.tint = new Color(0.7f, 0.4f, 0.85f);
+            });
+            EpsteinBarrJefe = Enemy("Jefe_EpsteinBarr", e =>
+            {
+                e.displayName = "Virus de Epstein-Barr";
+                e.threat = ThreatType.Virus;
+                e.biologia = "Causa la mononucleosis (\"la enfermedad del beso\"): fiebre, garganta inflamada, mucho cansancio y el " +
+                    "bazo hinchado. Se mete a los linfocitos B. No hay medicina que lo cure: lo controlan los linfocitos T.";
+                e.maxHealth = 520f;
+                e.meleeDamageTakenMultiplier = 0.5f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 6;
+                e.attackDamage = 9f;
+                e.projectileColor = new Color(0.75f, 0.5f, 1f);
+                e.tint = new Color(0.55f, 0.85f, 0.7f);
+                // A tus balas casi no les hace caso (ni al antiviral): le ganan tus linfocitos T.
+                AllMedications(e, Effectiveness.Partial, null);
+            });
+        }
+
         /// <summary>Tramos 5 y 6 de Arterias y venas: la MALARIA (Plasmodium) entra por la picadura de un mosquito.</summary>
         private void CreateMalariaEnemies()
         {
@@ -1018,8 +1050,8 @@ namespace HealingKnight.EditorTools
             }
 
             // De menos vital a más vital: sin bazo se puede vivir, sin corazón no. Ver el plan en el proyecto.
-            CirculatorioBazo = Level("Circulatorio", "01_Bazo", "circulatorio_bazo", "Bazo", "", false,
-                "El filtro de la sangre: ranuras, macrófagos y la reserva de plaquetas. Próximamente.");
+            CirculatorioBazo = PlayableLevel("Circulatorio", "01_Bazo", "circulatorio_bazo", "Bazo", "Circulatorio_Bazo", false,
+                "El filtro de la sangre: bandas de glóbulos, ranuras, macrófagos y la reserva de plaquetas. Jefe: el virus de Epstein-Barr.");
             CirculatorioArteriasVenas = PlayableLevel("Circulatorio", "02_ArteriasVenas", "circulatorio_arterias_venas", "Arterias y venas",
                 "Circulatorio_ArteriasVenas", false,
                 "Vuela en la nanocápsula: el ventrículo te dispara a la aorta. Avanza con cada latido y deshaz los coágulos con Anticoagulante.");

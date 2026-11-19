@@ -31,6 +31,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth Poliovirus, Meningococo, Herpes, Rabia;
         public EnemyHealth SAureusCoco, OxiuroHuevo;
         public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
+        public EnemyHealth PlaquetasBloqueo, EpsteinBarrJefe;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -140,6 +141,9 @@ namespace HealingKnight.EditorTools
             CelulaEspumosa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Celula_Espumosa.prefab", BuildFoamCell);
             Esporozoito = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Plasmodium_Esporozoito.prefab", BuildSporozoite);
             Merozoito = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Plasmodium_Merozoito.prefab", BuildMerozoite);
+            // Bazo: montón de plaquetas que tapa el paso (solo el anticoagulante) y el jefe Epstein-Barr.
+            PlaquetasBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Plaquetas_Pie.prefab", () => BuildObstacle("Bloqueo_Plaquetas_Pie", data.Plaquetas, true, false));
+            EpsteinBarrJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/EpsteinBarr_Bazo.prefab", BuildEpsteinBarr);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -1669,9 +1673,50 @@ namespace HealingKnight.EditorTools
             return root;
         }
 
+        /// <summary>Virus de Epstein-Barr (jefe del Bazo): cápside de 20 caras (verde) con su envoltura y espículas.</summary>
+        private GameObject BuildEpsteinBarr()
+        {
+            EnemyData d = data.EpsteinBarrJefe;
+            GameObject root = BossRoot("EpsteinBarr_Bazo", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.1f, 0.25f, 0.2f), env = new Color(0.75f, 0.6f, 0.95f, 0.55f);
+            for (int i = 0; i < 12; i++)
+            {
+                float a = i * 30f * Mathf.Deg2Rad;
+                Vector3 p = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 1.55f;
+                var spike = SetupUtils.SpriteChild(v, "Espicula" + i, PlaceholderArt.SquareCentered, new Color(0.55f, 0.35f, 0.75f), p * 0.9f, new Vector2(0.12f, 0.5f), 0);
+                spike.transform.localRotation = Quaternion.Euler(0f, 0f, i * 30f - 90f);
+                body.Add(SetupUtils.SpriteChild(v, "Punta" + i, PlaceholderArt.Circle, new Color(0.85f, 0.65f, 1f), p * 1.08f, Vector2.one * 0.3f, 1));
+            }
+            body.Add(SetupUtils.SpriteChild(v, "Envoltura", PlaceholderArt.Circle, env, Vector3.zero, Vector2.one * 3f, 1));
+            body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, Vector2.one * 2.3f, 2));
+            body.Add(SetupUtils.SpriteChild(v, "Capside", PlaceholderArt.Circle, d.tint, Vector3.zero, Vector2.one * 2.1f, 3));
+            for (int i = 0; i < 6; i++)
+            {
+                float a = (i * 60f + 30f) * Mathf.Deg2Rad;
+                SetupUtils.SpriteChild(v, "Cara" + i, PlaceholderArt.Circle, new Color(0.4f, 0.7f, 0.55f), new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.62f, Vector2.one * 0.55f, 4);
+            }
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(s * 0.38f, 0.2f, 0f), new Vector2(0.48f, 0.55f), 5);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(s * 0.34f, 0.16f, 0f), new Vector2(0.22f, 0.28f), 6);
+                SetupUtils.SpriteChild(v, "Ceja", PlaceholderArt.SquareCentered, line, new Vector3(s * 0.38f, 0.58f, 0f), new Vector2(0.5f, 0.12f), 6)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, s * -20f);
+            }
+            SetupUtils.SpriteChild(v, "Boca", PlaceholderArt.Circle, line, new Vector3(0f, -0.42f, 0f), new Vector2(0.7f, 0.28f), 5);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(2.6f, 2.6f));
+            var boss = root.AddComponent<EpsteinBarrBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "infectedData", data.LinfocitoInfectado);
+            SetupUtils.SetRef(boss, "table", data.Table);
+            return root;
+        }
+
         // ---------- Bloqueos tratables (Pulmones, GDD 5.12) ----------
 
-        private GameObject BuildObstacle(string name, EnemyData obstacleData, bool mucus)
+        private GameObject BuildObstacle(string name, EnemyData obstacleData, bool mucus, bool useArt = true)
         {
             const float width = 1.4f;
             const float height = 12f; // más alto que cualquier salto: hay que disolverlo
@@ -1712,7 +1757,7 @@ namespace HealingKnight.EditorTools
             string artName = mucus ? "Mucosidad" : "Inflamacion";
             string artDir = "Assets/_Project/Art/Respiratorio";
             Vector2 bottom = new Vector2(0.5f, 0.02f);
-            var normalTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{artDir}/{artName}_Normal.png");
+            var normalTex = useArt ? AssetDatabase.LoadAssetAtPath<Texture2D>($"{artDir}/{artName}_Normal.png") : null;
             SpriteRenderer drawn = null;
             Sprite hurtArt = null, deadArt = null;
             if (normalTex != null)

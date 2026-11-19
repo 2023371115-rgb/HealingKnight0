@@ -53,6 +53,7 @@ namespace HealingKnight.EditorTools
         public static string OjoPath => $"{Folder}/Levels/Nervioso/Nervioso_Ojo.unity";
         public static string AmigdalasPath => $"{Folder}/Levels/Respiratorio/Respiratorio_Amigdalas.unity";
         public static string ArteriasVenasPath => $"{Folder}/Levels/Circulatorio/Circulatorio_ArteriasVenas.unity";
+        public static string BazoPath => $"{Folder}/Levels/Circulatorio/Circulatorio_Bazo.unity";
 
         public void Run()
         {
@@ -71,6 +72,7 @@ namespace HealingKnight.EditorTools
             CreateIfMissing(OjoPath, BuildOjo);
             CreateIfMissing(AmigdalasPath, BuildAmigdalas);
             CreateIfMissing(ArteriasVenasPath, BuildArteriasVenas);
+            CreateIfMissing(BazoPath, BuildBazo);
             CreateIfMissing(SecretoPath, BuildMundoSecreto);
             CreateIfMissing(SandboxPath, BuildSandbox);
 
@@ -92,6 +94,7 @@ namespace HealingKnight.EditorTools
                 new EditorBuildSettingsScene(OjoPath, true),
                 new EditorBuildSettingsScene(AmigdalasPath, true),
                 new EditorBuildSettingsScene(ArteriasVenasPath, true),
+                new EditorBuildSettingsScene(BazoPath, true),
                 new EditorBuildSettingsScene(SandboxPath, true),
             };
             EditorBuildSettings.scenes = System.Array.FindAll(scenes, sc => File.Exists(sc.path));
@@ -4792,6 +4795,134 @@ namespace HealingKnight.EditorTools
             c12.hoverTime = 5f; c12.interval = 0.5f;
             FlightWaveAt(1156f, c12);
             FlightNote(1184f, "¡Arteria femoral limpia! Ahora se hace más y más delgada: arteriolas... y luego CAPILARES.");
+        }
+
+        // ================= SISTEMA CIRCULATORIO: BAZO (a pie) =================
+
+        /// <summary>Montón de plaquetas que tapa el paso (el bazo guarda un tercio de ellas): solo el anticoagulante.</summary>
+        private void PlateletBlock(float x)
+        {
+            var block = (GameObject)PrefabUtility.InstantiatePrefab(prefabs.PlaquetasBloqueo.gameObject);
+            block.transform.position = new Vector3(x, FloorY, 0f);
+        }
+
+        private void BloodBelt(float fromX, float toX, float push, int direction) =>
+            Node("BandaDeGlobulos", fromX, FloorY).AddComponent<BloodConveyor>().Configure(fromX, toX, FloorY, push, direction);
+
+        private void SplenicCord(float x, float phase) =>
+            Node("CordonDelBazo", x, FloorY).AddComponent<SplenicSlit>().Configure(9f, 2.2f, 2.4f, 0.5f, phase);
+
+        /// <summary>Linfocito aliado que flota sobre su casa y dispara anticuerpos (pulpa blanca).</summary>
+        private void WhitePulpAlly(float x, float y)
+        {
+            GameObject home = Node("PulpaBlanca_Casa", x, y);
+            var ally = new GameObject("LinfocitoAliado");
+            ally.transform.SetParent(environment, false);
+            ally.transform.position = new Vector3(x, y + 2.6f, 0f);
+            ally.AddComponent<AllyLymphocyte>().Configure(home.transform, 0f, 1.5f, 8f, false);
+        }
+
+        private void BuildBazo()
+        {
+            // Bazo (220 u): pulpa roja (bandas de glóbulos, cordones/ranuras, el macrófago que te persigue), la reserva de
+            // plaquetas (tutorial del anticoagulante), la pulpa blanca (linfocitos que te ayudan) y el jefe: el virus de
+            // Epstein-Barr. Ver el plan del sistema circulatorio.
+            LevelManager manager = BuildLevelBase(220f, new LevelStyle
+            {
+                background = new Color(0.12f, 0.03f, 0.07f),
+                wall = new Color(0.4f, 0.08f, 0.16f),
+                floor = new Color(0.55f, 0.12f, 0.24f),
+                floorEdge = new Color(1f, 0.55f, 0.65f),
+                blob = new Color(0.85f, 0.25f, 0.35f, 0.28f),
+                decor = Decor.Blobs,
+                glow = new Color(1f, 0.45f, 0.55f, 0.45f),
+                backdrop = "Fondo_Bazo",
+                tissue = "Bazo",
+                pitLiquid = new Color(0.9f, 0.2f, 0.25f, 1f),
+                liquidDeep = new Color(0.42f, 0.03f, 0.08f, 0.95f),
+                liquidSurface = new Color(0.9f, 0.2f, 0.25f, 0.85f),
+                liquidOutline = new Color(0.2f, 0.02f, 0.05f, 1f),
+                liquidCrest = new Color(1f, 0.6f, 0.6f, 0.95f)
+            }, "NODO: El BAZO, el filtro de la sangre: revisa los glóbulos rojos, se come a los viejos y guarda plaquetas. " +
+               "Detectamos al virus de EPSTEIN-BARR. (Sin bazo se puede vivir... pero mejor cuidarlo.)",
+                new Vector2(96f, 3f), new Vector2(153f, 3.4f));
+
+            // Bacterias con cápsula: justo las que el bazo atrapa mejor.
+            Arena("Arena_1_Capsuladas", 8f, 18f, "El bazo es experto en atrapar bacterias con CÁPSULA, como el NEUMOCOCO y el MENINGOCOCO. Antibiótico.",
+                W(0.6f, E(prefabs.Neumococo, data.Neumococo, 2)),
+                W(1.0f, E(prefabs.Meningococo, data.Meningococo, 2, SpawnSide.Both)));
+            Platform(12f, 2.4f, 2.6f);
+            Platform(19f, 3.6f, 2.6f);
+
+            // ---------- PULPA ROJA: bandas de glóbulos ----------
+            Tip(22f, "PULPA ROJA", "PULPA ROJA: la sangre pasa despacito para que el bazo revise cada glóbulo. El piso es un río de glóbulos: " +
+                "en contra cuesta caminar (súbete a las repisas).");
+            BloodBelt(24f, 45f, 3.2f, -1);
+            Platform(28f, 2.6f, 2.4f);
+            Platform(33.5f, 4f, 2.4f);
+            Platform(39f, 2.8f, 2.4f);
+            EnemyAt(prefabs.SAureus, 36f, FloorY);
+            Platform(44f, 4.2f, 2f);
+            BloodBelt(48f, 60f, 3.4f, 1);
+            Checkpoint(50f);
+
+            // ---------- CORDONES del bazo: ranuras que se abren un momento (dash) ----------
+            Sign(Signpost.Kind.Warning, 60.4f, FloorY, "¡DASH!");
+            SplenicCord(64f, 0f);
+            SplenicCord(70.5f, 0.8f);
+            SplenicCord(77f, 1.6f);
+            Checkpoint(80f);
+
+            // ---------- El macrófago te persigue (no te atores) ----------
+            Node("MacrofagoDelBazo", 81f, FloorY).AddComponent<MacrophageChase>().Configure(81f, 120f, FloorY, 4.3f);
+            BloodBelt(84f, 94f, 2.6f, 1);
+            Platform(90f, 2.4f, 2.2f);
+            EnemyAt(prefabs.Neumococo, 92f, FloorY);
+            Platform(100f, 2.8f, 2.4f);
+            SplenicCord(106f, 0.3f);
+            EnemyAt(prefabs.SAureus, 111f, FloorY);
+            Platform(114f, 3f, 2.4f);
+            Checkpoint(121f);
+
+            // ---------- RESERVA DE PLAQUETAS: tutorial del anticoagulante ----------
+            Tip(122f, "PLAQUETAS", "RESERVA DE PLAQUETAS: aquí el bazo guarda casi un TERCIO de tus plaquetas. Amontonadas tapan el paso: " +
+                "solo el ANTICOAGULANTE (turquesa) las deshace. Cámbiale con {cambiar}.");
+            PlateletBlock(127f);
+            ArenaZone platelets = Arena("Arena_2_Plaquetas", 131f, 16f, "Bacterias escondidas entre las plaquetas. Antibiótico para ellas, anticoagulante para el montón.",
+                W(0.6f, E(prefabs.Meningococo, data.Meningococo, 2)),
+                W(1.0f, E(prefabs.Neumococo, data.Neumococo, 2, SpawnSide.Left), E(prefabs.SAureus, data.SAureus, 1)));
+            platelets.rightSpawnInset = 2.2f;
+            PlateletBlock(platelets.rightBound - 1.2f);
+            Platform(135f, 2.6f, 2.4f);
+            Platform(141f, 3.8f, 2.4f);
+            Checkpoint(150f);
+            Platform(154.7f, 3.2f, 2.2f);   // sobre el hueco de sangre
+
+            // ---------- PULPA BLANCA: los linfocitos te ayudan ----------
+            Tip(158f, "PULPA BLANCA", "PULPA BLANCA: aquí viven los LINFOCITOS, las defensas. Estos te van a ayudar con sus ANTICUERPOS.");
+            WhitePulpAlly(162f, FloorY);
+            WhitePulpAlly(171f, FloorY);
+            WhitePulpAlly(180f, FloorY);
+            Arena("Arena_3_PulpaBlanca", 162f, 24f, "¡Llegan bacterias! Tus linfocitos te cubren: pelea junto a ellos.",
+                W(0.6f, E(prefabs.Neumococo, data.Neumococo, 3, SpawnSide.Both)),
+                W(1.0f, E(prefabs.Meningococo, data.Meningococo, 3), E(prefabs.SAureus, data.SAureus, 2, SpawnSide.Left)),
+                W(1.0f, E(prefabs.Neumococo, data.Neumococo, 2), E(prefabs.Meningococo, data.Meningococo, 2, SpawnSide.Left)));
+            Platform(166f, 2.6f, 2.6f);
+            Platform(174f, 4f, 2.6f);
+            Platform(182f, 2.6f, 2.6f);
+            OralSerum(186f, FloorY + 1f);
+            Checkpoint(189f);
+
+            // ---------- Jefe: el virus de Epstein-Barr ----------
+            Tip(190.5f, "¡MONO!", "El virus de EPSTEIN-BARR (mononucleosis) se mete a los LINFOCITOS B. Si infecta a los tuyos, ¡cúralos!");
+            Arena("Arena_EpsteinBarr", 194f, 26f, null,
+                W(1.2f, E(prefabs.EpsteinBarrJefe, data.EpsteinBarrJefe, 1)));
+            Platform(198f, 2.6f, 2.6f);
+            Platform(206.5f, 4.2f, 2.6f);
+            Platform(215f, 2.6f, 2.6f);
+
+            if (manager != null)
+                SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Bazo a salvo! La sangre ya está filtrada. Sigue: ARTERIAS Y VENAS, en la nanocápsula.");
         }
 
         private void BuildSandbox()

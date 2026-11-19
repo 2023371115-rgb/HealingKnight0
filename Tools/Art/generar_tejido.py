@@ -107,6 +107,42 @@ PALETAS = {
         "relleno_mancha": (98, 12, 28),
         "moco": (255, 156, 166),
     },
+    # Bazo (sistema circulatorio): pulpa roja oscura, vino tinto, con brillo rosa (la pulpa blanca son los linfocitos).
+    "Bazo": {
+        "contorno": (40, 6, 16),
+        "cuerpo": (150, 30, 60),
+        "labio": (226, 104, 134),
+        "brillo": (255, 196, 210),
+        "mancha": (118, 22, 48),
+        "sombra": (126, 24, 50),
+        "relleno": (92, 14, 36),
+        "relleno_mancha": (74, 10, 30),
+        "moco": (240, 170, 196),
+    },
+    # Corazón: músculo rojo intenso (miocardio) con brillo coral.
+    "Corazon": {
+        "contorno": (50, 4, 10),
+        "cuerpo": (190, 34, 44),
+        "labio": (250, 120, 110),
+        "brillo": (255, 205, 190),
+        "mancha": (150, 22, 34),
+        "sombra": (160, 26, 38),
+        "relleno": (110, 14, 24),
+        "relleno_mancha": (90, 10, 20),
+        "moco": (255, 170, 160),
+    },
+    # Riñón: café rojizo con brillo amarillo claro (la orina filtrada).
+    "Rinon": {
+        "contorno": (44, 18, 10),
+        "cuerpo": (150, 70, 52),
+        "labio": (236, 170, 120),
+        "brillo": (255, 232, 170),
+        "mancha": (120, 54, 40),
+        "sombra": (126, 58, 42),
+        "relleno": (92, 40, 30),
+        "relleno_mancha": (76, 32, 24),
+        "moco": (250, 226, 140),
+    },
     # Médula: índigo-violeta con brillo turquesa (líquido cefalorraquídeo).
     "Medula": {
         # Borde de arriba turquesa: así las plataformas no se confunden con las fibras lavanda del fondo.
