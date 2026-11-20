@@ -52,6 +52,12 @@ El stick derecho apunta libre; el mouse, solo si lo activas en Controles.
 El mouse siempre sirve para clic izq. disparar, clic der. escudo, clic central herramienta y la rueda para cambiar de
 medicamento; para **apuntar** con él activa **Apuntar con mouse** en Controles.
 
+**Medicamentos de cada nivel:** solo traes los que **sirven** ahí (los efectivos contra algún enemigo del nivel; mínimo
+2). Los calcula `SceneSetup.AssignLevelLoadout` al regenerar, revisando los enemigos sueltos, las arenas, las oleadas de
+vuelo, los jefes y lo que ellos sueltan, y los guarda en `LevelManager.levelLoadout` (en la consola sale la lista de cada
+nivel). Pueden salir los genéricos, el regional del sistema y el antiparasitario. El HUD muestra todos en una fila (el
+actual, más grande) con las teclas para ir hacia adelante y hacia atrás.
+
 Los controles se definen en `Scripts/Gameplay/Player/PlayerControls.cs` (el menú está en `UI/ControlsScreen.cs`).
 En los mensajes de NODO escribe `{saltar}`, `{disparar}`, `{fijar}`, `{dash}`, `{bomba}`, `{escudo}`, `{medicamento}`,
 `{herramienta}`, `{mover}`, `{arriba}`, `{abajo}` o `{pausa}` y el juego pone la tecla o el botón que tenga el jugador.
@@ -796,6 +802,9 @@ de nivel `Tools/Audio/generar_ambientes.py` (bucles estéreo de 16 s; casi todo 
 para no chocar con la música).
 
 ## Música adaptativa (por capas)
+
+**Menú y mapa:** suenan con `Musica_Mapa` (si no existe, `Musica_Digestivo`). Al entrar ahí se apaga de golpe la canción
+del nivel (y los remates), y al entrar a un nivel se apaga la del mapa: nunca se oyen dos canciones encimadas.
 
 Cada nivel tiene su canción separada en 6 capas que suenan sincronizadas; el juego sube o baja cada una según lo
 que pasa (`Scripts/Gameplay/Audio/AdaptiveMusic.cs`):

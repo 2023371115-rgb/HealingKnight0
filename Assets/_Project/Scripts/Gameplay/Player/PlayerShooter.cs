@@ -108,6 +108,17 @@ namespace HealingKnight.Gameplay.Player
         public void BuildLoadout()
         {
             loadout.Clear();
+            // Si el nivel dice qué medicamentos sirven ahí, solo se traen esos (menos que recorrer = cambiar más rápido).
+            Level.LevelManager level = Level.LevelManager.Current;
+            if (level != null && level.LevelLoadout.Count > 0)
+            {
+                foreach (MedicationData m in level.LevelLoadout)
+                    if (m != null && !loadout.Contains(m)) loadout.Add(m);
+                selectedIndex = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, loadout.Count - 1));
+                NotifyChanged();
+                return;
+            }
+
             foreach (MedicationData m in controller.Config.genericMedications)
             {
                 if (m != null && !loadout.Contains(m)) loadout.Add(m);

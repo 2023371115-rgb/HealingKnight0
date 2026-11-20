@@ -29,7 +29,10 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private float exitX = 48f;
         [SerializeField] private float completeDelay = 2.5f;
 
-        [Header("Medicamento del nivel")]
+        [Header("Medicamentos del nivel")]
+        [Tooltip("Los medicamentos que traes en este nivel: SOLO los que sirven contra sus enemigos (lo calcula SceneSetup " +
+                 "al regenerar). Vacío = los de siempre (genéricos + el regional).")]
+        [SerializeField] private List<MedicationData> levelLoadout = new List<MedicationData>();
         [Tooltip("Un medicamento que solo se da en este nivel (ej. ANTIPARASITARIO en el Corazón, para el T. cruzi).")]
         [SerializeField] private MedicationData levelMedication;
         [Tooltip("El genérico que deja su lugar (si no lo traes, el del nivel se agrega al final).")]
@@ -48,6 +51,7 @@ namespace HealingKnight.Gameplay.Level
         public Rect LevelBounds => levelBounds;
         public float ExitX => exitX;
         public MedicationData LevelMedication => levelMedication;
+        public IReadOnlyList<MedicationData> LevelLoadout => levelLoadout;
         public MedicationData ReplacesMedication => replacesMedication;
 
         /// <summary>
@@ -94,7 +98,7 @@ namespace HealingKnight.Gameplay.Level
             }
 
             player.Motor.Teleport(spawnPoint);
-            if (levelMedication != null && player.Shooter != null) player.Shooter.BuildLoadout();
+            if ((levelMedication != null || levelLoadout.Count > 0) && player.Shooter != null) player.Shooter.BuildLoadout();
             player.Health.Died += OnPlayerDied;
             foreach (ArenaZone a in arenas) a.Cleared += OnArenaCleared;
 

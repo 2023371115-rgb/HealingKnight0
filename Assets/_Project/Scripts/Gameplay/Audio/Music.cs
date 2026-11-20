@@ -11,6 +11,7 @@ namespace HealingKnight.Gameplay.Audio
     /// Los archivos van en Assets/_Project/Audio/Resources/Music. Si no hay archivo, no suena nada.
     /// Al morir y recargar la escena, la música sigue sin reiniciarse.
     /// Si el nivel tiene música ADAPTATIVA (Resources/MusicAdaptive/&lt;escena&gt;), se usa esa (ver AdaptiveMusic).
+    /// El menú y el mapa usan Musica_Mapa (o la del digestivo si no existe).
     /// </summary>
     public static class Music
     {
@@ -52,10 +53,24 @@ namespace HealingKnight.Gameplay.Audio
             int cut = name.IndexOf('_');
             string system = cut > 0 ? name.Substring(0, cut) : name;
 
-            // Si el nivel tiene música adaptativa (por capas), esa manda y la pista normal se apaga.
+            // El menú principal y el mapa no son de un sistema: usan su pista (Musica_Mapa si existe; si no, la del
+            // digestivo, idea del equipo). ANTES se apaga la canción del nivel de donde vienes: si no, al salir al mapa
+            // (y en el final del juego, que sale en el mapa) se oían las dos encimadas.
+            if (name == "MainMenu" || name == "BodyMap")
+            {
+                AdaptiveMusic.Stop();
+                AudioClip map = Load("Musica_Mapa");
+                baseName = map != null ? "Musica_Mapa" : "Musica_Digestivo";
+                levelTrack = map != null ? map : Load(baseName);
+                PlayTrack(levelTrack);
+                return;
+            }
+
+            // Si el nivel tiene música adaptativa (por capas), esa manda y la pista normal se apaga de inmediato
+            // (con fundido se oían las dos un momento).
             if (AdaptiveMusic.TryPlayLevel(name))
             {
-                PlayTrack(null);
+                StopAll();
                 return;
             }
 
@@ -102,6 +117,13 @@ namespace HealingKnight.Gameplay.Audio
             }
             else next.Stop();
             current = clip != null ? next : null;
+        }
+
+        private static void StopAll()
+        {
+            if (a == null) return;
+            foreach (AudioSource s in new[] { a, b }) { s.Stop(); s.volume = 0f; }
+            current = null;
         }
 
         private static void EnsureSources()

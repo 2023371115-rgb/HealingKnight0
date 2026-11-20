@@ -111,6 +111,93 @@ namespace HealingKnight.EditorTools
 
         private readonly List<string> failed = new List<string>();
 
+        // ---------------------------------------------------------------- medicamentos de cada nivel
+
+        /// <summary>
+        /// Revisa TODO lo que hay en la escena recién armada (enemigos sueltos, arenas, oleadas de vuelo, jefes y lo que
+        /// ellos sueltan) y le da al nivel SOLO los medicamentos que sirven: los que son EFECTIVOS contra algún enemigo
+        /// (o, si un enemigo no tiene ninguno efectivo, los que su ficha marca como parciales). Mínimo 2, para que siga
+        /// habiendo que elegir. Así hay menos que recorrer al cambiar. Se guarda en LevelManager.levelLoadout.
+        /// Medicamentos posibles: los genéricos, el regional del sistema y el antiparasitario (los parásitos salen en todos).
+        /// </summary>
+        private void AssignLevelLoadout(string path)
+        {
+            LevelManager manager = Object.FindAnyObjectByType<LevelManager>();
+            if (manager == null || data.Table == null) return;
+            try
+            {
+                var pool = new List<HealingKnight.Core.Combat.MedicationData> { data.Antibiotico, data.Antiviral, data.Antiinflamatorio, data.Antihistaminico };
+                HealingKnight.Core.Combat.MedicationData regional =
+                    path.Contains("/Digestivo/") ? data.Antiparasitario :
+                    path.Contains("/Respiratorio/") ? data.Mucolitico :
+                    path.Contains("/Nervioso/") ? data.Anticonvulsivo :
+                    path.Contains("/Circulatorio/") ? data.Anticoagulante : null;
+                if (regional != null && !pool.Contains(regional)) pool.Add(regional);
+                if (!pool.Contains(data.Antiparasitario)) pool.Add(data.Antiparasitario);
+
+                var enemies = new HashSet<EnemyData>();
+                var seen = new HashSet<Object>();
+                foreach (MonoBehaviour mb in Object.FindObjectsByType<MonoBehaviour>(FindObjectsInactive.Include, FindObjectsSortMode.None))
+                    CollectEnemies(mb, enemies, seen, 0);
+
+                var needed = new HashSet<HealingKnight.Core.Combat.MedicationData>();
+                foreach (EnemyData e in enemies)
+                {
+                    var effective = new List<HealingKnight.Core.Combat.MedicationData>();
+                    foreach (var m in pool)
+                        if (m != null && e.Evaluate(data.Table, m) == HealingKnight.Core.Combat.Effectiveness.Effective) effective.Add(m);
+                    // "Cualquier cápsula le sirve" (LDL, el cálculo...): no obliga a traer nada en especial.
+                    if (effective.Count >= pool.Count) continue;
+                    foreach (var m in effective) needed.Add(m);
+                    if (effective.Count > 0 || e.weaknesses == null) continue;
+                    foreach (EnemyWeakness w in e.weaknesses)
+                        if (w != null && w.medication != null && pool.Contains(w.medication) && w.result != HealingKnight.Core.Combat.Effectiveness.Ineffective)
+                            needed.Add(w.medication);
+                }
+                var loadout = new List<HealingKnight.Core.Combat.MedicationData>();
+                foreach (var m in pool) if (m != null && needed.Contains(m)) loadout.Add(m);
+                foreach (var m in pool) { if (loadout.Count >= 2) break; if (m != null && !loadout.Contains(m)) loadout.Add(m); }
+
+                var so = new SerializedObject(manager);
+                SerializedProperty list = so.FindProperty("levelLoadout");
+                if (list == null) return;
+                list.arraySize = loadout.Count;
+                for (int i = 0; i < loadout.Count; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = loadout[i];
+                so.ApplyModifiedPropertiesWithoutUndo();
+                var names = new List<string>();
+                foreach (var m in loadout) names.Add(m.displayName);
+                Debug.Log($"[Setup] {Path.GetFileNameWithoutExtension(path)}: medicamentos del nivel → {string.Join(", ", names)} ({enemies.Count} tipos de enemigo)");
+            }
+            catch (System.Exception e)
+            {
+                Debug.LogWarning($"[Setup] No se pudieron calcular los medicamentos de {path}: {e.Message}");
+            }
+        }
+
+        /// <summary>Junta los EnemyData que puede haber en el nivel: lo que la escena tiene a mano y los prefabs a los que
+        /// apunta (con lo que esos sueltan), unos niveles hacia adentro.</summary>
+        private static void CollectEnemies(Object o, HashSet<EnemyData> enemies, HashSet<Object> seen, int depth)
+        {
+            if (o == null || depth > 3 || !seen.Add(o)) return;
+            if (o is EnemyData d) { enemies.Add(d); return; }
+            if (o is GameObject go)
+            {
+                foreach (MonoBehaviour c in go.GetComponentsInChildren<MonoBehaviour>(true)) CollectEnemies(c, enemies, seen, depth + 1);
+                return;
+            }
+            if (!(o is MonoBehaviour) || o is LevelManager) return;
+            var so = new SerializedObject(o);
+            SerializedProperty it = so.GetIterator();
+            while (it.Next(true))
+            {
+                if (it.propertyType != SerializedPropertyType.ObjectReference || it.objectReferenceValue == null) continue;
+                Object r = it.objectReferenceValue;
+                if (r is EnemyData ed) enemies.Add(ed);
+                else if (r is MonoBehaviour m && EditorUtility.IsPersistent(m)) CollectEnemies(m.gameObject, enemies, seen, depth + 1);
+                else if (r is GameObject g && EditorUtility.IsPersistent(g)) CollectEnemies(g, enemies, seen, depth + 1);
+            }
+        }
+
         private void CreateIfMissing(string path, System.Action build)
         {
             if (File.Exists(path)) return;
@@ -132,6 +219,7 @@ namespace HealingKnight.EditorTools
             {
                 build();
                 FinishSigns();
+                AssignLevelLoadout(path);
             }
             catch (System.Exception e)
             {

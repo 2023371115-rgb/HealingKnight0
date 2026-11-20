@@ -92,8 +92,8 @@ namespace HealingKnight.Gameplay.Audio
                 return true;
             }
 
-            Song song = LoadSong(sceneName);
             Stop();
+            Song song = LoadSong(sceneName);
             if (song == null) return false;
 
             EnsureRoot();
@@ -138,11 +138,20 @@ namespace HealingKnight.Gameplay.Audio
 
         public static void Stop()
         {
+            // Todo lo que suene de antes se calla YA (no al final del cuadro): canciones (también las que hayan
+            // quedado sueltas), el remate y el latido. Así nunca se enciman dos canciones al cambiar de escena.
+            if (root != null)
+                foreach (AudioSource src in root.GetComponentsInChildren<AudioSource>(true))
+                    if (src != null) { src.Stop(); if (src != heart) src.volume = 0f; }
             foreach (Song s in new[] { levelSong, bossSong })
                 if (s != null && s.root != null) UnityEngine.Object.Destroy(s.root);
+            if (root != null)
+                foreach (Transform child in root.transform)
+                    if (child.name.StartsWith("Cancion_")) UnityEngine.Object.Destroy(child.gameObject);
             levelSong = bossSong = current = null;
             bossOn = false;
-            if (heart != null) heart.volume = 0f;
+            duckFrom = duckUntil = 0.0;
+            if (heart != null) { heart.volume = 0f; if (heart.clip != null) heart.Play(); }
         }
 
         // ------------------------------------------------------------------ cargar y tocar

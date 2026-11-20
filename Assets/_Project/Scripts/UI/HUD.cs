@@ -23,8 +23,10 @@ namespace HealingKnight.UI
         private NodoBubble nodo;
         private UIBar healthBar;
         private UIBar shieldBar;
-        private TextMeshProUGUI medicationText;
+        private TextMeshProUGUI medicationText, medicationKeys;
         private Image medicationSwatch;
+        private RectTransform medicationRow;
+        private readonly System.Collections.Generic.List<Image> medicationChips = new System.Collections.Generic.List<Image>();
         private TextMeshProUGUI goText;
         private TextMeshProUGUI levelText;
         private TextMeshProUGUI controlsText;
@@ -101,7 +103,7 @@ namespace HealingKnight.UI
 
             // Panel superior izquierdo
             Image panel = UIFactory.Panel(root, "PlayerPanel", new Color(0f, 0f, 0f, 0.35f));
-            UIFactory.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -30f), new Vector2(560f, 170f));
+            UIFactory.Place(panel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -30f), new Vector2(560f, 226f));
 
             TextMeshProUGUI name = UIFactory.Text(panel.transform, "HEALING KNIGHT", 30f, UIFactory.TextColor, TextAlignmentOptions.Left);
             UIFactory.Place(name.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -10f), new Vector2(520f, 40f));
@@ -125,9 +127,16 @@ namespace HealingKnight.UI
             medicationText = UIFactory.Text(panel.transform, "", 28f, UIFactory.TextColor, TextAlignmentOptions.Left);
             UIFactory.Place(medicationText.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(66f, -120f), new Vector2(470f, 40f));
 
+            // Todos los medicamentos que traes en una fila (el actual, más grande) y qué teclas los cambian.
+            medicationRow = new GameObject("MedicationRow", typeof(RectTransform)).GetComponent<RectTransform>();
+            medicationRow.SetParent(panel.transform, false);
+            UIFactory.Place(medicationRow, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -170f), new Vector2(300f, 30f));
+            medicationKeys = UIFactory.Text(panel.transform, "", 18f, new Color(1f, 1f, 1f, 0.7f), TextAlignmentOptions.Left);
+            UIFactory.Place(medicationKeys.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -196f), new Vector2(520f, 26f));
+
             // Salud del cerebro (solo en niveles con BrainHealth, GDD 5.14)
             Image brainPanel = UIFactory.Panel(root, "BrainPanel", new Color(0.1f, 0f, 0.15f, 0.45f));
-            UIFactory.Place(brainPanel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -210f), new Vector2(560f, 70f));
+            UIFactory.Place(brainPanel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(30f, -266f), new Vector2(560f, 70f));
             TextMeshProUGUI brainLabel = UIFactory.Text(brainPanel.transform, "SALUD DEL CEREBRO", 22f, new Color(0.85f, 0.7f, 1f), TextAlignmentOptions.Left);
             UIFactory.Place(brainLabel.rectTransform, new Vector2(0f, 1f), new Vector2(0f, 1f), new Vector2(20f, -4f), new Vector2(520f, 28f));
             brainBar = UIFactory.Bar(brainPanel.transform, "Brain", new Color(0.7f, 0.4f, 1f), new Vector2(520f, 24f));
@@ -217,12 +226,37 @@ namespace HealingKnight.UI
             int index = player != null && player.Shooter != null ? player.Shooter.SelectedIndex + 1 : 0;
             medicationText.text = $"[{index}] {med.displayName}{(med.isRegional ? "  (regional)" : "")}";
             medicationSwatch.color = med.color;
+            RefreshMedicationRow();
+        }
+
+        private void RefreshMedicationRow()
+        {
+            if (medicationRow == null || player == null || player.Shooter == null) return;
+            var meds = player.Shooter.Loadout;
+            while (medicationChips.Count < meds.Count)
+                medicationChips.Add(UIFactory.Panel(medicationRow, "Medicamento" + medicationChips.Count, Color.white));
+            for (int i = 0; i < medicationChips.Count; i++)
+            {
+                Image chip = medicationChips[i];
+                bool used = i < meds.Count && meds[i] != null;
+                chip.gameObject.SetActive(used);
+                if (!used) continue;
+                bool selected = i == player.Shooter.SelectedIndex;
+                float size = selected ? 28f : 18f;
+                UIFactory.Place(chip.rectTransform, new Vector2(0f, 0.5f), new Vector2(0f, 0.5f), new Vector2(i * 34f, 0f), new Vector2(size, size));
+                Color c = meds[i].color;
+                chip.color = selected ? c : new Color(c.r, c.g, c.b, 0.55f);
+            }
+            medicationKeys.text = meds.Count > 1
+                ? PlayerControls.Format("{medicamento_anterior} ◀  cambiar  ▶ {medicamento}   ·   1-" + meds.Count + " directo")
+                : "";
         }
 
         // Si cambias de teclado a control (o cambias una tecla en el menú), la ayuda dice los botones nuevos.
         private void RefreshControlsHint()
         {
             if (controlsText != null) controlsText.text = PlayerControls.HelpLine();
+            RefreshMedicationRow();
         }
 
         private void ShowMessage(string text)
