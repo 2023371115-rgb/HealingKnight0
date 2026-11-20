@@ -18,6 +18,8 @@ namespace HealingKnight.Gameplay.Audio
     ///   - Al limpiar una arena suena el remate "Victoria" justo en el siguiente tiempo del compás.
     ///   - Con poca vida todo se escucha "bajo el agua" (filtro) y suena un latido de corazón.
     ///   - Con un jefe cambia a la canción "Sistema_Jefe" justo al empezar un compás, con una subida ("Entrada").
+    ///   - Mientras suena un remate (Victoria o Entrada) la canción BAJA de volumen, para que no se encimen; al vencer
+    ///     a un jefe, la canción del nivel regresa hasta que termina el remate de victoria.
     ///
     /// Archivos: Assets/_Project/Audio/Resources/MusicAdaptive/&lt;NombreDeLaEscena&gt;/ (Ambiente, Armonia, Melodia,
     /// Bajo, Percusion, Combate, Victoria, manifest.json). Los genera Tools/Audio/generar_musica_adaptativa.py.
@@ -56,7 +58,8 @@ namespace HealingKnight.Gameplay.Audio
         private static GameObject root;
         private static Song levelSong, bossSong, current;
         private static AudioSource stinger, heart;
-        private static float intensity, holdUntil, danger;
+        private static float intensity, holdUntil, danger, duck = 1f;
+        private static double duckFrom, duckUntil;   // cuándo suena un remate (reloj de audio): ahí baja la canción
         private static bool bossOn;
 
         /// <summary>Intensidad actual (0 calma … 1 pelea fuerte). Útil para depurar.</summary>
@@ -70,6 +73,8 @@ namespace HealingKnight.Gameplay.Audio
             levelSong = bossSong = current = null;
             stinger = heart = null;
             intensity = holdUntil = danger = 0f;
+            duck = 1f;
+            duckFrom = duckUntil = 0.0;
             bossOn = false;
         }
 
@@ -116,6 +121,7 @@ namespace HealingKnight.Gameplay.Audio
             {
                 stinger.clip = bossSong.entrance;
                 stinger.PlayScheduled(start - current.bar);
+                Duck(start - current.bar, start);
             }
             SwitchTo(bossSong, start);
             return true;
@@ -126,7 +132,7 @@ namespace HealingKnight.Gameplay.Audio
             bossOn = false;
             // Al salir de Play (o al cambiar de escena) los jefes avisan que terminaron cuando las bocinas ya no existen.
             if (!Alive(levelSong) || current == levelSong) return;
-            SwitchTo(levelSong, NextBar(current));
+            SwitchTo(levelSong, AfterStinger(current));
         }
 
         public static void Stop()
@@ -208,6 +214,21 @@ namespace HealingKnight.Gameplay.Audio
             return song.startDsp + Math.Ceiling(t / song.bar + 1e-6) * song.bar;
         }
 
+        /// <summary>El primer compás que empieza después del remate que esté sonando (o el siguiente compás si no hay).</summary>
+        private static double AfterStinger(Song song)
+        {
+            double at = NextBar(song);
+            if (song == null || duckUntil <= at) return at;
+            double t = Math.Max(0.0, duckUntil - song.startDsp);
+            return song.startDsp + Math.Ceiling(t / song.bar - 0.25) * song.bar;
+        }
+
+        private static void Duck(double from, double until)
+        {
+            duckFrom = from;
+            duckUntil = Math.Max(until, from);
+        }
+
         private static double NextBeat(Song song)
         {
             double now = AudioSettings.dspTime;
@@ -250,8 +271,19 @@ namespace HealingKnight.Gameplay.Audio
             if (current == null || current.victory == null || stinger == null) return;
             stinger.clip = current.victory;
             stinger.volume = CombatAudio.MusicLevel;
-            stinger.PlayScheduled(NextBeat(current));
+            double at = NextBeat(current);
+            stinger.PlayScheduled(at);
+            Duck(at, at + current.victory.length - 0.25);
             holdUntil = Time.time + 1f; // después del remate se calma pronto
+
+            // Si ya venía el regreso a la canción del nivel (se acaba de vencer a un jefe), que espere al remate.
+            if (current == levelSong && bossSong != null && levelSong.startDsp > AudioSettings.dspTime && Alive(bossSong))
+            {
+                double back = AfterStinger(bossSong);
+                Start(levelSong, back);
+                levelSong.gain = 0f;
+                bossSong.fadeOutAt = back;
+            }
         }
 
         // ------------------------------------------------------------------ cada cuadro
@@ -267,6 +299,8 @@ namespace HealingKnight.Gameplay.Audio
             float master = CombatAudio.MusicLevel;
             double now = AudioSettings.dspTime;
             float cutoff = Mathf.Lerp(22000f, 900f, danger);
+            bool ducking = now >= duckFrom - 0.05 && now < duckUntil;
+            duck = Mathf.MoveTowards(duck, ducking ? 0.22f : 1f, dt / (ducking ? 0.15f : 0.6f));
 
             foreach (Song song in new[] { levelSong, bossSong })
             {
@@ -284,7 +318,7 @@ namespace HealingKnight.Gameplay.Audio
                 }
                 for (int i = 0; i < song.sources.Length; i++)
                 {
-                    song.sources[i].volume = LayerWeight(i, intensity) * song.gain * master;
+                    song.sources[i].volume = LayerWeight(i, intensity) * song.gain * master * duck;
                     song.filters[i].cutoffFrequency = cutoff;
                 }
             }

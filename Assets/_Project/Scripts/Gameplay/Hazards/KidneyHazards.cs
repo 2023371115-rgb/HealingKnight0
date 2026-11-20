@@ -128,10 +128,10 @@ namespace HealingKnight.Gameplay.Hazards
     public class ShootSwitch : MonoBehaviour
     {
         [SerializeField] private float holdTime = 6f;
-        [SerializeField] private float radius = 0.8f;
+        [SerializeField] private float radius = 1f;
         [SerializeField] private string label = "";
 
-        private SpriteRenderer lamp, ring;
+        private SpriteRenderer lamp, ring, halo;
         private float timer, cooldown;
 
         public bool On { get; private set; }
@@ -145,6 +145,8 @@ namespace HealingKnight.Gameplay.Hazards
 
         private void Start()
         {
+            // Halo que late mientras está APAGADO, para que se vea que hay que dispararle.
+            halo = CodeSprites.Add(transform, CodeSprites.Glow, new Color(1f, 0.85f, 0.4f, 0.7f), 19, Vector2.zero, Vector2.one * 3f, "Halo");
             CodeSprites.Add(transform, CodeSprites.Circle, new Color(0.25f, 0.1f, 0.08f), 20, Vector2.zero, Vector2.one * 1.5f, "Contorno");
             ring = CodeSprites.Add(transform, CodeSprites.Circle, new Color(0.85f, 0.5f, 0.35f), 21, Vector2.zero, Vector2.one * 1.3f, "Valvula");
             lamp = CodeSprites.Add(transform, CodeSprites.Circle, new Color(0.4f, 0.2f, 0.15f), 22, Vector2.zero, Vector2.one * 0.7f, "Luz");
@@ -166,6 +168,11 @@ namespace HealingKnight.Gameplay.Hazards
         {
             float dt = Time.deltaTime;
             if (cooldown > 0f) cooldown -= dt;
+            if (halo != null)
+            {
+                halo.enabled = !On || holdTime <= 0f;
+                halo.transform.localScale = Vector3.one * (2.6f + 0.5f * Mathf.Sin(Time.time * 5f));
+            }
             if (On && holdTime > 0f)
             {
                 timer -= dt;

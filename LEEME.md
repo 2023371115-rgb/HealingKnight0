@@ -243,7 +243,9 @@ Si borras un PNG, ese objeto vuelve a dibujarse con figuras.
 5. **Sigmoide y recto:** huevos de oxiuro sueltos, arena de nidos y la **pelea final con la lombriz**: abajo del 35 % de
    vida llegan oleadas de **movimiento de masa** (`Hazards/MassWave.cs`) que barren el piso: súbete a las plataformas.
 
-Al reaparecer, el juego busca el piso sólido de esa X (así funciona también arriba, en el transverso).
+Al reaparecer, el juego busca en esa X el piso sólido (con espacio encima) **más parecido a la altura donde estabas parado
+por última vez**: así funciona arriba, en el transverso, y en la Boca no apareces encima de la encía del techo. Si ahí hay
+un hueco, busca un poco más atrás.
 Dibujos opcionales (si no están, se dibuja con figuras): `Art/Grueso/` → `Haustra`, `Bolo`, `Ulcera`, `Probiotico`,
 `Apendice`; `Art/Enemigos/Grueso/` → `Flora_Normal`, `Entamoeba_*`, `CDifficile_*` (+ `CDifficile_Espora`),
 `Oxiuro_*` y `OxiuroHuevo_Normal` / `_Abre`.
@@ -530,6 +532,8 @@ Sonidos nuevos: `Latido_Lub`, `Latido_Dub`, `Nave_Despegue`, `Coagulo_Disuelve`,
   hace más) y sus **linfocitos T** le pegan un golpazo al virus.
 
 ### Corazón (a pie, 230 u)
+En este nivel el **ANTIPARASITARIO** (para el T. cruzi) toma el lugar del antiinflamatorio (`LevelManager.levelMedication`
+/ `replacesMedication`: cualquier nivel puede dar un medicamento propio así).
 Todo va al ritmo del **latido** (68 por minuto): aurícula → **válvulas** que se abren justo después de cada latido
 (`BeatValve`; si se cierran contigo en medio te avientan) → ventrículo con el **techo que se aprieta** en la sístole
 (`SqueezingChamber`: quédate abajo en el latido) → **cuerdas tendinosas** que son trampolines (`ChordaeTrampoline`) →
@@ -548,8 +552,9 @@ cerebro: si llega, **EMBOLIA** y regresas al último punto de guardado (el coág
 ### Riñón (secreto, a pie, 232 u)
 **Entrada:** en el tramo 2 de Arterias y venas, la arteria **renal izquierda** (la rama angosta de arriba, x≈452) jala
 muy fuerte. Métete **encogida** ({fijar}) y déjate jalar: hay un riñoncito brillante adentro (NODO da una pista).
-- **Glomérulo:** un colador tapa el paso. Dispárale a las dos **arteriolas** (botones `ShootSwitch`, 6 s prendidos cada
-  uno): con las dos prendidas sube la **presión**, el colador se abre 4 s y te empuja (`GlomerulusFilter`).
+- **Glomérulo:** un colador tapa el paso. Dispárale a las dos **arteriolas** (botones `ShootSwitch`, 9 s prendidos cada
+  uno; brillan y laten mientras están apagados): la AFERENTE desde el piso y la EFERENTE desde la plataforma. Con las dos
+  prendidas sube la **presión**, el colador se abre 4 s y te empuja (`GlomerulusFilter`).
 - **Asa de Henle:** se **nada** (`BuoyancyZone`): {saltar} da una brazada (cerca de la superficie, un salto fuera del
   agua), mantener abajo te hunde. Entre más hondo está más **salada** y **flotas más**. Pasa por debajo de la pared.
 - **Túbulo colector:** el botón **ADH** (la hormona) sube el agua y tú con ella para llegar a la orilla de arriba
@@ -780,9 +785,9 @@ que pasa (`Scripts/Gameplay/Audio/AdaptiveMusic.cs`):
 | Enemigos a menos de 11 unidades | + Bajo |
 | Arena en pelea | + Percusión, Melodía completa |
 | Muchos enemigos / jefe | + Combate |
-| Arena limpiada | remate "Victoria" en el siguiente tiempo del compás, y luego se calma |
+| Arena limpiada | remate "Victoria" en el siguiente tiempo del compás (la canción baja mientras suena), y luego se calma |
 | Poca vida (35 % o menos) | todo "bajo el agua" (filtro) + latido de corazón |
-| Jefe | cambia a la canción `<Sistema>_Jefe` al empezar un compás, con una subida ("Entrada") |
+| Jefe | cambia a la canción `<Sistema>_Jefe` al empezar un compás, con una subida ("Entrada"); al vencerlo, la del nivel regresa cuando acaba el remate |
 
 La intensidad sube en ~1 s, espera 3 s y baja en ~4 s (para que no "parpadee").
 

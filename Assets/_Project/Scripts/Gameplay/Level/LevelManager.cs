@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using HealingKnight.Core.Combat;
 using HealingKnight.Core.Flow;
 using HealingKnight.Gameplay.Movement;
 using HealingKnight.Gameplay.Player;
@@ -28,6 +29,12 @@ namespace HealingKnight.Gameplay.Level
         [SerializeField] private float exitX = 48f;
         [SerializeField] private float completeDelay = 2.5f;
 
+        [Header("Medicamento del nivel")]
+        [Tooltip("Un medicamento que solo se da en este nivel (ej. ANTIPARASITARIO en el Corazón, para el T. cruzi).")]
+        [SerializeField] private MedicationData levelMedication;
+        [Tooltip("El genérico que deja su lugar (si no lo traes, el del nivel se agrega al final).")]
+        [SerializeField] private MedicationData replacesMedication;
+
         [Header("Mensajes")]
         [SerializeField, TextArea] private string introMessage;
         [SerializeField] private string completeMessage = "¡ZONA DESINFECTADA!";
@@ -40,6 +47,8 @@ namespace HealingKnight.Gameplay.Level
         public static LevelManager Current { get; private set; }
         public Rect LevelBounds => levelBounds;
         public float ExitX => exitX;
+        public MedicationData LevelMedication => levelMedication;
+        public MedicationData ReplacesMedication => replacesMedication;
 
         /// <summary>
         /// Cosas que impiden terminar el nivel aunque llegues a la salida (la persecución de la lombriz hasta que huye).
@@ -85,14 +94,20 @@ namespace HealingKnight.Gameplay.Level
             }
 
             player.Motor.Teleport(spawnPoint);
+            if (levelMedication != null && player.Shooter != null) player.Shooter.BuildLoadout();
             player.Health.Died += OnPlayerDied;
             foreach (ArenaZone a in arenas) a.Cleared += OnArenaCleared;
 
             if (!string.IsNullOrEmpty(introMessage)) GameplayEvents.RaiseMessage(introMessage);
         }
 
+        private float lastSafeY = float.NaN;
+
         private void Update()
         {
+            // Recuerda a qué altura estabas parado por última vez: al reaparecer se busca el piso más parecido (y no,
+            // por ejemplo, la parte de ARRIBA de la encía del techo en la Boca).
+            if (player != null && player.Health.IsAlive && player.Motor.IsGrounded) lastSafeY = player.Position.y;
             if (completed || player == null || !player.Health.IsAlive) return;
             if (player.Position.x < exitX) return;
             if (ExitBlockers.Count > 0) return;   // algo del nivel todavía no termina (ej. la lombriz no ha huido)
@@ -134,23 +149,42 @@ namespace HealingKnight.Gameplay.Level
             }
 
             // Reaparece cayendo desde arriba, un poco antes de la arena para que esta vuelva a activarse al avanzar.
-            player.Respawn(new Vector2(respawnX - 1f, RespawnHeight(respawnX - 1f)));
+            Vector2 at = RespawnPoint(respawnX - 1f);
+            player.Respawn(at);
         }
 
         /// <summary>
-        /// Altura para reaparecer en esa X: un poco arriba del piso sólido que haya ahí (no de una plataforma de un solo
-        /// sentido). Así funciona también en partes altas del nivel (el colon transverso está arriba).
+        /// Dónde reaparecer cerca de esa X: un poco arriba de un piso sólido (no de una plataforma de un solo sentido)
+        /// que tenga espacio libre encima, el MÁS PARECIDO a la altura donde estabas parado antes de morir. Así no
+        /// apareces encima de un techo (la encía de la Boca) y funciona en partes altas (el colon transverso). Si ahí
+        /// no hay piso razonable (un hueco), busca un poco más atrás.
         /// </summary>
-        private float RespawnHeight(float x)
+        private Vector2 RespawnPoint(float x)
         {
-            float fallback = spawnPoint.y + 3f;
+            float reference = float.IsNaN(lastSafeY) ? spawnPoint.y : lastSafeY;
+            for (int step = 0; step <= 12; step++)
+            {
+                float tryX = x - step * 0.75f;
+                if (FloorNear(tryX, reference, out float y) && y < reference + 4f) return new Vector2(tryX, y + 2.5f);
+            }
+            return new Vector2(x, FloorNear(x, reference, out float any) ? any + 2.5f : spawnPoint.y + 3f);
+        }
+
+        private bool FloorNear(float x, float reference, out float floorY)
+        {
+            floorY = 0f;
+            bool found = false;
+            float best = float.MaxValue;
             RaycastHit2D[] hits = Physics2D.RaycastAll(new Vector2(x, levelBounds.yMax + 30f), Vector2.down, levelBounds.height + 60f, 1 << PhysicsLayers.Ground);
             foreach (RaycastHit2D h in hits)
             {
-                if (h.collider == null || h.collider.usedByEffector) continue;
-                return Mathf.Max(fallback, h.point.y + 2.5f);
+                if (h.collider == null || h.collider.usedByEffector || h.point.y < levelBounds.yMin) continue;
+                // Tiene que caber el jugador encima (si no, es la parte de abajo de algo).
+                if (Physics2D.OverlapBox(h.point + new Vector2(0f, 1.3f), new Vector2(0.6f, 2.2f), 0f, 1 << PhysicsLayers.Ground) != null) continue;
+                float d = Mathf.Abs(h.point.y - reference);
+                if (d < best) { best = d; floorY = h.point.y; found = true; }
             }
-            return fallback;
+            return found;
         }
 
         private IEnumerator CompleteLevel()

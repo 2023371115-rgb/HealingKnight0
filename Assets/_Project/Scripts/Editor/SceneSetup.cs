@@ -5053,6 +5053,13 @@ namespace HealingKnight.EditorTools
                "Detectamos endocarditis... y algo escondido en el músculo.",
                 new Vector2(80f, 12f));
 
+            // Aquí el ANTIPARASITARIO (para el T. cruzi) toma el lugar del antiinflamatorio, que en el corazón no sirve de mucho.
+            if (manager != null)
+            {
+                SetupUtils.SetRef(manager, "levelMedication", data.Antiparasitario);
+                SetupUtils.SetRef(manager, "replacesMedication", data.Antiinflamatorio);
+            }
+
             // El latido manda en todo el nivel (más suave que en el vuelo: aquí vas a pie).
             Heartbeat beat = new GameObject("Latido").AddComponent<Heartbeat>();
             beat.Configure(68f);
@@ -5114,7 +5121,7 @@ namespace HealingKnight.EditorTools
             HeartValveAt(174f, "VÁLVULA AÓRTICA: por aquí saliste disparado al empezar Arterias y venas.");
 
             // ---------- Miocardio: el jefe ----------
-            Tip(179f, "MIOCARDIO", "MIOCARDIO: el músculo del corazón. Algo se mueve ADENTRO de él...");
+            Tip(179f, "MIOCARDIO", "MIOCARDIO: el músculo del corazón. Algo se mueve ADENTRO de él... Ten listo el ANTIPARASITARIO ({cambiar}).");
             Arena("Arena_TCruzi", 184f, 30f, null,
                 W(1.2f, E(prefabs.TCruziJefe, data.TCruziJefe, 1)));
             Chordae(189f, FloorY);
@@ -5336,9 +5343,11 @@ namespace HealingKnight.EditorTools
                 W(1.0f, E(prefabs.EColi, data.EColi, 2, SpawnSide.Both)));
             Platform(12f, 2.6f, 2.6f);
             Tip(25f, "GLOMÉRULO", "GLOMÉRULO: un colador de vasitos. Dispárale a las DOS ARTERIOLAS: cuando las dos brillen sube la PRESIÓN y el colador se abre.");
-            ShootSwitch afferent = SwitchAt(30f, FloorY + 1.6f, 6f, "AFERENTE");
-            Platform(35f, 4f, 2.4f);
-            ShootSwitch efferent = SwitchAt(36.5f, FloorY + 7.2f, 6f, "EFERENTE");
+            // Los dos botones quedan a la altura de tu disparo: el AFERENTE desde el piso y el EFERENTE desde la plataforma
+            // (antes estaba tan alto que quedaba fuera de la pantalla). Duran 9 s prendidos.
+            ShootSwitch afferent = SwitchAt(30f, FloorY + 1.2f, 9f, "AFERENTE");
+            Platform(34.5f, 3.4f, 3f);
+            ShootSwitch efferent = SwitchAt(38f, FloorY + 4.4f, 9f, "EFERENTE");
             Node("Glomerulo", 41f, FloorY).AddComponent<GlomerulusFilter>().Configure(afferent, efferent, 12f);
             Checkpoint(44f);
 

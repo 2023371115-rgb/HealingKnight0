@@ -119,6 +119,15 @@ namespace HealingKnight.Gameplay.Player
 
             if (regional != null && !loadout.Contains(regional)) loadout.Add(regional);
 
+            // Medicamento propio del nivel: toma el lugar de un genérico que ahí no sirve.
+            Level.LevelManager stage = Level.LevelManager.Current;
+            if (stage != null && stage.LevelMedication != null && !loadout.Contains(stage.LevelMedication))
+            {
+                int slot = stage.ReplacesMedication != null ? loadout.IndexOf(stage.ReplacesMedication) : -1;
+                if (slot >= 0) loadout[slot] = stage.LevelMedication;
+                else loadout.Add(stage.LevelMedication);
+            }
+
             selectedIndex = Mathf.Clamp(selectedIndex, 0, Mathf.Max(0, loadout.Count - 1));
             NotifyChanged();
         }
