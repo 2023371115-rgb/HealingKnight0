@@ -439,7 +439,7 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
 - `ShipMissile`: en la nave, {bomba} lanza un **MISIL** en vez de la bomba (el HUD dice MISILES). Sale hacia adelante,
   acelera, **busca** al enemigo más cercano que tenga enfrente y revienta con el medicamento que traes (daño de bomba ×1.3,
   radio ×1.15); la onda borra las balas enemigas cercanas. Gasta las mismas cargas que las bombas.
-- `FlightPowerUp` (en `FlightPowerUps.cs`): **power-ups** que entran por la derecha cuando la pantalla llega a su X y se
+- `FlightPowerUp` (con `ShipPowerUps` y `FlightAlly`): **power-ups** que entran por la derecha cuando la pantalla llega a su X y se
   quedan atrás despacio; la nave los agarra al tocarlos (si mueres, los de adelante vuelven a salir).
   **TRIPLE DISPARO** (burbuja dorada): 3 cápsulas en abanico por 15 s (otro suma tiempo, hasta 30; aro dorado que
   parpadea al final). **+MISILES** (burbuja roja): +3, aunque pases del máximo (hasta 15). **GLÓBULO BLANCO** (célula
@@ -451,7 +451,7 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
   (turquesa, como la heparina; amenaza `Coagulo`). Completo = la pantalla se detiene hasta disolverlo; pegado a la pared =
   te lastima si lo tocas. Con `formTime` se va **formando**: al entrar a la pantalla sus dos mitades crecen desde las
   paredes; si lo disuelves antes (o cruzas el hueco) pasas, si se cierra se vuelve completo.
-- `FlightSpeedPad` (en `FlightSpeed.cs`): **anillos de velocidad**. **ADRENALINA** (naranja, flechas hacia adelante):
+- `FlightSpeedPad` (con `SpeedBanner` y `ThickBloodZone`): **anillos de velocidad**. **ADRENALINA** (naranja, flechas hacia adelante):
   2.6 s con la pantalla ×1.75, la nave invencible y **embistiendo** enemigos (golpe de 40), pero el corazón late +30 y
   disparan más seguido. **BETABLOQUEADOR** (azul, flechas hacia atrás): 4 s con todo ×0.5 y el corazón −26 (antes de las
   partes difíciles). Si mueres y regresas antes del anillo, vuelve a salir.
@@ -638,7 +638,7 @@ Toda la interfaz usa un lienzo de 1920 x 1080 que **nunca se aplasta**: en venta
 
 El menú principal y el mapa del cuerpo se dibujan por código con el estilo del juego (`UI/CartoonUI.cs`): formas
 redondas con contorno grueso, brillo y sombra, letra **Titan One** (`Art/UI/Fuentes`, licencia OFL libre), botones que se
-inflan y rebotan (`UI/CartoonButton.cs`) y microbios de los niveles flotando de fondo (`UI/UIMotion.cs`).
+inflan y rebotan (`UI/CartoonButton.cs`) y microbios de los niveles flotando de fondo (`UI/FloatingMicrobes.cs`, con `UIBob` y `UIFadeIn`).
 - Menú: fondo pintado (el del estómago, o `Art/UI/Portada.png` si existe), título que flota (o `Art/UI/Logo.png`),
   prólogo de NODO que se escribe letra por letra.
 - Mapa: una tarjeta por sistema con la pintura de su primer órgano, número en insignia, estado en pastilla y cada nivel
@@ -800,6 +800,11 @@ Los sonidos que pasan fuera de la pantalla se oyen más bajo y, si están muy le
 Los efectos los hace `Tools/Audio/generar_sonidos.py` (ahora con filtros, FM, reverb y eco por sonido) y los ambientes
 de nivel `Tools/Audio/generar_ambientes.py` (bucles estéreo de 16 s; casi todo ruido y eventos sueltos, sin notas,
 para no chocar con la música).
+
+## Una clase por archivo (importante)
+Unity solo puede guardar en una escena o prefab un componente cuyo archivo se llame **igual que la clase**. Si un archivo
+trae varias clases `MonoBehaviour`, solo la primera funciona y las demás quedan como **Missing Script** al guardar
+(así desaparecieron los botones del Riñón). Por eso cada componente va en su propio `<Clase>.cs`.
 
 ## Música adaptativa (por capas)
 

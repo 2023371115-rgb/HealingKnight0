@@ -398,10 +398,4 @@ namespace HealingKnight.Gameplay.Audio
 
         private static float Ramp(float from, float to, float x) => Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(from, to, x));
     }
-
-    /// <summary>Va en el objeto "MusicaAdaptativa" (lo crea AdaptiveMusic): lo actualiza cada cuadro.</summary>
-    public class AdaptiveMusicDriver : MonoBehaviour
-    {
-        private void Update() => AdaptiveMusic.Tick();
-    }
 }
