@@ -1760,8 +1760,8 @@ namespace HealingKnight.EditorTools
             SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 2.6f), new Vector2(1.1f, 1.1f));
             BossPoses stoneArt = AddBossPoses(root, "Calculo", "Calculo", 5.6f, new Vector2(0.5f, 0.5f), 11);   // si hay dibujo, lo pone KidneyStoneBoss
             var stone = root.AddComponent<KidneyStoneBoss>();
-            // Las grietas brillan donde están dibujadas (medido en Calculo_Normal.png: izquierda, arriba y abajo a la derecha).
-            if (stoneArt != null) stone.ConfigureCracks(new Vector2(-1.3f, -0.52f), new Vector2(0.25f, 1.16f), new Vector2(0.93f, -1.38f));
+            // Las grietas brillan donde están dibujadas (medido en Calculo_Normal.png: izquierda, arriba a la derecha y abajo a la derecha).
+            if (stoneArt != null) stone.ConfigureCracks(new Vector2(-1.51f, 0.03f), new Vector2(1.05f, 0.97f), new Vector2(1.37f, -1.31f));
             return root;
         }
 
