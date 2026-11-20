@@ -1,0 +1,20 @@
+{
+    "name": "HealingKnight.UI",
+    "rootNamespace": "HealingKnight.UI",
+    "references": [
+        "HealingKnight.Core",
+        "HealingKnight.Gameplay",
+        "Unity.InputSystem",
+        "Unity.TextMeshPro",
+        "UnityEngine.UI"
+    ],
+    "includePlatforms": [],
+    "excludePlatforms": [],
+    "allowUnsafeCode": false,
+    "overrideReferences": false,
+    "precompiledReferences": [],
+    "autoReferenced": true,
+    "defineConstraints": [],
+    "versionDefines": [],
+    "noEngineReferences": false
+}

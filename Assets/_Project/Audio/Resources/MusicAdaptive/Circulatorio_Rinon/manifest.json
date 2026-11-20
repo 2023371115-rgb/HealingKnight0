@@ -1,0 +1,15 @@
+{
+  "level": "Circulatorio_Rinon",
+  "bpm": 108,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 3136000,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

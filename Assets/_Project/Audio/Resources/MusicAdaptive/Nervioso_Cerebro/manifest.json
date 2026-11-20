@@ -1,0 +1,15 @@
+{
+  "level": "Nervioso_Cerebro",
+  "bpm": 174,
+  "bars": 32,
+  "sampleRate": 44100,
+  "samples": 1946483,
+  "layers": [
+    "Ambiente",
+    "Armonia",
+    "Melodia",
+    "Bajo",
+    "Percusion",
+    "Combate"
+  ]
+}

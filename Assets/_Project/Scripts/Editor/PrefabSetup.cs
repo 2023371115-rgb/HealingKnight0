@@ -1,0 +1,2115 @@
+using HealingKnight.Gameplay.Combat;
+using HealingKnight.Gameplay.Enemies;
+using HealingKnight.Gameplay.Hazards;
+using HealingKnight.Gameplay.Level;
+using HealingKnight.Gameplay.Movement;
+using HealingKnight.Gameplay.Player;
+using UnityEditor;
+using UnityEngine;
+using UnityEngine.Rendering;
+
+namespace HealingKnight.EditorTools
+{
+    /// <summary>
+    /// Crea los prefabs con figuras de placeholder. Cuando tengas el arte, reemplaza lo que está
+    /// dentro de "Visual" por tus piezas: los scripts de la raíz no cambian.
+    /// </summary>
+    internal class PrefabSetup
+    {
+        public const string Folder = "Assets/_Project/Prefabs";
+
+        public Projectile Capsule, EnemyProjectile;
+        public MedicineBomb Bomb;
+        public PlayerController Player;
+        public EnemyHealth HPyloriMadre, HPyloriUreasa, Anisakis, Bezoar;
+        public EnemyHealth Tenia, Proglotido, LombrizHuye, Flora;
+        public EnemyHealth HPylori, Giardia, Rotavirus, Entamoeba, CDifficile, Oxiuro, SMutans;
+        public EnemyHealth LombrizDelgado, LombrizGrueso;
+        public EnemyHealth Rinovirus, Polen, SAureus, Pertussis, Neumococo, Influenza, Tuberculosis;
+        public EnemyHealth Mucosidad, Inflamacion, Colmena, RabiaJefe, TosFerinaReina;
+        public EnemyHealth SPyogenes, SarroJefe, AbscesoJefe, ToxoplasmaJefe;
+        public EnemyHealth Poliovirus, Meningococo, Herpes, Rabia;
+        public EnemyHealth SAureusCoco, OxiuroHuevo;
+        public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
+        public EnemyHealth PlaquetasBloqueo, EpsteinBarrJefe;
+        public EnemyHealth SViridans, VegetacionBloqueo, TCruziJefe;
+        public EnemyHealth Embolo, EColi, CalculoJefe, Leptospira, Cercaria, ProteusBacteria, ProteusColoniaJefe;
+        public HealthyNeuron Neuron;
+        public EnemyHealth RedNeuron;
+        public LightningStorm Storm;
+        public AcidPool Acid;
+        public SecretPassage Secret;
+        public SecretTooth Tooth;
+
+        private readonly DataSetup data;
+
+        public PrefabSetup(DataSetup data)
+        {
+            this.data = data;
+        }
+
+        public void Run()
+        {
+            Capsule = LoadOrBuild<Projectile>($"{Folder}/Projectiles/Capsule.prefab", () => BuildProjectile("Capsule", new Vector2(0.55f, 0.28f)));
+            EnemyProjectile = LoadOrBuild<Projectile>($"{Folder}/Projectiles/EnemyProjectile.prefab", () => BuildProjectile("EnemyProjectile", new Vector2(0.4f, 0.4f)));
+            Bomb = LoadOrBuild<MedicineBomb>($"{Folder}/Projectiles/MedicineBomb.prefab", BuildBomb);
+            Player = LoadOrBuild<PlayerController>($"{Folder}/Player/HealingKnight.prefab", BuildPlayer);
+
+            HPylori = Enemy("Bacteria_HPylori", data.HPylori, EnemyShape.Capsule);
+            Giardia = Enemy("Parasito_Giardia", data.Giardia, EnemyShape.Pear);
+            Rotavirus = Enemy("Virus_Rotavirus", data.Rotavirus, EnemyShape.Wheel);
+            Entamoeba = Enemy("Parasito_Entamoeba", data.Entamoeba, EnemyShape.Blob);
+            CDifficile = Enemy("Bacteria_CDifficile", data.CDifficile, EnemyShape.Capsule);
+            Oxiuro = Enemy("Parasito_Oxiuro", data.Oxiuro, EnemyShape.Long);
+            SMutans = Enemy("Bacteria_SMutans", data.SMutans, EnemyShape.Blob);
+
+            // Estómago (rediseño): colonia madre, H. pylori con ureasa, anisakis y el jefe Bezoar.
+            HPyloriMadre = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_HPylori_Madre.prefab", () =>
+            {
+                GameObject go = BuildEnemy("Bacteria_HPylori_Madre", data.HPyloriMadre, EnemyShape.Blob);
+                // Se infla el dibujo (Body), no "Visual": a "Visual" lo voltea el cerebro según hacia dónde mira.
+                go.AddComponent<ColonySpawner>().Configure(HPylori, data.HPylori, go.transform.Find("Visual/Body"));
+                return go;
+            });
+            HPyloriUreasa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_HPylori_Ureasa.prefab", () =>
+            {
+                GameObject go = BuildEnemy("Bacteria_HPylori_Ureasa", data.HPyloriUreasa, EnemyShape.Capsule);
+                go.AddComponent<UreaseAura>();
+                return go;
+            });
+            Anisakis = Enemy("Parasito_Anisakis", data.Anisakis, EnemyShape.Long);
+            Bezoar = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Bezoar_Estomago.prefab", BuildBezoar);
+
+            // Intestino delgado (rediseño): proglótido suelto, la tenia y la lombriz que huye.
+            Proglotido = Enemy("Parasito_Proglotido", data.Proglotido, EnemyShape.Long);
+            Tenia = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Tenia_Delgado.prefab", BuildTenia);
+            LombrizHuye = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_Persecucion.prefab", BuildWormChase);
+
+            // Intestino grueso: flora buena (necesita C. difficile ya hecho).
+            Flora = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_Flora.prefab", BuildFlora);
+
+            LombrizDelgado = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_IntestinoDelgado.prefab",
+                () => BuildLombriz("Lombriz_IntestinoDelgado", 0.5f, null, null,
+                    "¡LA LOMBRIZ! Usa Antiparasitario. Salta sobre su embestida.",
+                    "NODO: ¡Escapa hacia el intestino grueso! Síguela."));
+            LombrizGrueso = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Lombriz_IntestinoGrueso.prefab",
+                () => BuildLombriz("Lombriz_IntestinoGrueso", 0f, Oxiuro, data.Oxiuro,
+                    "NODO: Aquí se esconde. Acaba con ella.",
+                    "NODO: Foco eliminado. Fórmula 1 obtenida."));
+
+            // Sistema Respiratorio
+            Rinovirus = Enemy("Virus_Rinovirus", data.Rinovirus, EnemyShape.Round);
+            Polen = Enemy("Alergeno_Polen", data.Polen, EnemyShape.Pollen);
+            SAureus = Enemy("Bacteria_SAureus", data.SAureus, EnemyShape.Cluster);
+            Pertussis = Enemy("Bacteria_Pertussis", data.Pertussis, EnemyShape.Capsule);
+            Neumococo = Enemy("Bacteria_Neumococo", data.Neumococo, EnemyShape.Diplo);
+            Influenza = Enemy("Virus_Influenza", data.Influenza, EnemyShape.Round);
+            Tuberculosis = Enemy("Bacteria_Tuberculosis", data.Tuberculosis, EnemyShape.Capsule);
+
+            // Crías: el racimo suelta cocos; el oxiuro deja un huevo y del huevo nace otro oxiuro.
+            SAureusCoco = Enemy("Bacteria_SAureus_Coco", data.SAureusCoco, EnemyShape.Cluster);
+            OxiuroHuevo = Enemy("Parasito_Oxiuro_Huevo", data.OxiuroHuevo, EnemyShape.Egg);
+            LinkChild(data.SAureus, SAureusCoco, data.SAureusCoco);
+            LinkChild(data.Oxiuro, OxiuroHuevo, data.OxiuroHuevo);
+            LinkChild(data.OxiuroHuevo, Oxiuro, data.Oxiuro);
+            Mucosidad = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Mucosidad.prefab", () => BuildObstacle("Bloqueo_Mucosidad", data.Mucosidad, true));
+            Inflamacion = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Inflamacion.prefab", () => BuildObstacle("Bloqueo_Inflamacion", data.Inflamacion, false));
+
+            // Sistema Nervioso
+            Poliovirus = Enemy("Virus_Poliovirus", data.Poliovirus, EnemyShape.Round);
+            Meningococo = Enemy("Bacteria_Meningococo", data.Meningococo, EnemyShape.Diplo);
+            Herpes = Enemy("Virus_Herpes", data.Herpes, EnemyShape.Round);
+            Rabia = Enemy("Virus_Rabia", data.Rabia, EnemyShape.Bullet);
+            Neuron = LoadOrBuild<HealthyNeuron>($"{Folder}/Level/Neurona_Sana.prefab", BuildNeuron);
+            RedNeuron = LoadOrBuild<EnemyHealth>($"{Folder}/Level/Neurona_Hiperexcitada.prefab", BuildRedNeuron);
+            if (Neuron != null && RedNeuron != null)
+            {
+                // La neurona sana se infecta y se vuelve roja (referencia cruzada entre los dos prefabs).
+                SetupUtils.SetRef(Neuron, "infectedPrefab", RedNeuron);
+                EditorUtility.SetDirty(Neuron.gameObject);
+            }
+            Storm = LoadOrBuild<LightningStorm>($"{Folder}/Hazards/Tormenta_Electrica.prefab", BuildStorm);
+
+            Colmena = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Colmena_Pulmones.prefab", BuildHive);
+            RabiaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Rabia_Hipocampo.prefab", BuildRabiesBoss);
+            TosFerinaReina = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/TosFerina_Traquea.prefab", BuildPertussisQueen);
+            SPyogenes = Enemy("Bacteria_SPyogenes", data.SPyogenes, EnemyShape.Diplo);
+            SarroJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Sarro_Boca.prefab", BuildSarro);
+            AbscesoJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Absceso_Amigdalas.prefab", BuildAbscess);
+            ToxoplasmaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Toxoplasma_Ojo.prefab", BuildToxoplasma);
+
+            // Sistema circulatorio (vuelo): bolitas de colesterol LDL y células espumosas (las suelta la placa de ateroma).
+            Ldl = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Lipido_LDL.prefab", BuildLdl);
+            CelulaEspumosa = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Celula_Espumosa.prefab", BuildFoamCell);
+            Esporozoito = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Plasmodium_Esporozoito.prefab", BuildSporozoite);
+            Merozoito = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Plasmodium_Merozoito.prefab", BuildMerozoite);
+            // Bazo: montón de plaquetas que tapa el paso (solo el anticoagulante) y el jefe Epstein-Barr.
+            PlaquetasBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Plaquetas_Pie.prefab", () => BuildObstacle("Bloqueo_Plaquetas_Pie", data.Plaquetas, true, false));
+            EpsteinBarrJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/EpsteinBarr_Bazo.prefab", BuildEpsteinBarr);
+            // Corazón: estreptococo viridans, vegetación en la válvula y el jefe T. cruzi.
+            SViridans = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_SViridans.prefab", BuildSViridans);
+            VegetacionBloqueo = LoadOrBuild<EnemyHealth>($"{Folder}/Hazards/Bloqueo_Vegetacion.prefab", () => BuildObstacle("Bloqueo_Vegetacion", data.Vegetacion, true, false));
+            TCruziJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/TCruzi_Corazon.prefab", BuildTCruzi);
+            Embolo = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Coagulo_Embolo.prefab", BuildEmbolus);
+            // Riñón (secreto): E. coli y el cálculo gigante.
+            EColi = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_EColi.prefab", BuildEColi);
+            CalculoJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Calculo_Rinon.prefab", BuildKidneyStone);
+            // Riñón acuático: nadadores (Leptospira, cercarias, Proteus) y el minijefe colonia de Proteus.
+            Leptospira = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_Leptospira.prefab", BuildLeptospira);
+            Cercaria = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Parasito_Cercaria.prefab", BuildCercaria);
+            ProteusBacteria = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_Proteus.prefab", BuildProteus);
+            ProteusColoniaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/ProteusColonia_Rinon.prefab", BuildProteusColony);
+
+            Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
+            Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
+
+            Acid = LoadOrBuild<AcidPool>($"{Folder}/Hazards/AcidPool.prefab", BuildAcid);
+        }
+
+        private static void LinkChild(EnemyData parent, EnemyHealth childPrefab, EnemyData childData)
+        {
+            if (parent == null || childPrefab == null) return;
+            parent.childPrefab = childPrefab.gameObject;
+            parent.childData = childData;
+            EditorUtility.SetDirty(parent);
+        }
+
+        private EnemyHealth Enemy(string name, EnemyData enemyData, EnemyShape shape)
+        {
+            return LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/{name}.prefab", () => BuildEnemy(name, enemyData, shape));
+        }
+
+        private static T LoadOrBuild<T>(string path, System.Func<GameObject> build) where T : Component
+        {
+            GameObject existing = AssetDatabase.LoadAssetAtPath<GameObject>(path);
+            if (existing != null) return existing.GetComponent<T>();
+            return SetupUtils.SavePrefab<T>(build(), path);
+        }
+
+        // ---------- Física ----------
+
+        private PhysicsMaterial2D noFriction;
+
+        /// <summary>Sin fricción: evita que los personajes se queden pegados a las paredes al saltar.</summary>
+        private PhysicsMaterial2D NoFriction
+        {
+            get
+            {
+                if (noFriction != null) return noFriction;
+                const string path = "Assets/_Project/Data/Physics/NoFriction.physicsMaterial2D";
+                noFriction = AssetDatabase.LoadAssetAtPath<PhysicsMaterial2D>(path);
+                if (noFriction == null)
+                {
+                    SetupUtils.EnsureFolder("Assets/_Project/Data/Physics");
+                    noFriction = new PhysicsMaterial2D("NoFriction") { friction = 0f, bounciness = 0f };
+                    AssetDatabase.CreateAsset(noFriction, path);
+                }
+                return noFriction;
+            }
+        }
+
+        /// <summary>Rigidbody2D + BoxCollider2D + CharacterMotor2D con los pies en el origen del objeto.</summary>
+        private CharacterMotor2D AddMotor(GameObject root, Transform visual, Vector2 colliderSize)
+        {
+            var rb = root.AddComponent<Rigidbody2D>();
+            rb.bodyType = RigidbodyType2D.Dynamic;
+            rb.gravityScale = 0f;
+            rb.freezeRotation = true;
+            rb.interpolation = RigidbodyInterpolation2D.Interpolate;
+            rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
+
+            var box = root.AddComponent<BoxCollider2D>();
+            box.size = colliderSize;
+            box.offset = new Vector2(0f, colliderSize.y * 0.5f);
+            box.sharedMaterial = NoFriction;
+
+            var motor = root.AddComponent<CharacterMotor2D>();
+            SetupUtils.SetRef(motor, "visual", visual);
+            return motor;
+        }
+
+        private static void SetHurtbox(Hurtbox hurtbox, Vector2 offset, Vector2 size)
+        {
+            SetupUtils.SetVector2(hurtbox, "offset", offset);
+            SetupUtils.SetVector2(hurtbox, "size", size);
+        }
+
+        // ---------- Proyectiles ----------
+
+        private GameObject BuildProjectile(string name, Vector2 size)
+        {
+            var root = new GameObject(name);
+            root.AddComponent<SortingGroup>().sortingOrder = 20;
+            var projectile = root.AddComponent<Projectile>();
+            var sr = SetupUtils.SpriteChild(root.transform, "Sprite", PlaceholderArt.Capsule, Color.white, Vector3.zero, size, 0);
+            SetupUtils.SetRef(projectile, "spriteRenderer", sr);
+            return root;
+        }
+
+        private GameObject BuildBomb()
+        {
+            var root = new GameObject("MedicineBomb");
+            root.AddComponent<SortingGroup>().sortingOrder = 21;
+            var bomb = root.AddComponent<MedicineBomb>();
+            var sr = SetupUtils.SpriteChild(root.transform, "Sprite", PlaceholderArt.Circle, Color.white, Vector3.zero, new Vector2(0.45f, 0.45f), 1);
+            SetupUtils.SpriteChild(sr.transform, "Cap", PlaceholderArt.SquareCentered, new Color(1f, 1f, 1f, 0.9f),
+                new Vector3(0f, 0.45f, 0f), new Vector2(0.35f, 0.25f), 2);
+            var blast = SetupUtils.SpriteChild(root.transform, "Blast", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.6f), Vector3.zero, Vector2.one, 0);
+            blast.enabled = false;
+            SetupUtils.SetRef(bomb, "spriteRenderer", sr);
+            SetupUtils.SetRef(bomb, "blastRenderer", blast);
+            return root;
+        }
+
+        // ---------- Jugador ----------
+
+        private GameObject BuildPlayer()
+        {
+            PlayerConfig config = data.PlayerConfig;
+            PlayerArt.ClearCache();
+            var root = new GameObject("HealingKnight");
+            root.layer = PhysicsLayers.Player;
+            root.AddComponent<SortingGroup>().sortingOrder = 10;
+
+            // Visual: se voltea al mirar a la izquierda. Los pies están en (0, 0).
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Transform v = visual.transform;
+
+            // Body: se encoge entero al presionar abajo (PlayerController.Size).
+            GameObject bodyGo = SetupUtils.Child(v, "Body", Vector3.zero);
+            Transform b = bodyGo.transform;
+            GameObject armPivot;
+            SpriteRenderer arm;
+            var colorParts = new System.Collections.Generic.List<Object>();
+            SpriteRenderer shieldSprite;
+
+            if (PlayerArt.Available)
+            {
+                // Muñeco articulado: cada pieza con su capa de color encima (la pinta el medicamento).
+                // Orden de dibujo: pierna de atrás < pierna de enfrente < torso < brazo < escudo.
+                SpriteRenderer Piece(Transform parent, PlayerArt.Piece piece, Vector3 localPos, int order)
+                {
+                    SetupUtils.SpriteChild(parent, piece.file, PlayerArt.Sprite(piece), Color.white, localPos, Vector2.one, order);
+                    SpriteRenderer col = SetupUtils.SpriteChild(parent, piece.file + "_Color", PlayerArt.ColorSprite(piece), Color.white, localPos, Vector2.one, order + 1);
+                    colorParts.Add(col);
+                    return col;
+                }
+
+                Transform Joint(Transform parent, string name, Vector2 localPos) =>
+                    SetupUtils.Child(parent, name, new Vector3(localPos.x, localPos.y, 0f)).transform;
+
+                // Piernas: muslo (gira en la cadera) y, colgando de él, rodilla+pie (gira en la rodilla).
+                Vector2 kneeOffset = PlayerArt.FrontShin.position - PlayerArt.FrontThigh.position;
+
+                // Pierna de atrás: mismo dibujo que la de enfrente, inclinada hacia atrás en reposo.
+                // "PiernaAtras" guarda la inclinación; "MusloAtras" es lo que mueve el animador.
+                Transform backHip = Joint(b, "PiernaAtras", PlayerArt.BackHip);
+                backHip.localRotation = Quaternion.Euler(0f, 0f, PlayerArt.BackLegRestAngle);
+                Transform backThigh = Joint(backHip, "MusloAtras", Vector2.zero);
+                Piece(backThigh, PlayerArt.FrontThigh, Vector3.zero, 0);
+                Transform backKneeRest = Joint(backThigh, "RodillaAtrasReposo", kneeOffset);
+                backKneeRest.localRotation = Quaternion.Euler(0f, 0f, -PlayerArt.BackLegRestAngle); // el pie queda plano
+                Transform backKnee = Joint(backKneeRest, "RodillaAtras", Vector2.zero);
+                Piece(backKnee, PlayerArt.FrontShin, Vector3.zero, 2);
+
+                Transform frontThigh = Joint(b, "PiernaFrente", PlayerArt.FrontThigh.position);
+                Piece(frontThigh, PlayerArt.FrontThigh, Vector3.zero, 4);
+                Transform frontKnee = Joint(frontThigh, "RodillaFrente", kneeOffset);
+                Piece(frontKnee, PlayerArt.FrontShin, Vector3.zero, 6);
+
+                // Parte de arriba (torso + brazo): sube y baja un poco al caminar.
+                Transform upper = SetupUtils.Child(b, "Arriba", Vector3.zero).transform;
+                Piece(upper, PlayerArt.Torso, new Vector3(PlayerArt.Torso.position.x, PlayerArt.Torso.position.y, 0f), 8);
+
+                // Brazo-cañón: gira desde el hombro hacia donde apuntas.
+                armPivot = SetupUtils.Child(upper, "ArmPivot", new Vector3(PlayerArt.Arm.position.x, PlayerArt.Arm.position.y, 0f));
+                SetupUtils.SpriteChild(armPivot.transform, PlayerArt.Arm.file, PlayerArt.Sprite(PlayerArt.Arm), Color.white, Vector3.zero, Vector2.one, 10);
+                arm = SetupUtils.SpriteChild(armPivot.transform, PlayerArt.Arm.file + "_Color", PlayerArt.ColorSprite(PlayerArt.Arm), Color.white, Vector3.zero, Vector2.one, 11);
+
+                // Escudo burbuja: dentro de Body para que se encoja junto con el caballero.
+                shieldSprite = SetupUtils.SpriteChild(b, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
+                    new Vector3(0f, 1.0f, 0f), new Vector2(2.4f, 2.4f), 12);
+
+                var rigAnimator = root.AddComponent<PlayerRigAnimator>();
+                SetupUtils.SetRef(rigAnimator, "upper", upper);
+                SetupUtils.SetRef(rigAnimator, "backThigh", backThigh);
+                SetupUtils.SetRef(rigAnimator, "backKnee", backKnee);
+                SetupUtils.SetRef(rigAnimator, "frontThigh", frontThigh);
+                SetupUtils.SetRef(rigAnimator, "frontKnee", frontKnee);
+            }
+            else
+            {
+                // Sin arte: figuras de relleno.
+                SetupUtils.SpriteChild(b, "BackLeg", PlaceholderArt.Square, new Color(0.65f, 0.67f, 0.72f), new Vector3(-0.15f, 0f, 0f), new Vector2(0.25f, 0.45f), -2);
+                SetupUtils.SpriteChild(b, "FrontLeg", PlaceholderArt.Square, new Color(0.85f, 0.87f, 0.9f), new Vector3(0.12f, 0f, 0f), new Vector2(0.25f, 0.45f), 1);
+                SetupUtils.SpriteChild(b, "Torso", PlaceholderArt.Square, new Color(0.92f, 0.93f, 0.96f), new Vector3(0f, 0.4f, 0f), new Vector2(0.75f, 0.6f), 0);
+                SetupUtils.SpriteChild(b, "Head", PlaceholderArt.CircleBottom, new Color(0.95f, 0.96f, 0.98f), new Vector3(0f, 0.95f, 0f), new Vector2(1.05f, 1.0f), 3);
+                SetupUtils.SpriteChild(b, "Visor", PlaceholderArt.SquareCentered, new Color(0.3f, 0.9f, 1f), new Vector3(0.22f, 1.48f, 0f), new Vector2(0.55f, 0.14f), 4);
+                armPivot = SetupUtils.Child(b, "ArmPivot", new Vector3(0.1f, config.muzzleHeight, 0f));
+                arm = SetupUtils.SpriteChild(armPivot.transform, "ArmCannon", PlaceholderArt.Capsule, Color.white,
+                    new Vector3(0.35f, 0f, 0f), new Vector2(0.8f, 0.32f), 5);
+                shieldSprite = SetupUtils.SpriteChild(b, "ShieldBubble", PlaceholderArt.Circle, new Color(0.03f, 0.91f, 0.95f, 0.45f),
+                    new Vector3(0.05f, 0.95f, 0f), new Vector2(2.1f, 2.1f), 8);
+            }
+
+            AddMotor(root, v, new Vector2(0.7f, config.standingColliderHeight));
+
+            root.AddComponent<PlayerInputReader>();
+            var controller = root.AddComponent<PlayerController>();
+            SetupUtils.SetRef(controller, "config", config);
+            SetupUtils.SetRef(controller, "bodyVisual", b);
+
+            var shooter = root.AddComponent<PlayerShooter>();
+            SetupUtils.SetRef(shooter, "capsulePrefab", Capsule);
+            SetupUtils.SetRef(shooter, "armPivot", armPivot.transform);
+            SetupUtils.SetRef(shooter, "tintedArm", arm);
+            if (colorParts.Count > 0) SetupUtils.SetRefArray(shooter, "medicationColorParts", colorParts.ToArray());
+            SetupUtils.SetRef(shooter, "fallbackRegionalMedication", data.Antiparasitario);
+
+            var bombs = root.AddComponent<PlayerBombs>();
+            SetupUtils.SetRef(bombs, "bombPrefab", Bomb);
+
+            var shield = root.AddComponent<PlayerShield>();
+            SetupUtils.SetRef(shield, "shieldVisual", shieldSprite.gameObject);
+
+            root.AddComponent<PlayerHealth>();
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, new Vector2(0f, config.standingColliderHeight * 0.5f), new Vector2(0.75f, config.standingColliderHeight));
+
+            return root;
+        }
+
+        // ---------- Enemigos ----------
+
+        private enum EnemyShape { Long, Capsule, Round, Blob, Pear, Cluster, Diplo, Pollen, Bullet, Egg, Wheel }
+
+        private GameObject BuildEnemy(string name, EnemyData enemyData, EnemyShape shape)
+        {
+            float s = enemyData.visualScale;
+            bool flying = enemyData.movement == EnemyMovement.Flying;
+            var root = new GameObject(name);
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 5;
+
+            // Los de suelo tienen los pies en (0, 0); los voladores, el centro.
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            SpriteRenderer bodySprite;
+            Vector2 bodySize;
+
+            switch (shape)
+            {
+                case EnemyShape.Long: // parásito: alargado y pegado al piso
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.CircleBottom, enemyData.tint,
+                        Vector3.zero, new Vector2(1.4f * s, 0.6f * s), 0);
+                    bodySize = new Vector2(1.3f * s, 0.6f * s);
+                    break;
+                case EnemyShape.Capsule: // bacteria: cápsula/bastón de pie
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Capsule, enemyData.tint,
+                        new Vector3(0f, 0.55f * s, 0f), new Vector2(1.1f * s, 0.55f * s), 0);
+                    bodySprite.transform.localRotation = Quaternion.Euler(0f, 0f, 70f);
+                    bodySize = new Vector2(0.6f * s, 1.1f * s);
+                    break;
+                case EnemyShape.Blob: // ameba / colonia: mancha pegada al piso
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.CircleBottom, enemyData.tint,
+                        Vector3.zero, new Vector2(1.1f * s, 0.85f * s), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Lobe", PlaceholderArt.CircleBottom, Color.Lerp(enemyData.tint, Color.white, 0.2f),
+                        new Vector3(-0.35f * s, 0f, 0f), new Vector2(0.6f * s, 0.55f * s), -1);
+                    bodySize = new Vector2(1.1f * s, 0.85f * s);
+                    break;
+                case EnemyShape.Pear: // giardia: forma de pera con "ojos"
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.CircleBottom, enemyData.tint,
+                        new Vector3(0f, 0.1f * s, 0f), new Vector2(0.9f * s, 1.0f * s), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Tail", PlaceholderArt.Capsule, Color.Lerp(enemyData.tint, Color.black, 0.15f),
+                        new Vector3(-0.45f * s, 0.35f * s, 0f), new Vector2(0.6f * s, 0.18f * s), -1);
+                    bodySize = new Vector2(0.85f * s, 1.1f * s);
+                    break;
+                case EnemyShape.Cluster: // estafilococo: racimo de esferas
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Circle, enemyData.tint,
+                        new Vector3(0f, 0.4f * s, 0f), new Vector2(0.55f * s, 0.55f * s), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Ball2", PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.black, 0.1f),
+                        new Vector3(-0.32f * s, 0.25f * s, 0f), new Vector2(0.5f * s, 0.5f * s), -1);
+                    SetupUtils.SpriteChild(visual.transform, "Ball3", PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.black, 0.15f),
+                        new Vector3(0.3f * s, 0.22f * s, 0f), new Vector2(0.48f * s, 0.48f * s), -1);
+                    SetupUtils.SpriteChild(visual.transform, "Ball4", PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.white, 0.15f),
+                        new Vector3(-0.05f * s, 0.75f * s, 0f), new Vector2(0.45f * s, 0.45f * s), -1);
+                    bodySize = new Vector2(1f * s, 1f * s);
+                    break;
+                case EnemyShape.Diplo: // neumococo: diplococo (dos esferas juntas)
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Circle, enemyData.tint,
+                        new Vector3(0.22f * s, 0.32f * s, 0f), new Vector2(0.62f * s, 0.62f * s), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Twin", PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.black, 0.12f),
+                        new Vector3(-0.25f * s, 0.32f * s, 0f), new Vector2(0.62f * s, 0.62f * s), -1);
+                    bodySize = new Vector2(1.05f * s, 0.65f * s);
+                    break;
+                case EnemyShape.Bullet: // virus de la rabia: forma de bala
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Capsule, enemyData.tint,
+                        Vector3.zero, new Vector2(1.2f * s, 0.55f * s), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Tip", PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.white, 0.25f),
+                        new Vector3(0.45f * s, 0f, 0f), new Vector2(0.45f * s, 0.5f * s), 1);
+                    for (int i = 0; i < 5; i++)
+                        SetupUtils.SpriteChild(visual.transform, "Spike" + i, PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.black, 0.2f),
+                            new Vector3((-0.4f + i * 0.2f) * s, 0.3f * s, 0f), new Vector2(0.12f * s, 0.12f * s), -1);
+                    bodySize = new Vector2(1.2f * s, 0.6f * s);
+                    break;
+                case EnemyShape.Wheel: // rotavirus: rueda con aro, rayos y bordes dentados (así se ve al microscopio)
+                {
+                    Color dark = Color.Lerp(enemyData.tint, Color.black, 0.35f);
+                    Color light = Color.Lerp(enemyData.tint, Color.white, 0.35f);
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Circle, enemyData.tint,
+                        Vector3.zero, new Vector2(1.0f * s, 1.0f * s), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Inner", PlaceholderArt.Circle, dark,
+                        Vector3.zero, new Vector2(0.66f * s, 0.66f * s), 1);
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * 60f;
+                        float r = a * Mathf.Deg2Rad;
+                        SpriteRenderer spoke = SetupUtils.SpriteChild(visual.transform, "Spoke" + i, PlaceholderArt.Capsule, light,
+                            new Vector3(Mathf.Cos(r) * 0.17f * s, Mathf.Sin(r) * 0.17f * s, 0f), new Vector2(0.34f * s, 0.07f * s), 2);
+                        spoke.transform.localRotation = Quaternion.Euler(0f, 0f, a);
+                    }
+                    SetupUtils.SpriteChild(visual.transform, "Hub", PlaceholderArt.Circle, light,
+                        Vector3.zero, new Vector2(0.2f * s, 0.2f * s), 3);
+                    for (int i = 0; i < 14; i++)
+                    {
+                        float r = i * (360f / 14f) * Mathf.Deg2Rad;
+                        SetupUtils.SpriteChild(visual.transform, "Tooth" + i, PlaceholderArt.Circle, dark,
+                            new Vector3(Mathf.Cos(r) * 0.52f * s, Mathf.Sin(r) * 0.52f * s, 0f), new Vector2(0.13f * s, 0.13f * s), -1);
+                    }
+                    bodySize = new Vector2(1.0f * s, 1.0f * s);
+                    break;
+                }
+                case EnemyShape.Egg: // huevo de oxiuro: ovalado, aplanado de un lado, con la larva adentro
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.CircleBottom, enemyData.tint,
+                        Vector3.zero, new Vector2(0.75f * s * 2f, 1.1f * s * 2f), 0);
+                    SetupUtils.SpriteChild(visual.transform, "Larva", PlaceholderArt.Capsule, new Color(0.85f, 0.8f, 0.6f, 0.8f),
+                        new Vector3(0f, 0.5f * s, 0f), new Vector2(0.7f * s, 0.25f * s), 1);
+                    bodySize = new Vector2(0.75f * s * 2f, 1.1f * s * 2f);
+                    break;
+                case EnemyShape.Pollen: // polen: esfera con muchas bolitas
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Circle, enemyData.tint,
+                        Vector3.zero, new Vector2(0.8f * s, 0.8f * s), 0);
+                    for (int i = 0; i < 10; i++)
+                    {
+                        float a = i * 36f * Mathf.Deg2Rad;
+                        SetupUtils.SpriteChild(bodySprite.transform, "Bump" + i, PlaceholderArt.Circle, Color.Lerp(enemyData.tint, new Color(0.8f, 0.5f, 0f), 0.35f),
+                            new Vector3(Mathf.Cos(a) * 0.5f, Mathf.Sin(a) * 0.5f, 0f), new Vector2(0.24f, 0.24f), -1);
+                    }
+                    bodySize = new Vector2(0.85f * s, 0.85f * s);
+                    break;
+                default: // virus: esfera
+                    bodySprite = SetupUtils.SpriteChild(visual.transform, "Body", PlaceholderArt.Circle, enemyData.tint,
+                        flying ? Vector3.zero : new Vector3(0f, 0.45f * s, 0f), new Vector2(0.9f * s, 0.9f * s), 0);
+                    // Espículas para que se lea como virus.
+                    for (int i = 0; i < 6; i++)
+                    {
+                        float a = i * 60f * Mathf.Deg2Rad;
+                        SetupUtils.SpriteChild(bodySprite.transform, "Spike" + i, PlaceholderArt.Circle, Color.Lerp(enemyData.tint, Color.white, 0.3f),
+                            new Vector3(Mathf.Cos(a) * 0.55f, Mathf.Sin(a) * 0.55f, 0f), new Vector2(0.22f, 0.22f), -1);
+                    }
+                    bodySize = new Vector2(0.9f * s, 0.9f * s);
+                    break;
+            }
+
+            // Ojo para saber hacia dónde mira.
+            Vector3 eyeOffset = shape == EnemyShape.Capsule ? new Vector3(0.12f * s, 0.85f * s, 0f) : bodySprite.transform.localPosition + new Vector3(0.3f * s, 0.25f * s, 0f);
+            if (shape != EnemyShape.Wheel) // la rueda gira: sin ojo
+                SetupUtils.SpriteChild(visual.transform, "Eye", PlaceholderArt.Circle, Color.black, eyeOffset, new Vector2(0.14f * s, 0.14f * s), 1);
+
+            if (!flying) AddMotor(root, visual.transform, new Vector2(Mathf.Min(bodySize.x, 0.9f), bodySize.y));
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", enemyData);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { bodySprite });
+
+            var brain = root.AddComponent<EnemyBrain>();
+            SetupUtils.SetRef(brain, "data", enemyData);
+            SetupUtils.SetRef(brain, "visual", visual.transform);
+            SetupUtils.SetRef(brain, "projectilePrefab", EnemyProjectile); // varios lanzan algo aunque peleen de cerca (ácido, gotitas)
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            Vector2 hurtSize = bodySize + new Vector2(0.15f, 0.15f);
+            SetHurtbox(hurtbox, flying ? Vector2.zero : new Vector2(0f, hurtSize.y * 0.5f), hurtSize);
+
+            ApplyEnemyArt(root, name, health);
+            return root;
+        }
+
+        // ---------- Circulatorio: colesterol LDL y célula espumosa (dibujados con figuras) ----------
+
+        /// <summary>¿ApplyEnemyArt ya le puso su dibujo? (entonces no se le agregan figuras encima).</summary>
+        private static bool HasDrawing(GameObject go) => go.GetComponent<EnemyPoseArt>() != null;
+
+        /// <summary>Quita las espículas de la figura redonda (es la de los virus).</summary>
+        private static Transform RoundWithoutSpikes(GameObject go)
+        {
+            Transform body = go.transform.Find("Visual/Body");
+            var spikes = new System.Collections.Generic.List<GameObject>();
+            if (body != null) foreach (Transform c in body) spikes.Add(c.gameObject);
+            foreach (GameObject spike in spikes) Object.DestroyImmediate(spike);
+            return go.transform.Find("Visual");
+        }
+
+        /// <summary>LDL: bolita de grasa amarilla con su cáscara de proteína (ApoB, las bolitas cafés) y brillo.</summary>
+        private GameObject BuildLdl()
+        {
+            GameObject go = BuildEnemy("Lipido_LDL", data.Ldl, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Ldl.visualScale;
+            SetupUtils.SpriteChild(visual, "Cascara", PlaceholderArt.Circle, new Color(0.5f, 0.32f, 0.05f), Vector3.zero, Vector2.one * 1.06f * s, -2);
+            for (int i = 0; i < 7; i++)
+            {
+                float a = (i * 360f / 7f + 15f) * Mathf.Deg2Rad;
+                SetupUtils.SpriteChild(visual, "ApoB" + i, PlaceholderArt.Circle, new Color(0.8f, 0.45f, 0.12f),
+                    new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.47f * s, Vector2.one * 0.2f * s, -1);
+            }
+            SetupUtils.SpriteChild(visual, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 0.85f, 0.75f),
+                new Vector3(-0.17f * s, 0.2f * s, 0f), new Vector2(0.3f * s, 0.17f * s), 2);
+            return go;
+        }
+
+        /// <summary>Célula espumosa: macrófago pálido y abultado, lleno de gotitas de grasa amarillas, con su núcleo.</summary>
+        private GameObject BuildFoamCell()
+        {
+            GameObject go = BuildEnemy("Celula_Espumosa", data.CelulaEspumosa, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.CelulaEspumosa.visualScale;
+            Color edge = new Color(0.55f, 0.42f, 0.3f), pale = data.CelulaEspumosa.tint;
+            // Contorno y "patitas" (pseudópodos) para que no sea una bola perfecta.
+            SetupUtils.SpriteChild(visual, "Contorno", PlaceholderArt.Circle, edge, Vector3.zero, Vector2.one * 0.98f * s, -3);
+            for (int i = 0; i < 5; i++)
+            {
+                float a = (i * 72f + 20f) * Mathf.Deg2Rad;
+                Vector3 p = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.42f * s;
+                SetupUtils.SpriteChild(visual, "PataContorno" + i, PlaceholderArt.Circle, edge, p, Vector2.one * 0.42f * s, -3);
+                SetupUtils.SpriteChild(visual, "Pata" + i, PlaceholderArt.Circle, pale, p, Vector2.one * 0.34f * s, -2);
+            }
+            var rnd = new System.Random(7);
+            for (int i = 0; i < 9; i++)
+            {
+                float a = (float)rnd.NextDouble() * Mathf.PI * 2f, r = 0.1f + (float)rnd.NextDouble() * 0.26f;
+                float size = 0.12f + (float)rnd.NextDouble() * 0.1f;
+                SetupUtils.SpriteChild(visual, "Grasa" + i, PlaceholderArt.Circle, new Color(1f, 0.82f, 0.3f, 0.9f),
+                    new Vector3(Mathf.Cos(a) * r, Mathf.Sin(a) * r, 0f) * s, Vector2.one * size * s, 1);
+            }
+            SetupUtils.SpriteChild(visual, "Nucleo", PlaceholderArt.Circle, new Color(0.6f, 0.4f, 0.7f), new Vector3(-0.16f, -0.1f, 0f) * s, new Vector2(0.26f, 0.2f) * s, 1);
+            return go;
+        }
+
+        /// <summary>Esporozoíto: gusanito delgado y curvo (media luna) morado.</summary>
+        private GameObject BuildSporozoite()
+        {
+            GameObject go = BuildEnemy("Plasmodium_Esporozoito", data.Esporozoito, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
+            Transform visual = RoundWithoutSpikes(go);
+            Transform body = go.transform.Find("Visual/Body");
+            float s = data.Esporozoito.visualScale;
+            if (body != null) body.localScale = new Vector3(1.5f * s * 0.9f, 0.42f * s * 0.9f, 1f);
+            Color edge = new Color(0.3f, 0.1f, 0.4f), fill = data.Esporozoito.tint;
+            for (int i = 0; i < 5; i++)
+            {
+                float t = (i - 2) / 2f;
+                var p = new Vector3(t * 0.55f * s, -Mathf.Abs(t) * 0.18f * s, 0f);
+                SetupUtils.SpriteChild(visual, "Borde" + i, PlaceholderArt.Circle, edge, p, Vector2.one * 0.36f * s, -2);
+                SetupUtils.SpriteChild(visual, "Segmento" + i, PlaceholderArt.Circle, fill, p, Vector2.one * 0.28f * s, -1);
+            }
+            return go;
+        }
+
+        /// <summary>Merozoíto: gotita morada con su "puntita" y un núcleo oscuro.</summary>
+        private GameObject BuildMerozoite()
+        {
+            GameObject go = BuildEnemy("Plasmodium_Merozoito", data.Merozoito, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Merozoito.visualScale;
+            SetupUtils.SpriteChild(visual, "Contorno", PlaceholderArt.Circle, new Color(0.25f, 0.05f, 0.35f), Vector3.zero, Vector2.one * 0.98f * s, -3);
+            SetupUtils.SpriteChild(visual, "Punta", PlaceholderArt.Circle, data.Merozoito.tint, new Vector3(-0.42f * s, 0f, 0f), new Vector2(0.4f, 0.28f) * s, -2);
+            SetupUtils.SpriteChild(visual, "Nucleo", PlaceholderArt.Circle, new Color(0.35f, 0.1f, 0.5f), new Vector3(0.08f, -0.08f, 0f) * s, Vector2.one * 0.3f * s, 1);
+            return go;
+        }
+
+        // ---------- Arte dibujado de enemigos (reemplaza las figuras de colores) ----------
+
+        public const string EnemyArtRoot = "Assets/_Project/Art/Enemigos";
+
+        /// <summary>
+        /// Si hay PNG para este enemigo (Art/Enemigos/&lt;Nivel&gt;/&lt;prefijo&gt;_&lt;Pose&gt;.png), quita las figuras de colores
+        /// y pone el dibujo con sus poses. 'width' = ancho en unidades de la pose con la que camina (las demás usan la misma escala).
+        /// Poses: Normal (quieto), Mueve, Ataca, Dano (le pegan), Muere. Las que falten usan la más parecida.
+        /// Los voladores (rotavirus) llevan el pivote al centro; los de suelo, abajo.
+        /// </summary>
+        private void ApplyEnemyArt(GameObject root, string name, EnemyHealth health)
+        {
+            string prefix, folder = "Estomago", idlePose = "Normal", movePose = "Normal", attackPose = "Ataca", hurtPose = "Dano", deadPose = "Muere";
+            float width;
+            Vector2 pivot = new Vector2(0.5f, 0f);
+            switch (name)
+            {
+                case "Bacteria_HPylori": prefix = "HPylori"; width = 1.7f; break;
+                case "Bacteria_HPylori_Madre": prefix = "HPyloriMadre"; width = 3f; attackPose = "Suelta"; break;
+                case "Bacteria_HPylori_Ureasa": prefix = "HPyloriUreasa"; width = 1.85f; break;
+                case "Parasito_Anisakis": prefix = "Anisakis"; width = 2.2f; idlePose = "Dormido"; movePose = "Arrastra"; break;
+                case "Parasito_Giardia": folder = "Delgado"; prefix = "Giardia"; width = 1.7f; break;
+                case "Virus_Rotavirus": folder = "Delgado"; prefix = "Rotavirus"; width = 1.35f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Parasito_Proglotido": folder = "Delgado"; prefix = "Proglotido"; width = 1.5f; break;
+                case "Parasito_Entamoeba": folder = "Grueso"; prefix = "Entamoeba"; width = 2f; break;
+                case "Bacteria_CDifficile": folder = "Grueso"; prefix = "CDifficile"; width = 0.8f; break;
+                case "Parasito_Oxiuro": folder = "Grueso"; prefix = "Oxiuro"; width = 1.5f; break;
+                case "Parasito_Oxiuro_Huevo": folder = "Grueso"; prefix = "OxiuroHuevo"; width = 1.1f; movePose = "Normal"; attackPose = "Abre"; break;
+                // Boca
+                case "Bacteria_SMutans": folder = "Boca"; prefix = "SMutans"; width = 1.4f; break;
+                case "Bacteria_SPyogenes": folder = "Respiratorio"; prefix = "SPyogenes"; width = 1.5f; break;
+                // Respiratorio (los voladores con pivote al centro)
+                case "Virus_Rinovirus": folder = "Respiratorio"; prefix = "Rinovirus"; width = 1.4f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Alergeno_Polen": folder = "Respiratorio"; prefix = "Polen"; width = 1f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_SAureus": folder = "Respiratorio"; prefix = "SAureus"; width = 2f; break;
+                case "Bacteria_SAureus_Coco": folder = "Respiratorio"; prefix = "SAureusCoco"; width = 0.9f; break;
+                case "Bacteria_Pertussis": folder = "Respiratorio"; prefix = "Pertussis"; width = 1.5f; break;
+                case "Bacteria_Neumococo": folder = "Respiratorio"; prefix = "Neumococo"; width = 1.6f; break;
+                case "Virus_Influenza": folder = "Respiratorio"; prefix = "Influenza"; width = 1.6f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_Tuberculosis": folder = "Respiratorio"; prefix = "Tuberculosis"; width = 2f; break;
+                // Nervioso
+                case "Virus_Poliovirus": folder = "Nervioso"; prefix = "Poliovirus"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_Meningococo": folder = "Nervioso"; prefix = "Meningococo"; width = 1.6f; break;
+                case "Virus_Herpes": folder = "Nervioso"; prefix = "Herpes"; width = 1.5f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Virus_Rabia": folder = "Nervioso"; prefix = "Rabia"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
+                // Circulatorio (mirando a la DERECHA; los de vuelo con el pivote al centro)
+                case "Lipido_LDL": folder = "Circulatorio"; prefix = "LDL"; width = 0.95f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Celula_Espumosa": folder = "Circulatorio"; prefix = "CelulaEspumosa"; width = 1.5f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Plasmodium_Esporozoito": folder = "Circulatorio"; prefix = "Esporozoito"; width = 1.6f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Plasmodium_Merozoito": folder = "Circulatorio"; prefix = "Merozoito"; width = 0.95f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Coagulo_Embolo": folder = "Circulatorio"; prefix = "Embolo"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_SViridans": folder = "Circulatorio"; prefix = "SViridans"; width = 2.2f; break;
+                case "Bacteria_EColi": folder = "Circulatorio"; prefix = "EColi"; width = 1.9f; break;
+                case "Bacteria_Leptospira": folder = "Circulatorio"; prefix = "Leptospira"; width = 1.9f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Parasito_Cercaria": folder = "Circulatorio"; prefix = "Cercaria"; width = 1.2f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_Proteus": folder = "Circulatorio"; prefix = "Proteus"; width = 1.7f; pivot = new Vector2(0.5f, 0.5f); break;
+                default: return;
+            }
+
+            string Path(string pose) => $"{EnemyArtRoot}/{folder}/{prefix}_{pose}.png";
+            // La escala sale de la pose en que camina (para el anisakis es "Arrastra").
+            var reference = AssetDatabase.LoadAssetAtPath<Texture2D>(Path(movePose));
+            if (reference == null) return;
+            float ppu = reference.width / width;
+            Sprite Load(string pose) => LoadArtSprite(Path(pose), ppu, pivot);
+
+            Sprite idle = Load(idlePose), move = Load(movePose), attack = Load(attackPose), hurt = Load(hurtPose), dead = Load(deadPose);
+
+            Transform visual = root.transform.Find("Visual");
+            var old = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in visual) old.Add(child.gameObject);
+            foreach (GameObject go in old) Object.DestroyImmediate(go);
+
+            SpriteRenderer body = SetupUtils.SpriteChild(visual, "Body", idle != null ? idle : move, Color.white, Vector3.zero, Vector2.one, 0);
+            // El juego supone que el dibujo mira a la DERECHA (así están los del digestivo). Los del Respiratorio,
+            // Nervioso y Boca se dibujaron mirando a la izquierda: se voltean para que no caminen de espaldas.
+            if (folder == "Respiratorio" || folder == "Nervioso" || folder == "Boca") body.flipX = true;
+            SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { body });
+
+            var poses = root.AddComponent<EnemyPoseArt>();
+            SetupUtils.SetRef(poses, "target", body);
+            SetupUtils.SetRef(poses, "idle", idle);
+            SetupUtils.SetRef(poses, "move", move);
+            SetupUtils.SetRef(poses, "attack", attack);
+            SetupUtils.SetRef(poses, "hurt", hurt);
+            SetupUtils.SetRef(poses, "dead", dead);
+            SetupUtils.SetRef(poses, "shelled", Load("Espora"));
+        }
+
+        /// <summary>Carga un PNG de arte para que mida 'worldWidth' de ancho (pivote al centro). Null si no existe.</summary>
+        public static Sprite ArtByWidth(string path, float worldWidth) => ArtByWidth(path, worldWidth, new Vector2(0.5f, 0.5f));
+
+        public static Sprite ArtByWidth(string path, float worldWidth, Vector2 pivot)
+        {
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+            return tex != null ? LoadArtSprite(path, tex.width / worldWidth, pivot) : null;
+        }
+
+        /// <summary>Carga un PNG de arte (para la escena: omeprazol, contracción, píloro). Null si no existe.</summary>
+        public static Sprite ArtSprite(string path, float pixelsPerUnit, Vector2 pivot) => LoadArtSprite(path, pixelsPerUnit, pivot);
+
+        // ---------- Jefe lombriz ----------
+
+        private GameObject BuildLombriz(string name, float fleeAt, EnemyHealth minionPrefab, EnemyData minionData,
+            string intro, string endMessage)
+        {
+            EnemyData d = data.Lombriz;
+            var root = new GameObject(name);
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 4;
+
+            // La raíz es la cabeza (centro).
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            SpriteRenderer head = SetupUtils.SpriteChild(visual.transform, "Head", PlaceholderArt.Circle, d.tint,
+                Vector3.zero, new Vector2(1.4f, 1.3f), 2);
+            SetupUtils.SpriteChild(visual.transform, "Mouth", PlaceholderArt.Circle, new Color(0.35f, 0.08f, 0.12f),
+                new Vector3(0.5f, -0.05f, 0f), new Vector2(0.45f, 0.55f), 3);
+            SetupUtils.SpriteChild(visual.transform, "Eye", PlaceholderArt.Circle, Color.black,
+                new Vector3(0.2f, 0.35f, 0f), new Vector2(0.22f, 0.22f), 4);
+
+            // Montículo de tierra que tiembla en el piso antes de salir (lo coloca el script).
+            SpriteRenderer mound = SetupUtils.SpriteChild(root.transform, "Mound", PlaceholderArt.CircleBottom, new Color(0.45f, 0.25f, 0.2f, 0.95f),
+                Vector3.zero, new Vector2(1.8f, 0.5f), 30);
+
+            GameObject segmentsRoot = SetupUtils.Child(root.transform, "Segments", Vector3.zero);
+
+            // Con dibujo (Art/Jefes/Lombriz, los mismos de la persecución): es la misma lombriz.
+            const string wormFolder = "Assets/_Project/Art/Jefes/Lombriz";
+            var wormTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{wormFolder}/Cabeza_Sale.png");
+            Sprite ring = null, headOut = null, headHurt = null;
+            if (wormTex != null)
+            {
+                while (visual.transform.childCount > 0) Object.DestroyImmediate(visual.transform.GetChild(0).gameObject);
+                float ppu = wormTex.width / 1.3f;
+                headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, new Vector2(0.5f, 0.5f));
+                headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, new Vector2(0.5f, 0.5f));
+                head = SetupUtils.SpriteChild(visual.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
+                ring = ArtByWidth($"{wormFolder}/Anillo.png", 1f);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { head });
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, Vector2.zero, new Vector2(1.4f, 1.3f));
+
+            if (headOut != null)
+            {
+                // Cara de dolor cuando le pegas (y al morir).
+                var poses = root.AddComponent<EnemyPoseArt>();
+                SetupUtils.SetRef(poses, "target", head);
+                SetupUtils.SetRef(poses, "idle", headOut);
+                SetupUtils.SetRef(poses, "hurt", headHurt);
+            }
+
+            var boss = root.AddComponent<LombrizBoss>();
+            SetupUtils.SetFloat(boss, "fleeAtHealth01", fleeAt);
+            SetupUtils.SetString(boss, "introMessage", intro);
+            SetupUtils.SetString(boss, fleeAt > 0f ? "fleeMessage" : "defeatMessage", endMessage);
+            SetupUtils.SetRef(boss, "visual", visual.transform);
+            SetupUtils.SetRef(boss, "segmentsRoot", segmentsRoot.transform);
+            SetupUtils.SetRef(boss, "segmentSprite", ring != null ? ring : PlaceholderArt.Circle);
+            SetupUtils.SetColor(boss, "segmentColor", ring != null ? Color.white : d.tint);
+            if (ring != null) SetupUtils.SetFloat(boss, "headSize", 1.15f);
+            SetupUtils.SetRef(boss, "moundRenderer", mound);
+            if (minionPrefab != null)
+            {
+                SetupUtils.SetRef(boss, "minionPrefab", minionPrefab);
+                SetupUtils.SetRef(boss, "minionData", minionData);
+            }
+            return root;
+        }
+
+        // ---------- Sistema Nervioso ----------
+
+        /// <summary>Neurona sana: cuerpo azul brillante con dendritas. Si la tocas con una cápsula, baja la salud del cerebro.</summary>
+        private GameObject BuildNeuron()
+        {
+            var root = new GameObject("Neurona_Sana");
+            root.AddComponent<SortingGroup>().sortingOrder = 2;
+            var parts = new System.Collections.Generic.List<Object>();
+
+            parts.Add(SetupUtils.SpriteChild(root.transform, "Halo", PlaceholderArt.Circle, new Color(0.35f, 0.7f, 1f, 0.25f),
+                Vector3.zero, new Vector2(2.2f, 2.2f), -2));
+            for (int i = 0; i < 6; i++)
+            {
+                float a = (i * 60f + 15f) * Mathf.Deg2Rad;
+                float len = 0.9f + (i % 2) * 0.4f;
+                var dendrite = SetupUtils.SpriteChild(root.transform, "Dendrita" + i, PlaceholderArt.Capsule, new Color(0.4f, 0.75f, 1f, 0.9f),
+                    new Vector3(Mathf.Cos(a) * len * 0.5f, Mathf.Sin(a) * len * 0.5f, 0f), new Vector2(len, 0.14f), -1);
+                dendrite.transform.localRotation = Quaternion.Euler(0f, 0f, i * 60f + 15f);
+                parts.Add(dendrite);
+            }
+            parts.Add(SetupUtils.SpriteChild(root.transform, "Soma", PlaceholderArt.Circle, new Color(0.45f, 0.8f, 1f), Vector3.zero, new Vector2(0.75f, 0.75f), 0));
+            parts.Add(SetupUtils.SpriteChild(root.transform, "Nucleo", PlaceholderArt.Circle, new Color(0.85f, 0.97f, 1f), Vector3.zero, new Vector2(0.3f, 0.3f), 1));
+
+            // Dibujo (Art/Nervioso/Neurona_Sana, _Danada, _Calmada): quita dendritas y soma, deja el halo.
+            const string nv = "Assets/_Project/Art/Nervioso";
+            Sprite sana = ArtByWidth($"{nv}/Neurona_Sana.png", 1.9f);
+            SpriteRenderer drawn = null;
+            if (sana != null)
+            {
+                for (int i = parts.Count - 1; i >= 1; i--) { Object.DestroyImmediate(((SpriteRenderer)parts[i]).gameObject); parts.RemoveAt(i); }
+                drawn = SetupUtils.SpriteChild(root.transform, "Dibujo", sana, Color.white, Vector3.zero, Vector2.one, 0);
+                parts.Add(drawn);
+            }
+
+            var neuron = root.AddComponent<HealthyNeuron>();
+            SetupUtils.SetRefArray(neuron, "renderers", parts.ToArray());
+            if (drawn != null)
+            {
+                float ppu = AssetDatabase.LoadAssetAtPath<Texture2D>($"{nv}/Neurona_Sana.png").width / 1.9f;
+                SetupUtils.SetRef(neuron, "art", drawn);
+                SetupUtils.SetRef(neuron, "healthySprite", sana);
+                SetupUtils.SetRef(neuron, "damagedSprite", LoadArtSprite($"{nv}/Neurona_Danada.png", ppu, new Vector2(0.5f, 0.5f)));
+                SetupUtils.SetRef(neuron, "calmedSprite", LoadArtSprite($"{nv}/Neurona_Calmada.png", ppu, new Vector2(0.5f, 0.5f)));
+            }
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, Vector2.zero, new Vector2(0.9f, 0.9f));
+            return root;
+        }
+
+        /// <summary>Neurona hiperexcitada (roja): suelta descargas; se sana con anticonvulsivo y se vuelve sana.</summary>
+        private GameObject BuildRedNeuron()
+        {
+            var root = new GameObject("Neurona_Hiperexcitada");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 2;
+            var parts = new System.Collections.Generic.List<Object>();
+
+            var ring = SetupUtils.SpriteChild(root.transform, "Descarga", PlaceholderArt.Circle, new Color(1f, 0.5f, 0.9f, 0.3f),
+                Vector3.zero, new Vector2(1f, 1f), -3);
+            parts.Add(SetupUtils.SpriteChild(root.transform, "Halo", PlaceholderArt.Circle, new Color(1f, 0.2f, 0.25f, 0.3f),
+                Vector3.zero, new Vector2(2.2f, 2.2f), -2));
+            for (int i = 0; i < 7; i++)
+            {
+                float a = (i * 51f + 10f) * Mathf.Deg2Rad;
+                float len = 0.8f + (i % 3) * 0.35f;
+                var dendrite = SetupUtils.SpriteChild(root.transform, "Dendrita" + i, PlaceholderArt.Capsule, new Color(1f, 0.3f, 0.35f, 0.95f),
+                    new Vector3(Mathf.Cos(a) * len * 0.5f, Mathf.Sin(a) * len * 0.5f, 0f), new Vector2(len, 0.13f), -1);
+                dendrite.transform.localRotation = Quaternion.Euler(0f, 0f, i * 51f + 10f);
+                parts.Add(dendrite);
+            }
+            parts.Add(SetupUtils.SpriteChild(root.transform, "Soma", PlaceholderArt.Circle, new Color(1f, 0.25f, 0.3f), Vector3.zero, new Vector2(0.8f, 0.8f), 0));
+            var core = SetupUtils.SpriteChild(root.transform, "Nucleo", PlaceholderArt.Circle, new Color(1f, 0.85f, 0.6f), Vector3.zero, new Vector2(0.32f, 0.32f), 1);
+
+            // Dibujo (Art/Nervioso/Neurona_Roja): quita dendritas y soma; el núcleo queda como un brillo chico que parpadea al cargar.
+            Sprite roja = ArtByWidth("Assets/_Project/Art/Nervioso/Neurona_Roja.png", 2f);
+            if (roja != null)
+            {
+                for (int i = parts.Count - 1; i >= 1; i--) { Object.DestroyImmediate(((SpriteRenderer)parts[i]).gameObject); parts.RemoveAt(i); }
+                parts.Add(SetupUtils.SpriteChild(root.transform, "Dibujo", roja, Color.white, Vector3.zero, Vector2.one, 0));
+                core.transform.localPosition = new Vector3(0f, -0.25f, 0f);
+                core.transform.localScale = new Vector3(0.22f, 0.22f, 1f);
+                core.color = new Color(1f, 0.95f, 0.4f, 0.8f);
+                core.sortingOrder = 1;
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.NeuronaHiperexcitada);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", parts.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, Vector2.zero, new Vector2(1f, 1f));
+
+            var neuron = root.AddComponent<HyperexcitedNeuron>();
+            SetupUtils.SetRef(neuron, "healedPrefab", Neuron);
+            SetupUtils.SetRef(neuron, "ring", ring);
+            SetupUtils.SetRef(neuron, "core", core);
+            return root;
+        }
+
+        /// <summary>Tormenta eléctrica: aviso (columna que parpadea) y rayo. El script los mueve a donde cae.</summary>
+        private GameObject BuildStorm()
+        {
+            var root = new GameObject("Tormenta_Electrica");
+            root.AddComponent<SortingGroup>().sortingOrder = 30;
+            var storm = root.AddComponent<LightningStorm>();
+
+            var warning = SetupUtils.SpriteChild(root.transform, "Aviso", PlaceholderArt.Square, new Color(0.85f, 0.6f, 1f, 0.3f),
+                Vector3.zero, new Vector2(2f, 14f), 0);
+            var bolt = SetupUtils.SpriteChild(root.transform, "Rayo", PlaceholderArt.Square, new Color(0.95f, 0.85f, 1f, 0.95f),
+                Vector3.zero, new Vector2(2f, 14f), 2);
+            var glow = SetupUtils.SpriteChild(root.transform, "Brillo", PlaceholderArt.Circle, new Color(0.8f, 0.5f, 1f, 0.6f),
+                Vector3.zero, new Vector2(3f, 0.8f), 1);
+
+            SetupUtils.SetRef(storm, "warningRenderer", warning);
+            SetupUtils.SetRef(storm, "boltRenderer", bolt);
+            SetupUtils.SetRef(storm, "groundGlow", glow);
+            return root;
+        }
+
+        // ---------- Jefe rabia (Hipocampo) ----------
+
+        private GameObject BuildRabiesBoss()
+        {
+            RabiesSegment virion = LoadOrBuild<RabiesSegment>($"{Folder}/Bosses/Rabia_Virion.prefab", BuildRabiesVirion);
+
+            // La raíz no se ve ni recibe daño: solo dirige la cadena y lleva la barra del jefe.
+            var root = new GameObject("Rabia_Hipocampo");
+            root.layer = PhysicsLayers.Enemy;
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", data.RabiaJefe);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+
+            var boss = root.AddComponent<RabiesBoss>();
+            SetupUtils.SetRef(boss, "segmentPrefab", virion);
+            SetupUtils.SetRef(boss, "segmentData", data.RabiaVirion);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "stormPrefab", Storm);
+            return root;
+        }
+
+        /// <summary>Virión de rabia (forma de bala con espículas). La cabeza muestra ojos y punta brillante.</summary>
+        private GameObject BuildRabiesVirion()
+        {
+            EnemyData d = data.RabiaVirion;
+            var root = new GameObject("Rabia_Virion");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Transform v = visual.transform;
+            var body = new System.Collections.Generic.List<Object>();
+            body.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Capsule, d.tint, Vector3.zero, new Vector2(1.05f, 0.62f), 0));
+            body.Add(SetupUtils.SpriteChild(v, "Punta", PlaceholderArt.Circle, Color.Lerp(d.tint, Color.white, 0.15f),
+                new Vector3(0.32f, 0f, 0f), new Vector2(0.5f, 0.62f), 1));
+            body.Add(SetupUtils.SpriteChild(v, "Base", PlaceholderArt.SquareCentered, Color.Lerp(d.tint, Color.black, 0.25f),
+                new Vector3(-0.47f, 0f, 0f), new Vector2(0.12f, 0.58f), 1));
+            for (int i = 0; i < 4; i++)
+            {
+                float x = -0.35f + i * 0.22f;
+                var up = SetupUtils.SpriteChild(v, "EspiculaArriba" + i, PlaceholderArt.Capsule, Color.Lerp(d.tint, Color.black, 0.3f),
+                    new Vector3(x, 0.38f, 0f), new Vector2(0.2f, 0.08f), -1);
+                up.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                var down = SetupUtils.SpriteChild(v, "EspiculaAbajo" + i, PlaceholderArt.Capsule, Color.Lerp(d.tint, Color.black, 0.3f),
+                    new Vector3(x, -0.38f, 0f), new Vector2(0.2f, 0.08f), -1);
+                down.transform.localRotation = Quaternion.Euler(0f, 0f, 90f);
+                body.Add(up);
+                body.Add(down);
+            }
+            body.Add(SetupUtils.SpriteChild(v, "Linea", PlaceholderArt.Capsule, new Color(0.9f, 0.2f, 0.45f), new Vector3(-0.1f, 0f, 0f), new Vector2(0.7f, 0.07f), 2));
+
+            // Partes de cabeza: ojo y halo rojo.
+            GameObject headGroup = SetupUtils.Child(v, "Cabeza", Vector3.zero);
+            SetupUtils.SpriteChild(headGroup.transform, "Halo", PlaceholderArt.Circle, new Color(1f, 0.2f, 0.45f, 0.35f), new Vector3(0.2f, 0f, 0f), new Vector2(1.3f, 1f), -2);
+            SetupUtils.SpriteChild(headGroup.transform, "Ojo", PlaceholderArt.Circle, new Color(1f, 0.25f, 0.5f), new Vector3(0.38f, 0.1f, 0f), new Vector2(0.2f, 0.16f), 3);
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, Vector2.zero, new Vector2(1f, 0.75f));
+
+            var seg = root.AddComponent<RabiesSegment>();
+            SetupUtils.SetRef(seg, "visual", v);
+            SetupUtils.SetRefArray(seg, "headParts", new Object[] { headGroup });
+
+            // Dibujo (Art/Jefes/Rabia): quita las figuras y usa un solo sprite que cambia (cabeza, cuerpo, cola).
+            const string rab = "Assets/_Project/Art/Jefes/Rabia";
+            var segTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{rab}/Segmento.png");
+            var headTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{rab}/Cabeza_Normal.png");
+            if (segTex != null && headTex != null)
+            {
+                var old = new System.Collections.Generic.List<GameObject>();
+                foreach (Transform child in v) if (child != headGroup.transform) old.Add(child.gameObject);
+                foreach (GameObject go in old) Object.DestroyImmediate(go);
+                Vector2 mid = new Vector2(0.5f, 0.5f);
+                float segPpu = segTex.width / 1.3f, headPpu = headTex.width / 1.55f;
+                System.Func<string, float, Sprite> S = (file, ppu) => LoadArtSprite($"{rab}/{file}.png", ppu, mid);
+                SpriteRenderer drawn = SetupUtils.SpriteChild(v, "Dibujo", S("Segmento", segPpu), Color.white, Vector3.zero, Vector2.one, 0);
+                SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { drawn });
+                SetupUtils.SetRef(seg, "art", drawn);
+                SetupUtils.SetRef(seg, "bodySprite", S("Segmento", segPpu));
+                SetupUtils.SetRef(seg, "bodyHurt", S("Segmento_Dano", segPpu));
+                SetupUtils.SetRef(seg, "tailSprite", S("Cola", segPpu));
+                SetupUtils.SetRef(seg, "headIdle", S("Cabeza_Normal", headPpu));
+                SetupUtils.SetRef(seg, "headAttack", S("Cabeza_Ataca", headPpu));
+                SetupUtils.SetRef(seg, "headScared", S("Cabeza_Miedo", headPpu));
+                SetupUtils.SetRef(seg, "headDead", S("Cabeza_Derrotada", headPpu));
+            }
+            return root;
+        }
+
+        // ---------- Jefe colmena (Pulmones) ----------
+
+        /// <summary>
+        /// Jefe Bezoar (placeholder hasta tener el sprite): bola grande de "comida pegada" con cara.
+        /// El pivote está en el piso; el dibujo gira al rodar (Visual) pero la cara no (Caras).
+        /// </summary>
+        private GameObject BuildBezoar()
+        {
+            EnemyData d = data.Bezoar;
+            const float r = 1.8f;
+            var root = new GameObject("Bezoar_Estomago");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            // El "Visual" gira: va centrado en la bola.
+            GameObject spinner = SetupUtils.Child(root.transform, "Visual", new Vector3(0f, r, 0f));
+            Transform v = spinner.transform;
+            var body = new System.Collections.Generic.List<Object>();
+            var faces = new System.Collections.Generic.List<Object>();
+            const string bezoarFolder = "Assets/_Project/Art/Jefes/Bezoar";
+            var bezoarTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{bezoarFolder}/Bezoar_Normal.png");
+            bool hasArt = bezoarTex != null;
+            if (hasArt)
+            {
+                // Dibujo completo (la cara viene en el dibujo): las tres caras son tres dibujos y giran con la bola.
+                float ppu = bezoarTex.width / (r * 2.1f);
+                string[] states = { "Normal", "Enojado", "Derrotado" };
+                for (int i = 0; i < states.Length; i++)
+                {
+                    Sprite sp = LoadArtSprite($"{bezoarFolder}/Bezoar_{states[i]}.png", ppu, new Vector2(0.5f, 0.5f));
+                    if (sp == null) sp = LoadArtSprite($"{bezoarFolder}/Bezoar_Normal.png", ppu, new Vector2(0.5f, 0.5f));
+                    SpriteRenderer sr = SetupUtils.SpriteChild(v, states[i], sp, Color.white, Vector3.zero, Vector2.one, 0);
+                    body.Add(sr);
+                    faces.Add(sr.gameObject);
+                    sr.gameObject.SetActive(i == 0);
+                }
+            }
+            else
+            {
+                body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, new Color(0.24f, 0.04f, 0.15f), Vector3.zero, new Vector2(r * 2.08f, r * 2.08f), -1));
+                body.Add(SetupUtils.SpriteChild(v, "Bola", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(r * 2f, r * 2f), 0));
+                // Pedazos de comida pegados (dona, pan, papas, chicle) de colores.
+                Vector2[] bitPos = { new Vector2(-0.8f, 0.7f), new Vector2(0.9f, 0.5f), new Vector2(-0.3f, -0.9f), new Vector2(0.8f, -0.7f), new Vector2(-1.1f, -0.2f) };
+                Vector2[] bitSize = { new Vector2(1.1f, 0.8f), new Vector2(0.9f, 0.7f), new Vector2(1.2f, 0.5f), new Vector2(0.7f, 0.7f), new Vector2(0.5f, 0.9f) };
+                Color[] bitColor =
+                {
+                    new Color(0.96f, 0.5f, 0.7f), new Color(0.95f, 0.7f, 0.3f), new Color(1f, 0.85f, 0.35f),
+                    new Color(0.6f, 0.9f, 0.85f), new Color(0.55f, 0.35f, 0.25f),
+                };
+                for (int i = 0; i < bitPos.Length; i++)
+                    body.Add(SetupUtils.SpriteChild(v, "Pedazo", PlaceholderArt.Circle, bitColor[i], new Vector3(bitPos[i].x, bitPos[i].y, 0f), bitSize[i], 1));
+
+                // Caras (no giran): normal, enojada y derrotada.
+                GameObject faceRoot = SetupUtils.Child(root.transform, "Caras", new Vector3(0f, r, 0f));
+                string[] names = { "Normal", "Enojado", "Derrotado" };
+                for (int i = 0; i < 3; i++)
+                {
+                    GameObject f = SetupUtils.Child(faceRoot.transform, names[i], Vector3.zero);
+                    float eyeY = i == 2 ? 0.25f : 0.35f;
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        SetupUtils.SpriteChild(f.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(side * 0.55f, eyeY, 0f), new Vector2(0.6f, i == 1 ? 0.45f : 0.6f), 3);
+                        SetupUtils.SpriteChild(f.transform, "Pupila", PlaceholderArt.Circle, new Color(0.1f, 0.02f, 0.06f),
+                            new Vector3(side * 0.5f, eyeY - 0.05f, 0f), new Vector2(0.25f, 0.25f), 4);
+                        if (i == 1)
+                            SetupUtils.SpriteChild(f.transform, "Ceja", PlaceholderArt.Square, new Color(0.24f, 0.04f, 0.15f),
+                                new Vector3(side * 0.55f, eyeY + 0.35f, 0f), new Vector2(0.6f, 0.12f), 4).transform.localRotation = Quaternion.Euler(0f, 0f, side * -18f);
+                    }
+                    SetupUtils.SpriteChild(f.transform, "Boca", PlaceholderArt.Capsule, new Color(0.35f, 0.05f, 0.12f), new Vector3(0f, -0.45f, 0f),
+                        new Vector2(i == 1 ? 1.1f : 0.8f, i == 1 ? 0.4f : 0.2f), 3);
+                    f.SetActive(i == 0);
+                    faces.Add(f);
+                }
+
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, new Vector2(0f, r), new Vector2(r * 1.8f, r * 1.8f));
+
+            var boss = root.AddComponent<BezoarBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRefArray(boss, "faces", faces.ToArray());
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "minionPrefab", HPylori);
+            SetupUtils.SetRef(boss, "minionData", data.HPylori);
+            var chunkArt = new System.Collections.Generic.List<Object>();
+            foreach (string piece in new[] { "Papa", "Dona", "Chicle", "Dulce" })
+            {
+                Sprite sp = LoadArtSprite($"{bezoarFolder}/Pedazo_{piece}.png", 200f, new Vector2(0.5f, 0.5f));
+                if (sp != null) chunkArt.Add(sp);
+            }
+            SetupUtils.SetRefArray(boss, "chunkSprites", chunkArt.ToArray());
+            return root;
+        }
+
+        /// <summary>
+        /// Minijefe Tenia (placeholder de figuras): la raíz es la CABEZA (escólex con ganchos y ventosas);
+        /// los pedazos del cuerpo son hijos con su propia vida (al cortarlos se vuelven proglótidos que caminan).
+        /// </summary>
+        private GameObject BuildTenia()
+        {
+            EnemyData d = data.Tenia;
+            Color outline = new Color(0.3f, 0.2f, 0.08f);
+            var root = new GameObject("Tenia_Delgado");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            GameObject head = SetupUtils.Child(root.transform, "Cabeza", Vector3.zero);
+            Transform h = head.transform;
+            var headParts = new System.Collections.Generic.List<Object>();
+            headParts.Add(SetupUtils.SpriteChild(h, "Contorno", PlaceholderArt.Circle, outline, Vector3.zero, new Vector2(1.36f, 1.3f), 10));
+            headParts.Add(SetupUtils.SpriteChild(h, "Escolex", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(1.24f, 1.18f), 11));
+            // Corona de ganchos arriba.
+            for (int i = 0; i < 7; i++)
+            {
+                float a = (150f - i * 20f) * Mathf.Deg2Rad;
+                SpriteRenderer hook = SetupUtils.SpriteChild(h, "Gancho" + i, PlaceholderArt.Capsule, outline,
+                    new Vector3(Mathf.Cos(a) * 0.62f, Mathf.Sin(a) * 0.6f, 0f), new Vector2(0.34f, 0.2f), 9);
+                hook.transform.localRotation = Quaternion.Euler(0f, 0f, a * Mathf.Rad2Deg);
+            }
+            // Cuatro ventosas.
+            Vector2[] suckers = { new Vector2(-0.38f, 0.05f), new Vector2(0.38f, 0.05f), new Vector2(-0.22f, -0.35f), new Vector2(0.22f, -0.35f) };
+            foreach (Vector2 sp in suckers)
+            {
+                SetupUtils.SpriteChild(h, "Ventosa", PlaceholderArt.Circle, outline, new Vector3(sp.x, sp.y, 0f), new Vector2(0.32f, 0.32f), 12);
+                SetupUtils.SpriteChild(h, "VentosaCentro", PlaceholderArt.Circle, new Color(0.75f, 0.45f, 0.4f), new Vector3(sp.x, sp.y, 0f), new Vector2(0.18f, 0.18f), 13);
+            }
+            // Ojos enojados (caricatura, para que se lea como enemigo).
+            for (int side = -1; side <= 1; side += 2)
+            {
+                SetupUtils.SpriteChild(h, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(side * 0.2f, 0.32f, 0f), new Vector2(0.24f, 0.2f), 13);
+                SetupUtils.SpriteChild(h, "Pupila", PlaceholderArt.Circle, outline, new Vector3(side * 0.18f, 0.3f, 0f), new Vector2(0.1f, 0.1f), 14);
+            }
+
+            // Con dibujo (Art/Jefes/Tenia): la cabeza es un solo dibujo con 3 caras; el cuello queda en el origen.
+            const string teniaFolder = "Assets/_Project/Art/Jefes/Tenia";
+            const float headHeight = 1.9f;
+            var headTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{teniaFolder}/Cabeza_Normal.png");
+            bool art = headTex != null;
+            SpriteRenderer headArt = null;
+            Sprite headIdle = null, headBite = null, headDead = null;
+            Vector2 headCenter = Vector2.zero;
+            if (art)
+            {
+                while (h.childCount > 0) Object.DestroyImmediate(h.GetChild(0).gameObject);
+                headParts.Clear();
+                float ppu = headTex.height / headHeight;
+                Vector2 neck = new Vector2(0.5f, 0.04f);
+                headIdle = LoadArtSprite($"{teniaFolder}/Cabeza_Normal.png", ppu, neck);
+                headBite = LoadArtSprite($"{teniaFolder}/Cabeza_Muerde.png", ppu, neck);
+                headDead = LoadArtSprite($"{teniaFolder}/Cabeza_Derrotada.png", ppu, neck);
+                headArt = SetupUtils.SpriteChild(h, "Dibujo", headIdle, Color.white, Vector3.zero, Vector2.one, 11);
+                headParts.Add(headArt);
+                headCenter = new Vector2(0f, headHeight * 0.55f);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", headParts.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), headCenter, art ? new Vector2(1.6f, 1.6f) : new Vector2(1.2f, 1.2f));
+
+            Sprite segNeck = art ? ArtByWidth($"{teniaFolder}/Segmento_Cuello.png", 0.75f) : null;
+            Sprite segBody = art ? ArtByWidth($"{teniaFolder}/Segmento.png", 1.15f) : null;
+
+            // Cuerpo: pedazos cada vez más anchos hacia la cola (así son los proglótidos).
+            const int count = 9;
+            var segments = new System.Collections.Generic.List<Object>();
+            for (int i = 0; i < count; i++)
+            {
+                GameObject seg = SetupUtils.Child(root.transform, "Proglotido" + i, new Vector3(0f, -0.7f * (i + 1), 0f));
+                seg.layer = PhysicsLayers.Enemy;
+                float w = Mathf.Lerp(0.55f, 1f, i / (float)(count - 1));
+                var parts = new System.Collections.Generic.List<Object>();
+                // (Sin el dibujo con huevos: en la cadena se veía raro. Los 2 primeros son de cuello.)
+                Sprite segArt = i < 2 ? segNeck : segBody;
+                if (segArt != null)
+                {
+                    // Dibujo: el pedazo ya trae contorno y huevos.
+                    parts.Add(SetupUtils.SpriteChild(seg.transform, "Dibujo", segArt, Color.white, Vector3.zero, Vector2.one, 2));
+                    var segHealthArt = seg.AddComponent<EnemyHealth>();
+                    SetupUtils.SetRef(segHealthArt, "data", data.TeniaSegmento);
+                    SetupUtils.SetRef(segHealthArt, "effectivenessTable", data.Table);
+                    SetupUtils.SetRefArray(segHealthArt, "flashRenderers", parts.ToArray());
+                    Vector2 sz = segArt.bounds.size;
+                    SetHurtbox(seg.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(sz.x * 0.85f, Mathf.Max(0.45f, sz.y)));
+                    segments.Add(segHealthArt);
+                    continue;
+                }
+                parts.Add(SetupUtils.SpriteChild(seg.transform, "Contorno", PlaceholderArt.Capsule, outline, Vector3.zero, new Vector2(w + 0.1f, 1.28f), 1));
+                parts.Add(SetupUtils.SpriteChild(seg.transform, "Pedazo", PlaceholderArt.Capsule, data.TeniaSegmento.tint, Vector3.zero, new Vector2(w, 1.08f), 2));
+                SetupUtils.SpriteChild(seg.transform, "Raya", PlaceholderArt.SquareCentered, new Color(0.85f, 0.72f, 0.55f), new Vector3(0f, 0.22f, 0f), new Vector2(w * 0.8f, 0.05f), 3);
+                if (i >= count - 3) // los últimos van llenos de huevos
+                    for (int k = 0; k < 3; k++)
+                        SetupUtils.SpriteChild(seg.transform, "Huevo", PlaceholderArt.Circle, new Color(0.75f, 0.62f, 0.4f),
+                            new Vector3((k - 1) * w * 0.25f, -0.03f, 0f), new Vector2(0.12f, 0.12f), 3);
+                var segHealth = seg.AddComponent<EnemyHealth>();
+                SetupUtils.SetRef(segHealth, "data", data.TeniaSegmento);
+                SetupUtils.SetRef(segHealth, "effectivenessTable", data.Table);
+                SetupUtils.SetRefArray(segHealth, "flashRenderers", parts.ToArray());
+                SetHurtbox(seg.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(w * 0.9f, 0.6f));
+                segments.Add(segHealth);
+            }
+
+            var boss = root.AddComponent<TeniaBoss>();
+            SetupUtils.SetRef(boss, "head", h);
+            SetupUtils.SetRefArray(boss, "segments", segments.ToArray());
+            SetupUtils.SetRef(boss, "walkerPrefab", Proglotido);
+            SetupUtils.SetRef(boss, "walkerData", data.Proglotido);
+            if (art)
+            {
+                SetupUtils.SetRef(boss, "headRenderer", headArt);
+                SetupUtils.SetRef(boss, "headIdle", headIdle);
+                SetupUtils.SetRef(boss, "headBite", headBite);
+                SetupUtils.SetRef(boss, "headDefeated", headDead);
+                SetupUtils.SetVector2(boss, "headCenterOffset", headCenter);
+                SetupUtils.SetFloat(boss, "spacing", 0.5f);
+            }
+            return root;
+        }
+
+        /// <summary>La lombriz de la persecución (íleon): cabeza con vida + cuerpo y montículo que se sueltan al empezar.</summary>
+        private GameObject BuildWormChase()
+        {
+            EnemyData d = data.LombrizHuye;
+            var root = new GameObject("Lombriz_Persecucion");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 5;
+
+            var head = new System.Collections.Generic.List<Object>();
+            head.Add(SetupUtils.SpriteChild(root.transform, "Contorno", PlaceholderArt.Circle, new Color(0.3f, 0.07f, 0.1f), Vector3.zero, new Vector2(1.5f, 1.38f), 1));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Cabeza", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(1.38f, 1.26f), 2));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Boca", PlaceholderArt.Circle, new Color(0.35f, 0.08f, 0.12f), new Vector3(0.5f, -0.08f, 0f), new Vector2(0.42f, 0.52f), 3));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(0.18f, 0.33f, 0f), new Vector2(0.32f, 0.3f), 3));
+            head.Add(SetupUtils.SpriteChild(root.transform, "Pupila", PlaceholderArt.Circle, Color.black, new Vector3(0.24f, 0.31f, 0f), new Vector2(0.14f, 0.14f), 4));
+
+            // Con dibujo (Art/Jefes/Lombriz): la cabeza trae el cuerpo doblado; el origen queda en la cara.
+            const string wormFolder = "Assets/_Project/Art/Jefes/Lombriz";
+            var wormTex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{wormFolder}/Cabeza_Sale.png");
+            SpriteRenderer headArt = null;
+            Sprite headOut = null, headRoar = null, headHurt = null;
+            if (wormTex != null)
+            {
+                foreach (Object part in head) Object.DestroyImmediate(((SpriteRenderer)part).gameObject);
+                head.Clear();
+                // La cabeza es un círculo del tamaño de los anillos: el cuerpo sale justo detrás.
+                float ppu = wormTex.width / 1.15f;
+                Vector2 face = new Vector2(0.5f, 0.5f);
+                headOut = LoadArtSprite($"{wormFolder}/Cabeza_Sale.png", ppu, face);
+                headRoar = LoadArtSprite($"{wormFolder}/Cabeza_Ruge.png", ppu, face);
+                headHurt = LoadArtSprite($"{wormFolder}/Cabeza_Dano.png", ppu, face);
+                headArt = SetupUtils.SpriteChild(root.transform, "Dibujo", headOut, Color.white, Vector3.zero, Vector2.one, 2);
+                head.Add(headArt);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", head.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(1.3f, 1.2f));
+
+            Sprite ringBig = wormTex != null ? ArtByWidth($"{wormFolder}/Anillo.png", 1f) : null;
+            Sprite ringSmall = wormTex != null ? ArtByWidth($"{wormFolder}/Anillo_Chico.png", 1f) : null;
+            Sprite tail = wormTex != null ? ArtByWidth($"{wormFolder}/Cola.png", 1.2f) : null;
+
+            GameObject body = SetupUtils.Child(root.transform, "Cuerpo", Vector3.zero);
+            for (int i = 0; i < 11; i++)
+            {
+                GameObject seg = SetupUtils.Child(body.transform, "Anillo" + i, Vector3.zero);
+                float size = Mathf.Lerp(wormTex != null ? 1.0f : 1.2f, 0.7f, i / 10f);
+                if (ringBig != null)
+                {
+                    bool last = i == 10;
+                    Sprite art = last && tail != null ? tail : (i < 6 ? ringBig : ringSmall);
+                    // La cola apunta hacia atrás (el dibujo trae la punta a la derecha: se voltea).
+                    Vector2 scale = last ? new Vector2(-1f, 1f) : new Vector2(size, size);
+                    SetupUtils.SpriteChild(seg.transform, "Anillo", art, Color.white, Vector3.zero, scale, 3);
+                    continue;
+                }
+                SpriteRenderer sr = SetupUtils.SpriteChild(seg.transform, "Anillo", PlaceholderArt.Circle,
+                    Color.Lerp(d.tint, new Color(0.8f, 0.4f, 0.42f), (i % 2) * 0.35f), Vector3.zero, new Vector2(size, size), 3);
+                sr.sortingOrder = 3;
+            }
+            Sprite moundArt = wormTex != null ? LoadArtSprite($"{wormFolder}/Monticulo.png", 513f / 2.3f, new Vector2(0.5f, 0.05f)) : null;
+            SpriteRenderer mound = moundArt != null
+                ? SetupUtils.SpriteChild(root.transform, "Monticulo", moundArt, Color.white, Vector3.zero, Vector2.one, 30)
+                : SetupUtils.SpriteChild(root.transform, "Monticulo", PlaceholderArt.CircleBottom, new Color(0.62f, 0.3f, 0.36f, 0.95f),
+                    Vector3.zero, new Vector2(2f, 0.55f), 30);
+
+            var chase = root.AddComponent<WormChase>();
+            SetupUtils.SetRef(chase, "bodyRoot", body.transform);
+            SetupUtils.SetRef(chase, "mound", mound);
+            SetupUtils.SetRefArray(chase, "headRenderers", head.ToArray());
+            if (headArt != null)
+            {
+                SetupUtils.SetRef(chase, "headArt", headArt);
+                SetupUtils.SetRef(chase, "headOut", headOut);
+                SetupUtils.SetRef(chase, "headRoar", headRoar);
+                SetupUtils.SetRef(chase, "headHurt", headHurt);
+                SetupUtils.SetFloat(chase, "bodyStart", 0.7f);
+            }
+            return root;
+        }
+
+        /// <summary>Flora intestinal buena: bastoncito verde con cara feliz. Con dibujo si hay Art/Enemigos/Grueso/Flora_Normal.png.</summary>
+        private GameObject BuildFlora()
+        {
+            EnemyData d = data.Flora;
+            var root = new GameObject("Bacteria_Flora");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 3;
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Transform v = visual.transform;
+            var parts = new System.Collections.Generic.List<Object>();
+            // Variantes: cualquier PNG "Flora_<algo>.png" en Art/Enemigos/Grueso (todas miden 1.5 de alto).
+            var variants = new System.Collections.Generic.List<Object>();
+            string floraFolder = $"{EnemyArtRoot}/Grueso";
+            if (System.IO.Directory.Exists(floraFolder))
+                foreach (string file in System.IO.Directory.GetFiles(floraFolder, "Flora_*.png"))
+                {
+                    string path = file.Replace('\\', '/');
+                    var tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path);
+                    if (tex == null) { AssetDatabase.ImportAsset(path); tex = AssetDatabase.LoadAssetAtPath<Texture2D>(path); }
+                    Sprite sp = tex != null ? LoadArtSprite(path, tex.height / 1.5f, new Vector2(0.5f, 0f)) : null;
+                    if (sp != null) variants.Add(sp);
+                }
+            Sprite art = variants.Count > 0 ? (Sprite)variants[0] : null;
+            SpriteRenderer floraBody = null;
+            if (art != null)
+            {
+                floraBody = SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 1);
+                parts.Add(floraBody);
+            }
+            else
+            {
+                Color outline = new Color(0.08f, 0.25f, 0.12f);
+                parts.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Capsule, outline, new Vector3(0f, 0.38f, 0f), new Vector2(1.28f, 1.56f), 0));
+                parts.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Capsule, d.tint, new Vector3(0f, 0.38f, 0f), new Vector2(1.16f, 1.36f), 1));
+                SetupUtils.SpriteChild(v, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.7f), new Vector3(-0.25f, 0.5f, 0f), new Vector2(0.3f, 0.1f), 2);
+                for (int side = -1; side <= 1; side += 2)
+                    SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, outline, new Vector3(0.12f + side * 0.13f, 0.44f, 0f), new Vector2(0.09f, 0.12f), 2);
+                SetupUtils.SpriteChild(v, "Sonrisa", PlaceholderArt.Circle, outline, new Vector3(0.12f, 0.3f, 0f), new Vector2(0.2f, 0.08f), 2);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", parts.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), art != null ? new Vector2(0f, 0.7f) : new Vector2(0f, 0.4f), art != null ? new Vector2(0.7f, 1.4f) : new Vector2(1f, 0.8f));
+
+            var flora = root.AddComponent<FriendlyBacteria>();
+            flora.Configure(data.Antibiotico, CDifficile, data.CDifficile);
+            SetupUtils.SetRef(flora, "visual", v);
+            if (floraBody != null)
+            {
+                SetupUtils.SetRef(flora, "body", floraBody);
+                SetupUtils.SetRefArray(flora, "variants", variants.ToArray());
+            }
+            return root;
+        }
+
+        private GameObject BuildHive()
+        {
+            EnemyData d = data.Colmena;
+            var root = new GameObject("Colmena_Pulmones");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Transform v = visual.transform;
+            var body = new System.Collections.Generic.List<Object>();
+
+            // Membranas laterales que "aletean" (lectura de nave).
+            body.Add(SetupUtils.SpriteChild(v, "WingL", PlaceholderArt.Circle, new Color(0.75f, 0.55f, 0.85f, 0.7f),
+                new Vector3(-1.9f, 0.3f, 0f), new Vector2(1.8f, 0.8f), -2));
+            body.Add(SetupUtils.SpriteChild(v, "WingR", PlaceholderArt.Circle, new Color(0.75f, 0.55f, 0.85f, 0.7f),
+                new Vector3(1.9f, 0.3f, 0f), new Vector2(1.8f, 0.8f), -2));
+
+            // Cuerpo: granuloma con forma de colmena.
+            body.Add(SetupUtils.SpriteChild(v, "Body", PlaceholderArt.Circle, d.tint, Vector3.zero, new Vector2(3.6f, 2.4f), 0));
+            body.Add(SetupUtils.SpriteChild(v, "Crown", PlaceholderArt.Circle, Color.Lerp(d.tint, Color.white, 0.2f),
+                new Vector3(0f, 0.9f, 0f), new Vector2(2.4f, 1.1f), 1));
+            body.Add(SetupUtils.SpriteChild(v, "Belly", PlaceholderArt.Circle, Color.Lerp(d.tint, Color.black, 0.2f),
+                new Vector3(0f, -0.8f, 0f), new Vector2(2.6f, 0.9f), 1));
+
+            // Celdas de la colmena: brillan antes de atacar.
+            var cells = new System.Collections.Generic.List<Object>();
+            Vector2[] cellPos =
+            {
+                new Vector2(-1.1f, 0.15f), new Vector2(-0.35f, 0.35f), new Vector2(0.4f, 0.3f), new Vector2(1.15f, 0.1f),
+                new Vector2(-0.75f, -0.4f), new Vector2(0f, -0.35f), new Vector2(0.75f, -0.45f)
+            };
+            for (int i = 0; i < cellPos.Length; i++)
+                cells.Add(SetupUtils.SpriteChild(v, "Cell" + i, PlaceholderArt.Circle, new Color(0.25f, 0.1f, 0.15f),
+                    new Vector3(cellPos[i].x, cellPos[i].y, 0f), new Vector2(0.45f, 0.42f), 2));
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, Vector2.zero, new Vector2(3.4f, 2.4f));
+
+            var boss = root.AddComponent<HiveBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRefArray(boss, "cellRenderers", cells.ToArray());
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "minionPrefab", Neumococo);
+            SetupUtils.SetRef(boss, "minionData", data.Neumococo);
+
+            // Dibujo (Art/Jefes/Colmena/Nave_*.png): la nave de tuberculosis reemplaza las figuras.
+            const string nave = "Assets/_Project/Art/Jefes/Colmena";
+            Sprite naveNormal = ArtByWidth($"{nave}/Nave_Normal.png", 4.2f);
+            if (naveNormal != null)
+            {
+                var old = new System.Collections.Generic.List<GameObject>();
+                foreach (Transform child in v) old.Add(child.gameObject);
+                foreach (GameObject go in old) Object.DestroyImmediate(go);
+                float ppu = AssetDatabase.LoadAssetAtPath<Texture2D>($"{nave}/Nave_Normal.png").width / 4.2f;
+                Vector2 mid = new Vector2(0.5f, 0.5f);
+                SpriteRenderer drawn = SetupUtils.SpriteChild(v, "Dibujo", naveNormal, Color.white, Vector3.zero, Vector2.one, 0);
+                SetupUtils.SetRefArray(health, "flashRenderers", new Object[] { drawn });
+                SetupUtils.SetRefArray(boss, "cellRenderers", new Object[0]);
+                SetupUtils.SetRef(boss, "art", drawn);
+                SetupUtils.SetRef(boss, "idleSprite", naveNormal);
+                SetupUtils.SetRef(boss, "attackSprite", LoadArtSprite($"{nave}/Nave_Ataca.png", ppu, mid));
+                SetupUtils.SetRef(boss, "hurtSprite", LoadArtSprite($"{nave}/Nave_Dano.png", ppu, mid));
+                SetupUtils.SetRef(boss, "deadSprite", LoadArtSprite($"{nave}/Nave_Derrotada.png", ppu, mid));
+                SetHurtbox(hurtbox, Vector2.zero, new Vector2(3.8f, 2.8f));
+            }
+            return root;
+        }
+
+        /// <summary>
+        /// Reina de la tos ferina (jefe de la tráquea): cocobacilo azul gigante con corona, ojos y boca que se abre al toser.
+        /// Con 'Art/Jefes/TosFerina/TosFerina_Normal.png' usa ese dibujo en vez de las figuras.
+        /// </summary>
+        private GameObject BuildPertussisQueen()
+        {
+            EnemyData d = data.TosFerinaReina;
+            var root = new GameObject("TosFerina_Traquea");
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", new Vector3(0f, 0f, 0f));
+            Transform v = visual.transform;
+            var body = new System.Collections.Generic.List<Object>();
+            Transform mouth;
+            Sprite art = ArtByWidth("Assets/_Project/Art/Jefes/TosFerina/TosFerina_Normal.png", 3.6f, new Vector2(0.5f, 0.02f));
+            if (art != null)
+            {
+                body.Add(SetupUtils.SpriteChild(v, "Dibujo", art, Color.white, Vector3.zero, Vector2.one, 0));
+                mouth = SetupUtils.Child(v, "Boca", new Vector3(-0.3f, 4f, 0f)).transform;
+            }
+            else
+            {
+                Color outline = new Color(0.08f, 0.12f, 0.3f);
+                Color tint = d.tint;
+                // Cuerpo: cocobacilo (cápsula ancha) parado.
+                body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, outline, new Vector3(0f, 1.55f, 0f), new Vector2(3.9f, 3.2f), 0));
+                body.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Circle, tint, new Vector3(0f, 1.55f, 0f), new Vector2(3.7f, 3f), 1));
+                body.Add(SetupUtils.SpriteChild(v, "Panza", PlaceholderArt.Circle, Color.Lerp(tint, Color.white, 0.35f), new Vector3(0.3f, 1.2f, 0f), new Vector2(2f, 1.6f), 2));
+                body.Add(SetupUtils.SpriteChild(v, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.6f), new Vector3(-0.9f, 2.4f, 0f), new Vector2(0.8f, 0.4f), 3));
+                // Pelitos (fimbrias) alrededor.
+                for (int i = 0; i < 10; i++)
+                {
+                    float a = i * 36f * Mathf.Deg2Rad;
+                    var f = SetupUtils.SpriteChild(v, "Fimbria" + i, PlaceholderArt.Square, outline,
+                        new Vector3(Mathf.Cos(a) * 1.95f, 1.55f + Mathf.Sin(a) * 1.6f, 0f), new Vector2(0.08f, 0.45f), -1);
+                    f.transform.localRotation = Quaternion.Euler(0f, 0f, i * 36f - 90f);
+                }
+                // Corona.
+                body.Add(SetupUtils.SpriteChild(v, "CoronaBase", PlaceholderArt.Square, new Color(0.35f, 0.22f, 0.02f), new Vector3(0f, 3.05f, 0f), new Vector2(1.7f, 0.5f), 4));
+                body.Add(SetupUtils.SpriteChild(v, "Corona", PlaceholderArt.Square, new Color(1f, 0.82f, 0.2f), new Vector3(0f, 3.07f, 0f), new Vector2(1.56f, 0.38f), 5));
+                for (int i = -1; i <= 1; i++)
+                {
+                    var pico = SetupUtils.SpriteChild(v, "Pico" + i, PlaceholderArt.Square, new Color(1f, 0.82f, 0.2f), new Vector3(i * 0.55f, 3.35f, 0f), new Vector2(0.34f, 0.34f), 5);
+                    pico.transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+                    SetupUtils.SpriteChild(v, "Joya" + i, PlaceholderArt.Circle, new Color(0.9f, 0.2f, 0.4f), new Vector3(i * 0.55f, 3.08f, 0f), new Vector2(0.2f, 0.2f), 6);
+                }
+                // Ojos enojados.
+                for (int s = -1; s <= 1; s += 2)
+                {
+                    SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(-0.5f + s * 0.45f, 2.05f, 0f), new Vector2(0.62f, 0.7f), 6);
+                    SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, outline, new Vector3(-0.6f + s * 0.45f, 2f, 0f), new Vector2(0.28f, 0.34f), 7);
+                    var ceja = SetupUtils.SpriteChild(v, "Ceja", PlaceholderArt.Square, outline, new Vector3(-0.5f + s * 0.45f, 2.45f, 0f), new Vector2(0.6f, 0.12f), 7);
+                    ceja.transform.localRotation = Quaternion.Euler(0f, 0f, s * -15f);
+                }
+                // Boca (se estira al toser).
+                mouth = SetupUtils.Child(v, "Boca", new Vector3(-0.6f, 1.3f, 0f)).transform;
+                SetupUtils.SpriteChild(mouth, "Boca", PlaceholderArt.Circle, new Color(0.25f, 0.04f, 0.12f), Vector3.zero, new Vector2(0.8f, 0.5f), 7);
+                SetupUtils.SpriteChild(mouth, "Lengua", PlaceholderArt.Circle, new Color(0.9f, 0.4f, 0.5f), new Vector3(0f, -0.12f, 0f), new Vector2(0.45f, 0.2f), 8);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+
+            var hurtbox = root.AddComponent<Hurtbox>();
+            if (art != null) SetHurtbox(hurtbox, new Vector2(0f, 2.5f), new Vector2(2.4f, 4.8f));   // el dibujo es alto
+            else SetHurtbox(hurtbox, new Vector2(0f, 1.55f), new Vector2(3.4f, 3f));
+
+            var boss = root.AddComponent<PertussisQueenBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "mouth", mouth);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "minionPrefab", Pertussis);
+            SetupUtils.SetRef(boss, "minionData", data.Pertussis);
+            if (art != null)
+            {
+                const string tf = "Assets/_Project/Art/Jefes/TosFerina";
+                var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{tf}/TosFerina_Normal.png");
+                float ppu = tex.width / 3.6f;
+                Vector2 feet = new Vector2(0.5f, 0.02f);
+                System.Func<string, Sprite> P = pose => LoadArtSprite($"{tf}/TosFerina_{pose}.png", ppu, feet);
+                SetupUtils.SetRef(boss, "art", (SpriteRenderer)body[0]);
+                SetupUtils.SetRef(boss, "idleSprite", art);
+                SetupUtils.SetRef(boss, "inflateSprite", P("Infla"));
+                SetupUtils.SetRef(boss, "coughSprite", P("Tose"));
+                SetupUtils.SetRef(boss, "hurtSprite", P("Dano"));
+                SetupUtils.SetRef(boss, "deadSprite", P("Derrotada"));
+            }
+            return root;
+        }
+
+        // ---------- Jefes de los niveles secretos (Boca, Amígdalas, Ojo) ----------
+
+        /// <summary>
+        /// Si existen los PNG Art/Jefes/&lt;carpeta&gt;/&lt;prefijo&gt;_&lt;pose&gt;.png, pone el dibujo (misma escala para todas las poses,
+        /// tomada de la primera) y devuelve los sprites en el orden de 'poses'. Si no, devuelve null (se quedan las figuras).
+        /// </summary>
+        private Sprite[] BossArt(Transform v, string folder, string prefix, float width, Vector2 pivot, string[] poses, out SpriteRenderer drawn)
+        {
+            drawn = null;
+            string dir = $"Assets/_Project/Art/Jefes/{folder}";
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{prefix}_{poses[0]}.png");
+            if (tex == null) return null;
+            float ppu = tex.width / width;
+            var sprites = new Sprite[poses.Length];
+            for (int i = 0; i < poses.Length; i++) sprites[i] = LoadArtSprite($"{dir}/{prefix}_{poses[i]}.png", ppu, pivot);
+            var old = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in v) old.Add(child.gameObject);
+            foreach (GameObject go in old) Object.DestroyImmediate(go);
+            drawn = SetupUtils.SpriteChild(v, "Dibujo", sprites[0], Color.white, Vector3.zero, Vector2.one, 0);
+            return sprites;
+        }
+
+        /// <summary>
+        /// Si existe Art/Jefes/&lt;carpeta&gt;/&lt;prefijo&gt;_Normal.png, agrega <see cref="BossPoses"/> con las poses que haya
+        /// (Normal, Ataca, Enojado, Derrotado), todas a la escala de la Normal ('width' de ancho en el mundo).
+        /// 'renderer': el SpriteRenderer que ya muestra el dibujo (null = el jefe lo crea en Start con Build).
+        /// </summary>
+        public static BossPoses AddBossPoses(GameObject go, string folder, string prefix, float width, Vector2 pivot, int order,
+            SpriteRenderer renderer = null)
+        {
+            string dir = $"Assets/_Project/Art/Jefes/{folder}";
+            var tex = AssetDatabase.LoadAssetAtPath<Texture2D>($"{dir}/{prefix}_Normal.png");
+            if (tex == null) return null;
+            float ppu = tex.width / width;
+            var sprites = new Sprite[4];
+            string[] names = { "Normal", "Ataca", "Enojado", "Derrotado" };
+            for (int i = 0; i < names.Length; i++) sprites[i] = LoadArtSprite($"{dir}/{prefix}_{names[i]}.png", ppu, pivot);
+            var poses = go.AddComponent<BossPoses>();
+            poses.Configure(sprites[0], sprites[1], sprites[2], sprites[3], renderer, order);
+            if (renderer != null) renderer.sprite = sprites[0];
+            return poses;
+        }
+
+        /// <summary>
+        /// Jefe armado aquí (en el prefab): si hay dibujo, quita las figuras de 'v' y pone el dibujo con sus poses.
+        /// Devuelve null (y deja las figuras) si no hay PNG.
+        /// </summary>
+        private static BossPoses DrawBoss(GameObject root, Transform v, string folder, string prefix, float width, Vector2 pivot, int order,
+            out SpriteRenderer drawn)
+        {
+            drawn = null;
+            if (AssetDatabase.LoadAssetAtPath<Texture2D>($"Assets/_Project/Art/Jefes/{folder}/{prefix}_Normal.png") == null) return null;
+            var old = new System.Collections.Generic.List<GameObject>();
+            foreach (Transform child in v) old.Add(child.gameObject);
+            foreach (GameObject go in old) Object.DestroyImmediate(go);
+            drawn = SetupUtils.SpriteChild(v, "Dibujo", null, Color.white, Vector3.zero, Vector2.one, order);
+            return AddBossPoses(root, folder, prefix, width, pivot, order, drawn);
+        }
+
+        private GameObject BossRoot(string name, EnemyData d, out Transform v, out EnemyHealth health)
+        {
+            var root = new GameObject(name);
+            root.layer = PhysicsLayers.Enemy;
+            root.AddComponent<SortingGroup>().sortingOrder = 6;
+            v = SetupUtils.Child(root.transform, "Visual", Vector3.zero).transform;
+            health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", d);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            return root;
+        }
+
+        /// <summary>El Sarro (jefe de la Boca): gólem de placa endurecida, amarillento, con caritas de S. mutans.</summary>
+        private GameObject BuildSarro()
+        {
+            EnemyData d = data.SarroJefe;
+            GameObject root = BossRoot("Sarro_Boca", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.3f, 0.22f, 0.1f), fill = d.tint, dark = new Color(0.7f, 0.6f, 0.32f);
+            body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, line, new Vector3(0f, 1.8f, 0f), new Vector2(3.8f, 3.6f), 0));
+            body.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Circle, fill, new Vector3(0f, 1.8f, 0f), new Vector2(3.6f, 3.4f), 1));
+            body.Add(SetupUtils.SpriteChild(v, "Roca1", PlaceholderArt.Circle, dark, new Vector3(0.9f, 1f, 0f), new Vector2(1.2f, 0.9f), 2));
+            body.Add(SetupUtils.SpriteChild(v, "Roca2", PlaceholderArt.Circle, dark, new Vector3(-1f, 2.4f, 0f), new Vector2(0.9f, 0.7f), 2));
+            for (int s = -1; s <= 1; s += 2)
+            {
+                body.Add(SetupUtils.SpriteChild(v, "Pie", PlaceholderArt.Circle, line, new Vector3(s * 1f, 0.25f, 0f), new Vector2(1.2f, 0.6f), 0));
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(-0.5f + s * 0.45f, 2.3f, 0f), new Vector2(0.55f, 0.55f), 3);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(-0.6f + s * 0.45f, 2.25f, 0f), new Vector2(0.25f, 0.3f), 4);
+                var ceja = SetupUtils.SpriteChild(v, "Ceja", PlaceholderArt.Square, line, new Vector3(-0.5f + s * 0.45f, 2.65f, 0f), new Vector2(0.55f, 0.12f), 4);
+                ceja.transform.localRotation = Quaternion.Euler(0f, 0f, s * -18f);
+            }
+            SetupUtils.SpriteChild(v, "Boca", PlaceholderArt.Circle, new Color(0.3f, 0.1f, 0.05f), new Vector3(-0.6f, 1.5f, 0f), new Vector2(1f, 0.4f), 3);
+            string[] poses = { "Normal", "Ataca", "Expuesto", "Derrotado" };
+            Sprite[] art = BossArt(v, "Sarro", "Sarro", 4.2f, new Vector2(0.5f, 0.02f), poses, out SpriteRenderer drawn);
+            if (drawn != null) body = new System.Collections.Generic.List<Object> { drawn };
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 1.8f), new Vector2(3.4f, 3.4f));
+            var boss = root.AddComponent<SarroBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "plateArt", ArtByWidth("Assets/_Project/Art/Jefes/Sarro/Placa.png", 1.3f));
+            if (art != null)
+            {
+                SetupUtils.SetRef(boss, "art", drawn);
+                SetupUtils.SetRef(boss, "idleSprite", art[0]);
+                SetupUtils.SetRef(boss, "attackSprite", art[1]);
+                SetupUtils.SetRef(boss, "exposedSprite", art[2]);
+                SetupUtils.SetRef(boss, "deadSprite", art[3]);
+            }
+            return root;
+        }
+
+        /// <summary>El Absceso (jefe de las Amígdalas): una bolsa redonda e hinchada con cara enojada (tierno, no asqueroso).</summary>
+        private GameObject BuildAbscess()
+        {
+            EnemyData d = data.AbscesoJefe;
+            GameObject root = BossRoot("Absceso_Amigdalas", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.4f, 0.1f, 0.15f);
+            body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, line, new Vector3(0f, 2f, 0f), new Vector2(4.2f, 4f), 0));
+            body.Add(SetupUtils.SpriteChild(v, "Cuerpo", PlaceholderArt.Circle, new Color(1f, 0.55f, 0.55f), new Vector3(0f, 2f, 0f), new Vector2(4f, 3.8f), 1));
+            body.Add(SetupUtils.SpriteChild(v, "Punta", PlaceholderArt.Circle, new Color(1f, 0.95f, 0.8f), new Vector3(0.3f, 3.4f, 0f), new Vector2(1.4f, 1f), 2));
+            body.Add(SetupUtils.SpriteChild(v, "Brillo", PlaceholderArt.Circle, new Color(1f, 1f, 1f, 0.6f), new Vector3(-1f, 3f, 0f), new Vector2(0.8f, 0.4f), 3));
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(s * 0.6f, 2.1f, 0f), new Vector2(0.6f, 0.65f), 3);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(s * 0.55f, 2.05f, 0f), new Vector2(0.28f, 0.32f), 4);
+                var ceja = SetupUtils.SpriteChild(v, "Ceja", PlaceholderArt.Square, line, new Vector3(s * 0.6f, 2.55f, 0f), new Vector2(0.6f, 0.12f), 4);
+                ceja.transform.localRotation = Quaternion.Euler(0f, 0f, s * 18f);
+            }
+            SetupUtils.SpriteChild(v, "Boca", PlaceholderArt.Circle, line, new Vector3(0f, 1.3f, 0f), new Vector2(1f, 0.35f), 3);
+            string[] poses = { "Normal", "Ataca", "Dano", "Derrotado" };
+            Sprite[] art = BossArt(v, "Absceso", "Absceso", 4.4f, new Vector2(0.5f, 0.02f), poses, out SpriteRenderer drawn);
+            if (drawn != null) body = new System.Collections.Generic.List<Object> { drawn };
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 2f), new Vector2(3.8f, 3.8f));
+            var boss = root.AddComponent<AbscessBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "minionPrefab", SPyogenes);
+            SetupUtils.SetRef(boss, "minionData", data.SPyogenes);
+            if (art != null)
+            {
+                SetupUtils.SetRef(boss, "art", drawn);
+                SetupUtils.SetRef(boss, "idleSprite", art[0]);
+                SetupUtils.SetRef(boss, "attackSprite", art[1]);
+                SetupUtils.SetRef(boss, "hurtSprite", art[2]);
+                SetupUtils.SetRef(boss, "deadSprite", art[3]);
+            }
+            return root;
+        }
+
+        /// <summary>Toxoplasma (jefe del Ojo): parásito en forma de media luna, verde y morado, con ojos grandes.</summary>
+        private GameObject BuildToxoplasma()
+        {
+            EnemyData d = data.ToxoplasmaJefe;
+            GameObject root = BossRoot("Toxoplasma_Ojo", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.15f, 0.2f, 0.1f);
+            for (int i = 0; i < 5; i++)
+            {
+                float a = (i - 2) * 22f * Mathf.Deg2Rad;
+                Vector3 p = new Vector3(Mathf.Sin(a) * 1.3f, Mathf.Cos(a) * 0.7f - 0.4f, 0f);
+                body.Add(SetupUtils.SpriteChild(v, "ContornoArco" + i, PlaceholderArt.Circle, line, p, new Vector2(1.05f, 1.05f), 0));
+                body.Add(SetupUtils.SpriteChild(v, "Arco" + i, PlaceholderArt.Circle, d.tint, p, new Vector2(0.9f, 0.9f), 1));
+            }
+            body.Add(SetupUtils.SpriteChild(v, "Nucleo", PlaceholderArt.Circle, new Color(0.6f, 0.4f, 0.85f), new Vector3(0f, 0.25f, 0f), new Vector2(0.55f, 0.5f), 2));
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(s * 0.3f, 0.35f, 0f), new Vector2(0.34f, 0.4f), 3);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(s * 0.3f, 0.33f, 0f), new Vector2(0.15f, 0.2f), 4);
+            }
+            string[] poses = { "Normal", "Mareado", "Ataca", "Derrotado" };
+            Sprite[] art = BossArt(v, "Toxoplasma", "Toxoplasma", 2.8f, new Vector2(0.5f, 0.5f), poses, out SpriteRenderer drawn);
+            if (drawn != null) body = new System.Collections.Generic.List<Object> { drawn };
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(2.4f, 1.6f));
+            var boss = root.AddComponent<ToxoplasmaBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            if (art != null)
+            {
+                SetupUtils.SetRef(boss, "art", drawn);
+                SetupUtils.SetRef(boss, "idleSprite", art[0]);
+                SetupUtils.SetRef(boss, "stunnedSprite", art[1]);
+                SetupUtils.SetRef(boss, "attackSprite", art[2]);
+                SetupUtils.SetRef(boss, "deadSprite", art[3]);
+            }
+            return root;
+        }
+
+        /// <summary>E. coli: bacilo (bastoncito) amarillo con flagelos.</summary>
+        private GameObject BuildEColi()
+        {
+            GameObject go = BuildEnemy("Bacteria_EColi", data.EColi, EnemyShape.Blob);
+            if (HasDrawing(go)) return go;
+            Transform visual = go.transform.Find("Visual");
+            Transform body = go.transform.Find("Visual/Body");
+            if (body != null) body.localScale = new Vector3(body.localScale.x * 1.5f, body.localScale.y * 0.75f, 1f);
+            for (int i = 0; i < 4; i++)
+            {
+                var f = SetupUtils.SpriteChild(visual, "Flagelo" + i, PlaceholderArt.SquareCentered, new Color(0.5f, 0.35f, 0.15f),
+                    new Vector3(-0.9f + i * 0.6f, 0.05f, 0f), new Vector2(0.06f, 0.6f), -1);
+                f.transform.localRotation = Quaternion.Euler(0f, 0f, -30f + i * 20f);
+            }
+            return go;
+        }
+
+        /// <summary>Leptospira: espiral turquesa (un "resorte" de bolitas) con carita al frente.</summary>
+        private GameObject BuildLeptospira()
+        {
+            GameObject go = BuildEnemy("Bacteria_Leptospira", data.Leptospira, EnemyShape.Round);
+            if (HasDrawing(go)) return go;
+            Transform visual = RoundWithoutSpikes(go);
+            Transform body = go.transform.Find("Visual/Body");
+            if (body != null) body.gameObject.SetActive(false);
+            Color line = new Color(0.05f, 0.3f, 0.35f), fill = data.Leptospira.tint;
+            for (int i = 0; i < 9; i++)
+            {
+                var p = new Vector3(-0.8f + i * 0.2f, Mathf.Sin(i * 1.6f) * 0.16f, 0f);
+                SetupUtils.SpriteChild(visual, "EspiraContorno" + i, PlaceholderArt.Circle, line, p, Vector2.one * 0.3f, 0);
+                SetupUtils.SpriteChild(visual, "Espira" + i, PlaceholderArt.Circle, fill, p, Vector2.one * 0.22f, 1);
+            }
+            SetupUtils.SpriteChild(visual, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(0.82f, 0.08f, 0f), Vector2.one * 0.16f, 2);
+            SetupUtils.SpriteChild(visual, "Pupila", PlaceholderArt.Circle, line, new Vector3(0.85f, 0.07f, 0f), Vector2.one * 0.08f, 3);
+            return go;
+        }
+
+        /// <summary>Cercaria (larva de Schistosoma): cabecita durazno y cola larga que termina en Y.</summary>
+        private GameObject BuildCercaria()
+        {
+            GameObject go = BuildEnemy("Parasito_Cercaria", data.Cercaria, EnemyShape.Round);
+            if (HasDrawing(go)) return go;
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Cercaria.visualScale;
+            Color line = new Color(0.4f, 0.22f, 0.15f);
+            for (int i = 0; i < 5; i++)
+                SetupUtils.SpriteChild(visual, "Cola" + i, PlaceholderArt.Circle, line, new Vector3((-0.55f - i * 0.2f) * s, Mathf.Sin(i) * 0.06f * s, 0f), Vector2.one * 0.13f * s, -1);
+            for (int k = -1; k <= 1; k += 2)
+                SetupUtils.SpriteChild(visual, "Horquilla", PlaceholderArt.SquareCentered, line, new Vector3(-1.6f * s, k * 0.13f * s, 0f), new Vector2(0.35f, 0.07f) * s, -1)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, k * 30f);
+            SetupUtils.SpriteChild(visual, "Ventosa", PlaceholderArt.Circle, line, new Vector3(0.42f * s, 0f, 0f), Vector2.one * 0.18f * s, 2);
+            return go;
+        }
+
+        /// <summary>Proteus: bastón morado con muchos flagelos (como pelos) y cristalitos blancos pegados.</summary>
+        private GameObject BuildProteus()
+        {
+            GameObject go = BuildEnemy("Bacteria_Proteus", data.Proteus, EnemyShape.Bullet);
+            if (HasDrawing(go)) return go;
+            Transform visual = go.transform.Find("Visual");
+            Color hair = new Color(0.35f, 0.25f, 0.55f);
+            for (int i = 0; i < 8; i++)
+            {
+                float a = i * 45f;
+                var f = SetupUtils.SpriteChild(visual, "Flagelo" + i, PlaceholderArt.SquareCentered, hair,
+                    new Vector3(Mathf.Cos(a * Mathf.Deg2Rad) * 0.6f, Mathf.Sin(a * Mathf.Deg2Rad) * 0.38f, 0f), new Vector2(0.5f, 0.05f), -2);
+                f.transform.localRotation = Quaternion.Euler(0f, 0f, a + 20f);
+            }
+            for (int i = 0; i < 3; i++)
+                SetupUtils.SpriteChild(visual, "Cristal" + i, PlaceholderArt.SquareCentered, Color.white, new Vector3(-0.3f + i * 0.25f, 0.3f, 0f), new Vector2(0.14f, 0.14f), 3)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            return go;
+        }
+
+        /// <summary>Colonia de Proteus (minijefe del Riñón): pared de biopelícula. El dibujo y la lógica, en ProteusColonyBoss.</summary>
+        private GameObject BuildProteusColony()
+        {
+            EnemyData d = data.ProteusColonia;
+            GameObject root = BossRoot("ProteusColonia_Rinon", d, out Transform v, out EnemyHealth health);
+            // Con dibujo es un montículo (más ancho que alto); con figuras, una pared. Solo la CARA recibe daño.
+            BossPoses art = AddBossPoses(root, "ProteusColonia", "ProteusColonia", 5.2f, new Vector2(0.5f, 0f), 11);   // si hay dibujo, lo pone el jefe
+            bool drawn = art != null && art.HasArt;
+            float h = drawn ? 4.2f : 6f, w = drawn ? 4.6f : 3.4f;
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, h * 0.55f), drawn ? new Vector2(3f, 2.4f) : new Vector2(2.6f, 3f));
+            root.AddComponent<ProteusColonyBoss>().Configure(EnemyProjectile, ProteusBacteria, h, w);
+            return root;
+        }
+
+        /// <summary>Cálculo gigante (jefe secreto del Riñón): el dibujo y la lógica los arma KidneyStoneBoss.</summary>
+        private GameObject BuildKidneyStone()
+        {
+            EnemyData d = data.CalculoJefe;
+            GameObject root = BossRoot("Calculo_Rinon", d, out Transform v, out EnemyHealth health);
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, 2.6f), new Vector2(1.1f, 1.1f));
+            BossPoses stoneArt = AddBossPoses(root, "Calculo", "Calculo", 5.6f, new Vector2(0.5f, 0.5f), 11);   // si hay dibujo, lo pone KidneyStoneBoss
+            var stone = root.AddComponent<KidneyStoneBoss>();
+            // Las grietas brillan donde están dibujadas (medido en Calculo_Normal.png: izquierda, arriba a la derecha y abajo a la derecha).
+            if (stoneArt != null) stone.ConfigureCracks(new Vector2(-1.51f, 0.03f), new Vector2(1.05f, 0.97f), new Vector2(1.37f, -1.31f));
+            return root;
+        }
+
+        /// <summary>Émbolo: bolita de plaquetas moradas con hilos de fibrina (un pedazo del gran trombo).</summary>
+        private GameObject BuildEmbolus()
+        {
+            GameObject go = BuildEnemy("Coagulo_Embolo", data.Embolo, EnemyShape.Round);
+            if (HasDrawing(go)) return go;   // ya tiene su dibujo (Art/Enemigos/Circulatorio)
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Embolo.visualScale;
+            for (int i = 0; i < 6; i++)
+            {
+                float a = i * 60f * Mathf.Deg2Rad;
+                var p = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.32f * s;
+                SetupUtils.SpriteChild(visual, "PlaquetaContorno" + i, PlaceholderArt.Circle, new Color(0.3f, 0.1f, 0.34f), p, Vector2.one * 0.42f * s, -2);
+                SetupUtils.SpriteChild(visual, "Plaqueta" + i, PlaceholderArt.Circle, new Color(0.85f, 0.65f, 0.95f), p, Vector2.one * 0.34f * s, -1);
+            }
+            SetupUtils.SpriteChild(visual, "Fibrina", PlaceholderArt.SquareCentered, new Color(1f, 0.95f, 0.8f, 0.9f), Vector3.zero, new Vector2(1.1f, 0.06f) * s, 2)
+                .transform.localRotation = Quaternion.Euler(0f, 0f, 25f);
+            return go;
+        }
+
+        /// <summary>S. viridans: cadenita de cocos verdes (un "collar") sobre su cuerpo.</summary>
+        private GameObject BuildSViridans()
+        {
+            GameObject go = BuildEnemy("Bacteria_SViridans", data.SViridans, EnemyShape.Blob);
+            if (HasDrawing(go)) return go;
+            Transform visual = go.transform.Find("Visual");
+            Color edge = new Color(0.1f, 0.3f, 0.12f);
+            for (int i = 0; i < 6; i++)
+            {
+                var p = new Vector3(-0.75f + i * 0.3f, 1.05f + Mathf.Sin(i * 1.1f) * 0.12f, 0f);
+                SetupUtils.SpriteChild(visual, "CocoContorno" + i, PlaceholderArt.Circle, edge, p, Vector2.one * 0.34f, 3);
+                SetupUtils.SpriteChild(visual, "Coco" + i, PlaceholderArt.Circle, new Color(0.65f, 0.95f, 0.6f), p, Vector2.one * 0.27f, 4);
+            }
+            return go;
+        }
+
+        /// <summary>T. cruzi (jefe del Corazón): cuerpo largo en segmentos que ondulan, flagelo y ojos enojados.</summary>
+        private GameObject BuildTCruzi()
+        {
+            EnemyData d = data.TCruziJefe;
+            GameObject root = BossRoot("TCruzi_Corazon", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.08f, 0.2f, 0.3f), membrane = new Color(0.7f, 0.9f, 1f, 0.55f);
+            for (int i = 0; i < 8; i++)
+            {
+                float x = 1.6f - i * 0.45f;
+                float size = i < 2 ? 0.95f - i * 0.05f : 0.9f - (i - 2) * 0.09f;
+                GameObject seg = SetupUtils.Child(v, "Segmento" + i, new Vector3(x, 0f, 0f));
+                SetupUtils.SpriteChild(seg.transform, "Membrana", PlaceholderArt.Circle, membrane, new Vector3(0f, 0.3f, 0f), new Vector2(size * 0.9f, size * 0.5f), 0);
+                body.Add(SetupUtils.SpriteChild(seg.transform, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, Vector2.one * size * 1.1f, 1));
+                body.Add(SetupUtils.SpriteChild(seg.transform, "Cuerpo", PlaceholderArt.Circle, d.tint, Vector3.zero, Vector2.one * size, 2));
+            }
+            // Flagelo (el látigo) atrás y el cinetoplasto (el puntito oscuro).
+            for (int i = 0; i < 5; i++)
+                SetupUtils.SpriteChild(v, "Flagelo" + i, PlaceholderArt.Circle, line, new Vector3(-2.2f - i * 0.35f, Mathf.Sin(i) * 0.15f, 0f), Vector2.one * 0.16f, 1);
+            SetupUtils.SpriteChild(v, "Cinetoplasto", PlaceholderArt.Circle, new Color(0.15f, 0.25f, 0.45f), new Vector3(-0.9f, 0f, 0f), Vector2.one * 0.3f, 3);
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(1.75f, s * 0.2f, 0f), new Vector2(0.32f, 0.36f), 4);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(1.82f, s * 0.19f, 0f), Vector2.one * 0.16f, 5);
+            }
+            bool drawing = DrawBoss(root, v, "TCruzi", "TCruzi", 4.6f, new Vector2(0.5f, 0.5f), 3, out SpriteRenderer drawn) != null;
+            if (drawing) body = new System.Collections.Generic.List<Object> { drawn };
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            // El dibujo es más alto que la figura (el cuerpo en C con su membrana): le cabe un cuerpo más grande.
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, drawing ? new Vector2(3.8f, 2f) : new Vector2(3.6f, 1.2f));
+            var boss = root.AddComponent<TrypanosomaBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            return root;
+        }
+
+        /// <summary>Virus de Epstein-Barr (jefe del Bazo): cápside de 20 caras (verde) con su envoltura y espículas.</summary>
+        private GameObject BuildEpsteinBarr()
+        {
+            EnemyData d = data.EpsteinBarrJefe;
+            GameObject root = BossRoot("EpsteinBarr_Bazo", d, out Transform v, out EnemyHealth health);
+            var body = new System.Collections.Generic.List<Object>();
+            Color line = new Color(0.1f, 0.25f, 0.2f), env = new Color(0.75f, 0.6f, 0.95f, 0.55f);
+            for (int i = 0; i < 12; i++)
+            {
+                float a = i * 30f * Mathf.Deg2Rad;
+                Vector3 p = new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 1.55f;
+                var spike = SetupUtils.SpriteChild(v, "Espicula" + i, PlaceholderArt.SquareCentered, new Color(0.55f, 0.35f, 0.75f), p * 0.9f, new Vector2(0.12f, 0.5f), 0);
+                spike.transform.localRotation = Quaternion.Euler(0f, 0f, i * 30f - 90f);
+                body.Add(SetupUtils.SpriteChild(v, "Punta" + i, PlaceholderArt.Circle, new Color(0.85f, 0.65f, 1f), p * 1.08f, Vector2.one * 0.3f, 1));
+            }
+            body.Add(SetupUtils.SpriteChild(v, "Envoltura", PlaceholderArt.Circle, env, Vector3.zero, Vector2.one * 3f, 1));
+            body.Add(SetupUtils.SpriteChild(v, "Contorno", PlaceholderArt.Circle, line, Vector3.zero, Vector2.one * 2.3f, 2));
+            body.Add(SetupUtils.SpriteChild(v, "Capside", PlaceholderArt.Circle, d.tint, Vector3.zero, Vector2.one * 2.1f, 3));
+            for (int i = 0; i < 6; i++)
+            {
+                float a = (i * 60f + 30f) * Mathf.Deg2Rad;
+                SetupUtils.SpriteChild(v, "Cara" + i, PlaceholderArt.Circle, new Color(0.4f, 0.7f, 0.55f), new Vector3(Mathf.Cos(a), Mathf.Sin(a), 0f) * 0.62f, Vector2.one * 0.55f, 4);
+            }
+            for (int s = -1; s <= 1; s += 2)
+            {
+                SetupUtils.SpriteChild(v, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(s * 0.38f, 0.2f, 0f), new Vector2(0.48f, 0.55f), 5);
+                SetupUtils.SpriteChild(v, "Pupila", PlaceholderArt.Circle, line, new Vector3(s * 0.34f, 0.16f, 0f), new Vector2(0.22f, 0.28f), 6);
+                SetupUtils.SpriteChild(v, "Ceja", PlaceholderArt.SquareCentered, line, new Vector3(s * 0.38f, 0.58f, 0f), new Vector2(0.5f, 0.12f), 6)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, s * -20f);
+            }
+            SetupUtils.SpriteChild(v, "Boca", PlaceholderArt.Circle, line, new Vector3(0f, -0.42f, 0f), new Vector2(0.7f, 0.28f), 5);
+            if (DrawBoss(root, v, "EpsteinBarr", "EpsteinBarr", 3.4f, new Vector2(0.5f, 0.5f), 3, out SpriteRenderer drawn) != null)
+                body = new System.Collections.Generic.List<Object> { drawn };
+            SetupUtils.SetRefArray(health, "flashRenderers", body.ToArray());
+            SetHurtbox(root.AddComponent<Hurtbox>(), Vector2.zero, new Vector2(2.6f, 2.6f));
+            var boss = root.AddComponent<EpsteinBarrBoss>();
+            SetupUtils.SetRef(boss, "visual", v);
+            SetupUtils.SetRef(boss, "projectilePrefab", EnemyProjectile);
+            SetupUtils.SetRef(boss, "infectedData", data.LinfocitoInfectado);
+            SetupUtils.SetRef(boss, "table", data.Table);
+            return root;
+        }
+
+        // ---------- Bloqueos tratables (Pulmones, GDD 5.12) ----------
+
+        private GameObject BuildObstacle(string name, EnemyData obstacleData, bool mucus, bool useArt = true)
+        {
+            const float width = 1.4f;
+            const float height = 12f; // más alto que cualquier salto: hay que disolverlo
+            var root = new GameObject(name);
+            root.layer = PhysicsLayers.Ground;
+            root.AddComponent<SortingGroup>().sortingOrder = 3;
+
+            var wall = root.AddComponent<BoxCollider2D>();
+            wall.size = new Vector2(width, height);
+            wall.offset = new Vector2(0f, height * 0.5f);
+
+            // El dibujo tiene el pivote en el piso para que se encoja hacia abajo.
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Color c = obstacleData.tint;
+            SpriteRenderer main = SetupUtils.SpriteChild(visual.transform, "Mass", PlaceholderArt.Square, c,
+                new Vector3(0f, 0f, 0f), new Vector2(width, height), 0);
+            var renderers = new System.Collections.Generic.List<Object> { main };
+            for (int i = 0; i < 9; i++)
+            {
+                // Bultos en la orilla para que se lea orgánico (gotas de moco o tejido hinchado).
+                float y = 0.5f + i * 1.25f;
+                float side = i % 2 == 0 ? -1f : 1f;
+                float size = mucus ? 0.9f + (i % 3) * 0.25f : 1.2f + (i % 2) * 0.3f;
+                SpriteRenderer bump = SetupUtils.SpriteChild(visual.transform, "Bump" + i, PlaceholderArt.Circle,
+                    Color.Lerp(c, mucus ? Color.white : new Color(0.7f, 0.1f, 0.15f), mucus ? 0.25f : 0.2f),
+                    new Vector3(side * width * 0.45f, y, 0f), new Vector2(size, size), 1);
+                renderers.Add(bump);
+            }
+            if (!mucus)
+            {
+                // Vetas de la inflamación.
+                for (int i = 0; i < 4; i++)
+                    SetupUtils.SpriteChild(visual.transform, "Vein" + i, PlaceholderArt.Capsule, new Color(0.7f, 0.1f, 0.2f, 0.8f),
+                        new Vector3(0f, 1.2f + i * 2.4f, 0f), new Vector2(1f, 0.18f), 2).transform.localRotation = Quaternion.Euler(0f, 0f, i % 2 == 0 ? 25f : -25f);
+            }
+
+            // Dibujo (Art/Respiratorio/Mucosidad_*.png o Inflamacion_*.png): va abajo, al frente de la columna.
+            string artName = mucus ? "Mucosidad" : "Inflamacion";
+            string artDir = "Assets/_Project/Art/Respiratorio";
+            Vector2 bottom = new Vector2(0.5f, 0.02f);
+            var normalTex = useArt ? AssetDatabase.LoadAssetAtPath<Texture2D>($"{artDir}/{artName}_Normal.png") : null;
+            SpriteRenderer drawn = null;
+            Sprite hurtArt = null, deadArt = null;
+            if (normalTex != null)
+            {
+                float ppu = normalTex.width / 3.4f;
+                drawn = SetupUtils.SpriteChild(visual.transform, "Dibujo", LoadArtSprite($"{artDir}/{artName}_Normal.png", ppu, bottom), Color.white, Vector3.zero, Vector2.one, 5);
+                renderers.Add(drawn);
+                hurtArt = LoadArtSprite($"{artDir}/{artName}_Dano.png", ppu, bottom);
+                deadArt = LoadArtSprite($"{artDir}/{artName}_{(mucus ? "Disuelta" : "Desinflada")}.png", ppu, bottom);
+            }
+
+            var health = root.AddComponent<EnemyHealth>();
+            SetupUtils.SetRef(health, "data", obstacleData);
+            SetupUtils.SetRef(health, "effectivenessTable", data.Table);
+            SetupUtils.SetRefArray(health, "flashRenderers", renderers.ToArray());
+
+            // Hurtbox un poco más ancha que la pared para que la cápsula la toque antes de chocar.
+            var hurtbox = root.AddComponent<Hurtbox>();
+            SetHurtbox(hurtbox, new Vector2(0f, height * 0.5f), new Vector2(width + 0.9f, height));
+
+            var obstacle = root.AddComponent<TreatableObstacle>();
+            SetupUtils.SetRef(obstacle, "visual", visual.transform);
+            SetupUtils.SetBool(obstacle, "slowsOnTouch", mucus);
+            SetupUtils.SetBool(obstacle, "shrinkWidth", !mucus);
+            SetupUtils.SetFloat(obstacle, "minScale", mucus ? 0.45f : 0.55f);
+            if (drawn != null)
+            {
+                SetupUtils.SetRef(obstacle, "art", drawn);
+                SetupUtils.SetRef(obstacle, "hurtSprite", hurtArt);
+                SetupUtils.SetRef(obstacle, "deadSprite", deadArt);
+                SetupUtils.SetFloat(obstacle, "deadWidth", 3.6f);
+            }
+            return root;
+        }
+
+        // ---------- Nivel ----------
+
+        private GameObject BuildSecret()
+        {
+            var root = new GameObject("SecretPassage");
+            var secret = root.AddComponent<SecretPassage>();
+            // Grieta brillante en la pared: tócala para descubrir el pasaje.
+            SpriteRenderer glow = SetupUtils.SpriteChild(root.transform, "Glow", PlaceholderArt.Circle, new Color(1f, 0.9f, 0.4f, 0.75f),
+                Vector3.zero, new Vector2(0.6f, 1.3f), -5);
+            SetupUtils.SetRef(secret, "glow", glow);
+            return root;
+        }
+
+        /// <summary>Easter egg: el diente con cara (Art/Secreto/Diente_Secreto.png), la entrada secreta a la Boca. Mide ~1.6 de alto.</summary>
+        private GameObject BuildTooth()
+        {
+            var root = new GameObject("DienteSecreto");
+            var tooth = root.AddComponent<SecretTooth>();
+            GameObject visual = SetupUtils.Child(root.transform, "Visual", Vector3.zero);
+            Sprite art = LoadArtSprite("Assets/_Project/Art/Secreto/Diente_Secreto.png", 400f, new Vector2(0.5f, 0.5f));
+            if (art != null)
+                SetupUtils.SpriteChild(visual.transform, "Diente", art, Color.white, Vector3.zero, Vector2.one, 5);
+            else
+                SetupUtils.SpriteChild(visual.transform, "Diente", PlaceholderArt.Circle, new Color(1f, 0.92f, 0.7f), Vector3.zero, new Vector2(1f, 1.3f), 5);
+            // Brillo detrás para que se note cuando lo encuentras.
+            SetupUtils.SpriteChild(visual.transform, "Brillo", PlaceholderArt.Circle, new Color(1f, 0.95f, 0.6f, 0.25f), Vector3.zero, new Vector2(2.2f, 2.2f), 4);
+            SetupUtils.SetRef(tooth, "visual", visual.transform);
+            SetupUtils.SetRef(tooth, "targetLevel", data.DigestivoBoca);
+            return root;
+        }
+
+        /// <summary>Importa un PNG como Sprite con su tamaño y pivote (solo cambia la importación si hace falta).</summary>
+        private static Sprite LoadArtSprite(string path, float pixelsPerUnit, Vector2 pivot)
+        {
+            var importer = AssetImporter.GetAtPath(path) as TextureImporter;
+            if (importer == null) return null;
+            var settings = new TextureImporterSettings();
+            importer.ReadTextureSettings(settings);
+            if (importer.textureType != TextureImporterType.Sprite || Mathf.Abs(importer.spritePixelsPerUnit - pixelsPerUnit) > 0.01f
+                || settings.spriteAlignment != (int)SpriteAlignment.Custom || (settings.spritePivot - pivot).sqrMagnitude > 1e-4f)
+            {
+                importer.textureType = TextureImporterType.Sprite;
+                importer.spriteImportMode = SpriteImportMode.Single;
+                importer.spritePixelsPerUnit = pixelsPerUnit;
+                importer.mipmapEnabled = false;
+                importer.alphaIsTransparency = true;
+                importer.ReadTextureSettings(settings);
+                settings.spriteAlignment = (int)SpriteAlignment.Custom;
+                settings.spritePivot = pivot;
+                importer.SetTextureSettings(settings);
+                importer.SaveAndReimport();
+            }
+            return AssetDatabase.LoadAssetAtPath<Sprite>(path);
+        }
+
+        // ---------- Peligros ----------
+
+        private GameObject BuildAcid()
+        {
+            var root = new GameObject("AcidPool");
+            var acid = root.AddComponent<AcidPool>();
+            SetupUtils.SetVector2(acid, "size", new Vector2(2.8f, 0.5f));
+
+            // Charco sobre el piso (el objeto se coloca a la altura del piso).
+            SetupUtils.SpriteChild(root.transform, "Glow", PlaceholderArt.Circle, new Color(0.5f, 1f, 0.15f, 0.25f),
+                new Vector3(0f, 0.25f, 0f), new Vector2(3.8f, 1.2f), 1);
+            SetupUtils.SpriteChild(root.transform, "Puddle", PlaceholderArt.Circle, new Color(0.5f, 1f, 0.15f, 0.95f),
+                Vector3.zero, new Vector2(3.2f, 0.35f), 2);
+            SetupUtils.SpriteChild(root.transform, "Bubble1", PlaceholderArt.Circle, new Color(0.85f, 1f, 0.6f, 0.9f),
+                new Vector3(-0.6f, 0.12f, 0f), new Vector2(0.25f, 0.25f), 3);
+            SetupUtils.SpriteChild(root.transform, "Bubble2", PlaceholderArt.Circle, new Color(0.85f, 1f, 0.6f, 0.9f),
+                new Vector3(0.7f, 0.08f, 0f), new Vector2(0.18f, 0.18f), 3);
+            return root;
+        }
+    }
+}
