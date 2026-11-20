@@ -35,7 +35,7 @@ namespace HealingKnight.EditorTools
         public EnemyData SViridans, Vegetacion, TCruziJefe;
         public EnemyData Embolo, GranTromboJefe;
         public EnemyData EColi, CalculoJefe, Leptospira, Cercaria, Proteus, ProteusColonia;
-        public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo, CirculatorioRinon;
+        public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioRinon;
 
         public void Run()
         {
@@ -1116,6 +1116,9 @@ namespace HealingKnight.EditorTools
             });
         }
 
+        private const string ArteriasVenasObjective = "Vuela en la nanocápsula por TODO el cuerpo: aorta, pierna, venas y el corazón. " +
+            "Al final, persigue al GRAN TROMBO por la carótida y deshazlo con anticoagulante antes de que llegue al cerebro.";
+
         private void CreateCatalog()
         {
             DigestivoEstomago = Level("Digestivo", "01_Estomago", "digestivo_estomago", "Estómago", "Digestivo_Estomago", false,
@@ -1206,17 +1209,20 @@ namespace HealingKnight.EditorTools
                 UnityEditor.EditorUtility.SetDirty(nervioso);
             }
 
-            // De menos vital a más vital: sin bazo se puede vivir, sin corazón no. Ver el plan en el proyecto.
+            // Bazo → Corazón → Arterias y venas (el vuelo por todo el cuerpo termina con el jefe del sistema, el GRAN TROMBO,
+            // que antes era un nivel aparte). El Riñón es secreto (se entra por la arteria renal en Arterias y venas).
             CirculatorioBazo = PlayableLevel("Circulatorio", "01_Bazo", "circulatorio_bazo", "Bazo", "Circulatorio_Bazo", false,
                 "El filtro de la sangre: bandas de glóbulos, ranuras, macrófagos y la reserva de plaquetas. Jefe: el virus de Epstein-Barr.");
             CirculatorioArteriasVenas = PlayableLevel("Circulatorio", "02_ArteriasVenas", "circulatorio_arterias_venas", "Arterias y venas",
                 "Circulatorio_ArteriasVenas", false,
-                "Vuela en la nanocápsula: el ventrículo te dispara a la aorta. Avanza con cada latido y deshaz los coágulos con Anticoagulante.");
+                ArteriasVenasObjective);
             CirculatorioCorazon = PlayableLevel("Circulatorio", "03_Corazon", "circulatorio_corazon", "Corazón", "Circulatorio_Corazon", true,
                 "Válvulas al ritmo del latido, ventrículos que se aprietan, cuerdas tendinosas y el Trypanosoma cruzi (Chagas)."); 
-            CirculatorioGranTrombo = PlayableLevel("Circulatorio", "04_GranTrombo", "circulatorio_gran_trombo", "El gran trombo",
-                "Circulatorio_GranTrombo", false,
-                "Jefe del sistema: persigue al coágulo por la carótida y deshazlo con anticoagulante antes de que llegue al cerebro.");
+            if (CirculatorioArteriasVenas.objective != ArteriasVenasObjective)
+            {
+                CirculatorioArteriasVenas.objective = ArteriasVenasObjective;
+                UnityEditor.EditorUtility.SetDirty(CirculatorioArteriasVenas);
+            }
             CirculatorioRinon = Level("Circulatorio", "99_Rinon_Secreto", "circulatorio_rinon", "Riñón", "Circulatorio_Rinon", false,
                 "Nivel secreto: sube la presión del glomérulo, nada en el asa de Henle, juega con el agua y rompe el cálculo gigante.");
             if (!CirculatorioRinon.hidden)
@@ -1229,16 +1235,15 @@ namespace HealingKnight.EditorTools
             SystemData circulatorio = MakeSystem("Circulatorio", "circulatorio", "Sistema Circulatorio", "IV", Anticoagulante,
                 new Color(0.9f, 0.2f, 0.25f), new Vector2(0.45f, 0.65f),
                 "La Cepa Madre bombea variantes resistentes a todo el cuerpo.",
-                CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo, CirculatorioRinon);
-            if (circulatorio.regionalMedication != Anticoagulante || !circulatorio.levels.Contains(CirculatorioArteriasVenas))
+                CirculatorioBazo, CirculatorioCorazon, CirculatorioArteriasVenas, CirculatorioRinon);
+            // Siempre en este orden (los proyectos viejos tenían "El gran trombo" como cuarto nivel).
+            var circulatoryOrder = new List<LevelData> { CirculatorioBazo, CirculatorioCorazon, CirculatorioArteriasVenas, CirculatorioRinon };
+            bool sameOrder = circulatorio.levels != null && circulatorio.levels.Count == circulatoryOrder.Count;
+            for (int i = 0; sameOrder && i < circulatoryOrder.Count; i++) sameOrder = circulatorio.levels[i] == circulatoryOrder[i];
+            if (circulatorio.regionalMedication != Anticoagulante || !sameOrder)
             {
                 circulatorio.regionalMedication = Anticoagulante;
-                circulatorio.levels = new List<LevelData> { CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo };
-                UnityEditor.EditorUtility.SetDirty(circulatorio);
-            }
-            if (!circulatorio.levels.Contains(CirculatorioRinon))
-            {
-                circulatorio.levels.Add(CirculatorioRinon);
+                circulatorio.levels = circulatoryOrder;
                 UnityEditor.EditorUtility.SetDirty(circulatorio);
             }
 
@@ -1490,7 +1495,7 @@ namespace HealingKnight.EditorTools
                     "Antiparasitarios que receta el médico; funcionan mejor si se dan pronto.",
                     "Enjarrar paredes y sellar las grietas de la casa, usar pabellón y revisar camas y rincones.",
                     TCruziJefe),
-                Ficha(C, "Carótida (jefe del sistema)", "El gran trombo", "Trombo y émbolos", "Jefe · coágulo que viaja", $"{BossArt}/GranTrombo/GranTrombo_Normal.png",
+                Ficha(C, "Arterias y venas: carótida (jefe del sistema)", "El gran trombo", "Trombo y émbolos", "Jefe · coágulo que viaja", $"{BossArt}/GranTrombo/GranTrombo_Normal.png",
                     "Embolia: un coágulo (o un pedazo de él) viaja por la sangre y tapa un vaso lejos de donde se formó. En el cerebro causa un infarto cerebral (EVC).",
                     "Señales de un EVC: la cara se ve chueca, un brazo no tiene fuerza, la persona habla raro. Si las ves, ¡pide ayuda y llama a emergencias de inmediato! Cada minuto cuenta.",
                     "En el hospital, lo antes posible: medicinas que disuelven el coágulo o sacarlo con un tubito (catéter).",

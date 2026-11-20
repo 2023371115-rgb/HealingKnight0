@@ -397,9 +397,9 @@ Los niveles largos tienen **puntos de regreso** invisibles (`CheckpointTrigger`)
 
 ## Sistema circulatorio (completo)
 
-El cuarto sistema ya se juega completo desde el mapa del cuerpo: **Bazo** (a pie) → **Arterias y venas** (en vuelo, 6
-tramos) → **Corazón** (a pie, al ritmo del latido) → **El gran trombo** (jefe del sistema, en vuelo hacia arriba), más el
-**Riñón** secreto. Plan y biología en el proyecto de Claude: `claude/plan-sistema-circulatorio.md`. Cada nivel también se
+El cuarto sistema ya se juega completo desde el mapa del cuerpo: **Bazo** (a pie) → **Corazón** (a pie, al ritmo del
+latido) → **Arterias y venas** (en vuelo por todo el cuerpo, 8 tramos; termina con el jefe del sistema, **el gran
+trombo**), más el **Riñón** secreto. (El gran trombo era un nivel aparte; ahora es el final de Arterias y venas.) Plan y biología en el proyecto de Claude: `claude/plan-sistema-circulatorio.md`. Cada nivel también se
 abre con *Healing Knight → Abrir escena → Circulatorio · ...*. Al desinfectar los cuatro sistemas sale el **final del
 juego** (abajo).
 
@@ -439,7 +439,7 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
   parpadea al final). **+MISILES** (burbuja roja): +3, aunque pases del máximo (hasta 15). **GLÓBULO BLANCO** (célula
   blanca con núcleo morado): se vuelve un **LINFOCITO** de escolta (`FlightAlly`, hasta 3) que vuela junto a la nave
   **todo el nivel** y le dispara al enemigo más cercano con tu medicamento (60 % del daño); con la escolta completa da +2
-  misiles. En Arterias y venas hay 19 (por rama en las ilíacas) y en El gran trombo 5. Las oleadas del arranque de la
+  misiles. En Arterias y venas hay 25 (por rama en las ilíacas; 6 en el corazón y la persecución final). Las oleadas del arranque de la
   aorta son más chicas y espaciadas.
 - `ClotGate`: coágulo de plaquetas y fibrina. Solo lo deshace el **ANTICOAGULANTE**, la cápsula regional nueva
   (turquesa, como la heparina; amenaza `Coagulo`). Completo = la pantalla se detiene hasta disolverlo; pegado a la pared =
@@ -511,7 +511,7 @@ abajo). **Picadura de mosquito**: entran los **esporozoítos** del Plasmodium. *
 rotas, sangre que se regresa (`FlowZone` hacia atrás), **remolinos** (`FlowSwirl`), sangre estancada y un coágulo que se
 forma (trombosis venosa profunda).
 
-**Tramo 6, VENA CAVA** (1846–2186): llega la vena de la otra pierna, las renales y las hepáticas (`SideVein`, te empujan
+**Tramo 6, VENA CAVA** (1846–2196, ancha: casi toda la pantalla): llega la vena de la otra pierna, las renales y las hepáticas (`SideVein`, te empujan
 hacia adentro); merozoítos y esporozoítos. **Jefe: PLASMODIUM** (`PlasmodiumBoss`): un anillo de glóbulos rojos da
 vueltas y el parásito está escondido en el que tiene un **anillito morado**. Los sanos tapan las balas; si le pegas 4
 veces al infectado lo revientas. Cada 11 s hay **FIEBRE**: el glóbulo revienta solo, salen merozoítos y el Plasmodium
@@ -543,15 +543,19 @@ endocarditis (S. viridans) → mitral → ventrículo izquierdo → aórtica →
   65 % causa **ARRITMIA**: se esconde en el músculo, el latido se vuelve desordenado (`Heartbeat.Irregular`) y el piso da
   **toque** en cada latido (brilla antes: ¡salta!). Antiparasitario.
 
-### El gran trombo (jefe del sistema, vuelo hacia arriba, 720 u)
-Sales del ventrículo izquierdo y subes por la aorta y la **carótida** persiguiendo un coágulo enorme que va al cerebro
+### Final de Arterias y venas: el corazón y EL GRAN TROMBO (jefe del sistema)
+Al salir de la vena cava (x 2196) la pantalla se **endereza** para cruzar el **corazón** (horizontal: aurícula, válvulas,
+músculo que se aprieta, suero y un glóbulo blanco). La arritmia que dejó el T. cruzi suelta un coágulo... y al salir por
+la aorta (x 2290) la pantalla **vuelve a girar**: segundo tramo hacia ARRIBA (el primero son las venas de la pierna con el
+Plasmodium), por la aorta y la **carótida** persiguiendo un coágulo enorme que va al cerebro
 (`GreatThrombusBoss`). Suelta **émbolos**, a media vida **redes de fibrina** (una fila con un solo hueco) y al final
 **taquicardia**. Solo el **anticoagulante** lo deshace. La barra de la derecha dice cuánto le falta para llegar al
 cerebro: si llega, **EMBOLIA** y regresas al último punto de guardado (el coágulo no se cura).
 
 ### Riñón (secreto, ACUÁTICO, 384 u)
-**Entrada:** en el tramo 2 de Arterias y venas, la arteria **renal izquierda** (la rama angosta de arriba, x≈452) jala
-muy fuerte. Métete **encogida** ({fijar}) y déjate jalar: hay un riñoncito brillante adentro (NODO da una pista).
+**Entrada:** en el tramo 2 de Arterias y venas, la arteria **renal izquierda** (la rama de arriba, x≈452) jala hacia
+arriba. En su **boca** brilla un riñoncito: tócalo con la nave (NODO da una pista). Antes estaba más adentro de la rama,
+fuera del alcance de la nave.
 Sigue el camino del agua por la **nefrona**; casi todo se **nada** (`BuoyancyZone`: {saltar} da una brazada, cerca de la
 superficie un salto fuera del agua, mantener abajo te hunde). Bajo el agua la música se oye apagada, hay burbujas, el
 fondo es más oscuro y cada tramo tiene su color de agua. Aquí el **ANTIPARASITARIO** reemplaza al antihistamínico (por
