@@ -559,9 +559,9 @@ están en el proyecto de Claude: `claude/sprites-circulatorio.md`.
   quita el fondo, separa los dibujos (en orden de lectura) y los guarda a la misma escala. Si ya existe
   `<Prefijo>_Normal.png` no lo reemplaza y escala las demás poses para que midan lo mismo; una pose `-` se ignora.
 - **Ya están** (20 nov): los 6 jefes con sus 4 poses (Ateroma, Plasmodium, Epstein-Barr, T. cruzi, Gran trombo y
-  Cálculo), `SViridans` y `EColi` con 4 poses, `LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito` y `Embolo` (Normal),
-  `Plaquetas` (bestiario), la nave, el linfocito B, los 8 letreros y los fondos del Bazo, el Corazón y el Riñón.
-  Faltan las otras 3 poses de los 5 enemigos que solo tienen la Normal. Con dibujo, la placa de
+  Cálculo), los 7 enemigos con sus 4 poses (`LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito`, `Embolo`,
+  `SViridans` y `EColi`), `Plaquetas` (bestiario), la nave, el linfocito B, los 8 letreros y los fondos del Bazo, el
+  Corazón y el Riñón: el arte del sistema circulatorio está completo. Con dibujo, la placa de
   ateroma mide lo que su dibujo (a lo alto tapa casi toda la arteria), las grietas del cálculo brillan donde están
   dibujadas, y el gran trombo y T. cruzi ajustan dónde se les puede pegar.
 
