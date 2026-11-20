@@ -4382,6 +4382,10 @@ namespace HealingKnight.EditorTools
             };
         }
 
+        /// <summary>Power-up de vuelo: entra por la derecha cuando la pantalla llega a 'x' (a la altura 'screenY' de la pantalla).</summary>
+        private void FlightPowerUpAt(float x, FlightPowerKind kind, float screenY, int branch = 0) =>
+            Node("PowerUp_" + kind, x, 0f).AddComponent<FlightPowerUp>().Configure(kind, screenY, branch);
+
         private void FlightWaveAt(float triggerX, FlightWaveSpec spec) =>
             Node("OleadaVuelo", triggerX, AortaCenterY(triggerX)).AddComponent<FlightWave>().Configure(spec);
 
@@ -4418,7 +4422,7 @@ namespace HealingKnight.EditorTools
                 tissue = "Arteria",
                 flight = true
             }, "NODO: Sistema circulatorio. Estás DENTRO del ventrículo izquierdo del corazón, en la NANOCÁPSULA. " +
-               "{mover} para volar, {disparar} dispara, {dash} hace un dash y mantener {fijar} te ENCOGE. Espera el latido...");
+               "{mover} para volar, {disparar} dispara, {bomba} lanza un MISIL, {dash} hace un dash y mantener {fijar} te ENCOGE. Espera el latido...");
 
             // Fondo: sangre oscura que late, glóbulos lejanos y rayitas de velocidad (AmbientLife, tema Blood).
             var back = new GameObject("Fondo");
@@ -4547,31 +4551,32 @@ namespace HealingKnight.EditorTools
 
             // ================= TRAMO 1: la aorta =================
             // ---------- Aorta ascendente ----------
-            SetMessage("Cada LATIDO empuja la sangre: la pantalla avanza de golpe y luego va lento. Los GLÓBULOS ROJOS detienen las balas... las tuyas también.", 14f);
-            var w1 = Spec(prefabs.SAureus, 3, FlightPattern.Line, 1.6f, -1.6f, 2.6f);
+            SetMessage("Cada LATIDO empuja la sangre: la pantalla avanza de golpe y luego va lento. Tus cápsulas ATRAVIESAN los GLÓBULOS ROJOS, pero las balas enemigas no: úsalos de escudo.", 14f);
+            // (El arranque va tranquilo: pocos enemigos y separados, para aprender a volar.)
+            var w1 = Spec(prefabs.SAureus, 2, FlightPattern.Line, 1.2f, -2.4f, 2.6f);
             w1.amplitude = 0.6f; w1.frequency = 0.4f; w1.splitPrefab = prefabs.SAureusCoco; w1.splitCount = 2;
             w1.message = "S. aureus en la sangre: eso es SEPSIS. Antibiótico. Al romper el racimo, los cocos salen disparados.";
             FlightWaveAt(32f, w1);
-            var w2 = Spec(prefabs.Neumococo, 4, FlightPattern.Swoop, 5f, 1.4f, 3.4f);
-            w2.edge = FlightEdge.Top; w2.interval = 0.5f;
+            var w2 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 5f, 1.4f, 3.2f);
+            w2.edge = FlightEdge.Top; w2.interval = 0.8f;
             w2.message = "Neumococo: de los pulmones también puede pasar a la sangre (bacteriemia). Antibiótico.";
-            FlightWaveAt(50f, w2);
-            var w3 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, 2f, -4f, 2.5f);
-            w3.hoverX = 5.5f; w3.hoverTime = 5f; w3.fireEveryBeats = 2; w3.shotSpeed = 5.5f; w3.interval = 0.2f;
+            FlightWaveAt(56f, w2);
+            var w3 = Spec(prefabs.SAureus, 1, FlightPattern.Hover, 1f, 0f, 2.5f);
+            w3.hoverX = 5.5f; w3.hoverTime = 5f; w3.fireEveryBeats = 2; w3.shotSpeed = 5f; w3.interval = 0.2f;
             w3.splitPrefab = prefabs.SAureusCoco; w3.splitCount = 2;
             w3.message = "¡Disparan AL RITMO del latido! Se ponen rojos medio latido antes: muévete o usa el DASH ({dash}).";
-            FlightWaveAt(66f, w3);
-            var w4 = Spec(prefabs.Neumococo, 5, FlightPattern.Line, 2.8f, -1.4f, 3.2f);
-            w4.interval = 0.35f;
-            FlightWaveAt(82f, w4);
+            FlightWaveAt(72f, w3);
+            var w4 = Spec(prefabs.Neumococo, 3, FlightPattern.Line, 2.4f, -2.4f, 3.2f);
+            w4.interval = 0.6f;
+            FlightWaveAt(86f, w4);
             Checkpoint(92f);
 
             // ---------- Arco aórtico ----------
             SetMessage("El ARCO de la aorta: de arriba salen las arterias que van a la cabeza y a los brazos. La sangre que se va por ahí te JALA.", 106f);
-            var w5 = Spec(prefabs.Neumococo, 3, FlightPattern.Swoop, 0f, 0f, 2.6f);
+            var w5 = Spec(prefabs.Neumococo, 2, FlightPattern.Swoop, 0f, 0f, 2.6f);
             w5.edge = FlightEdge.Top; w5.worldX = 121f; w5.interval = 0.7f;
             FlightWaveAt(124f, w5);
-            var w6 = Spec(prefabs.SAureus, 3, FlightPattern.Swoop, 0f, 0f, 2.4f);
+            var w6 = Spec(prefabs.SAureus, 2, FlightPattern.Swoop, 0f, 0f, 2.4f);
             w6.edge = FlightEdge.Top; w6.worldX = 134f; w6.interval = 0.8f; w6.splitPrefab = prefabs.SAureusCoco; w6.splitCount = 2;
             FlightWaveAt(137f, w6);
             var w7 = Spec(prefabs.SAureus, 2, FlightPattern.Hover, -2f, 3.5f, 2.5f);
@@ -4748,6 +4753,28 @@ namespace HealingKnight.EditorTools
             l6.hoverX = 6f; l6.hoverTime = 4f; l6.fireEveryBeats = 2; l6.shots = 3; l6.spreadDegrees = 26f; l6.interval = 0.2f; l6.branch = 2;
             FlightWaveAt(740f, l6);
             FlightNote(BranchEndX - 16f, "¡Ilíaca derecha superada! De aquí sale la arteria FEMORAL, rumbo a la pierna...", 2);
+
+            // ---------- POWER-UPS de la carrera ----------
+            // Glóbulos blancos (se vuelven linfocitos de escolta, hasta 3), triple disparo y +misiles.
+            FlightPowerUpAt(40f, FlightPowerKind.WhiteCell, -1.4f);
+            FlightPowerUpAt(100f, FlightPowerKind.TripleShot, 1.5f);
+            FlightPowerUpAt(160f, FlightPowerKind.Missiles, -1.6f);
+            FlightPowerUpAt(238f, FlightPowerKind.WhiteCell, 1.6f);
+            FlightPowerUpAt(314f, FlightPowerKind.TripleShot, 0f);     // justo antes del enjambre
+            FlightPowerUpAt(430f, FlightPowerKind.Missiles, 1.4f);
+            FlightPowerUpAt(548f, FlightPowerKind.WhiteCell, -1.2f);
+            FlightPowerUpAt(632f, FlightPowerKind.TripleShot, 0f, 1);
+            FlightPowerUpAt(700f, FlightPowerKind.Missiles, 0f, 1);
+            FlightPowerUpAt(660f, FlightPowerKind.TripleShot, 0f, 2);
+            FlightPowerUpAt(700f, FlightPowerKind.Missiles, 0.8f, 2);
+            FlightPowerUpAt(FemoralStart + 64f, FlightPowerKind.TripleShot, 0f);
+            FlightPowerUpAt(FemoralStart + 156f, FlightPowerKind.WhiteCell, 0.6f);
+            FlightPowerUpAt(1084f, FlightPowerKind.Missiles, 0f);       // antes de la placa de ateroma
+            FlightPowerUpAt(1500f, FlightPowerKind.TripleShot, 0f);
+            FlightPowerUpAt(1620f, FlightPowerKind.WhiteCell, 0.8f);
+            FlightPowerUpAt(1700f, FlightPowerKind.Missiles, -0.8f);
+            FlightPowerUpAt(1900f, FlightPowerKind.TripleShot, 1f);
+            FlightPowerUpAt(2070f, FlightPowerKind.Missiles, -1f);      // antes del Plasmodium
 
             BuildDiseasedFemoral(endX);
             BuildCapillaries();
@@ -5198,6 +5225,12 @@ namespace HealingKnight.EditorTools
 
             // ---------- Recorrido: aorta → carótida → carótida interna → cerebro ----------
             FlightNote(12f, "La AORTA: el coágulo ya va adelante. Cámbiale al ANTICOAGULANTE ({cambiar}) y ¡dispárale!");
+            // Power-ups de la persecución (los misiles también llevan el medicamento: con ANTICOAGULANTE le pegan al coágulo).
+            FlightPowerUpAt(40f, FlightPowerKind.WhiteCell, -1.2f);
+            FlightPowerUpAt(200f, FlightPowerKind.Missiles, 1.2f);
+            FlightPowerUpAt(306f, FlightPowerKind.TripleShot, 0f);
+            FlightPowerUpAt(440f, FlightPowerKind.WhiteCell, 1f);
+            FlightPowerUpAt(600f, FlightPowerKind.Missiles, -1f);
             Checkpoint(60f);
             FlightBannerNote(96f, "CARÓTIDA", new Color(1f, 0.6f, 0.65f), "La CARÓTIDA lleva sangre a la cabeza y al CEREBRO. Te la puedes sentir en el cuello.");
             var g1 = Spec(prefabs.SAureus, 3, FlightPattern.Line, 2.5f, -2.5f, 2.6f);

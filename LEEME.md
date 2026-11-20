@@ -426,8 +426,19 @@ enemigos y balas de la pantalla y se rearman las oleadas de adelante (las que ya
   apagada. Patrones: `Line` (cruza, con ondas), `Swoop` (picada hacia tu altura), `Hover` (se queda disparando y se va),
   `Chase` (te persigue un rato). Entran por la derecha, arriba o abajo; con `worldX` salen de la boca de una rama.
   Con `splitPrefab` se separan al morir (racimo de S. aureus → cocos).
-- `BloodStream`: tráfico de glóbulos rojos (`Art/Respiratorio/GloboRojo.png`). Te empujan suave y **detienen todas las
-  balas**, las tuyas también: sirven de escudo.
+- `BloodStream`: tráfico de glóbulos rojos (`Art/Respiratorio/GloboRojo.png`). Te empujan suave y **detienen las balas
+  enemigas** (sirven de escudo); tus cápsulas y las de tus linfocitos los **atraviesan**.
+- `ShipMissile`: en la nave, {bomba} lanza un **MISIL** en vez de la bomba (el HUD dice MISILES). Sale hacia adelante,
+  acelera, **busca** al enemigo más cercano que tenga enfrente y revienta con el medicamento que traes (daño de bomba ×1.3,
+  radio ×1.15); la onda borra las balas enemigas cercanas. Gasta las mismas cargas que las bombas.
+- `FlightPowerUp` (en `FlightPowerUps.cs`): **power-ups** que entran por la derecha cuando la pantalla llega a su X y se
+  quedan atrás despacio; la nave los agarra al tocarlos (si mueres, los de adelante vuelven a salir).
+  **TRIPLE DISPARO** (burbuja dorada): 3 cápsulas en abanico por 15 s (otro suma tiempo, hasta 30; aro dorado que
+  parpadea al final). **+MISILES** (burbuja roja): +3, aunque pases del máximo (hasta 15). **GLÓBULO BLANCO** (célula
+  blanca con núcleo morado): se vuelve un **LINFOCITO** de escolta (`FlightAlly`, hasta 3) que vuela junto a la nave
+  **todo el nivel** y le dispara al enemigo más cercano con tu medicamento (60 % del daño); con la escolta completa da +2
+  misiles. En Arterias y venas hay 19 (por rama en las ilíacas) y en El gran trombo 5. Las oleadas del arranque de la
+  aorta son más chicas y espaciadas.
 - `ClotGate`: coágulo de plaquetas y fibrina. Solo lo deshace el **ANTICOAGULANTE**, la cápsula regional nueva
   (turquesa, como la heparina; amenaza `Coagulo`). Completo = la pantalla se detiene hasta disolverlo; pegado a la pared =
   te lastima si lo tocas. Con `formTime` se va **formando**: al entrar a la pantalla sus dos mitades crecen desde las

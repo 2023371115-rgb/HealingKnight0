@@ -464,6 +464,7 @@ namespace HealingKnight.Gameplay.Flight
 
             ClearScreen();
             FlightWave.RearmFrom(View.xMin, View.xMax);
+            FlightPowerUp.RearmFrom(View.xMin);
         }
 
         private void OnDrawGizmos()

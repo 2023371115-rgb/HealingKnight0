@@ -14,6 +14,8 @@ namespace HealingKnight.Gameplay.Flight
     /// circulatorio, estilo avioncito de Cuphead):
     /// - Te mueves en 8 direcciones, sin gravedad. La pantalla avanza sola (FlightRoute) y la nave va con ella.
     /// - Disparas siempre hacia adelante con el medicamento que traes; la cápsula se pinta de su color.
+    /// - {bomba} lanza un MISIL que busca al enemigo más cercano (ShipMissile). En la carrera hay power-ups
+    ///   (FlightPowerUp): triple disparo, +misiles y glóbulos blancos que se vuelven linfocitos de escolta.
     /// - DASH ({dash}): un empujón rápido hacia donde te mueves, invencible un instante (pasas entre balas).
     /// - ENCOGERSE (mantener {fijar}): la nave se hace chiquita y más lenta; cabes por capilares y entre balas.
     /// - Al latir el corazón, la sangre te empuja: la nave se queda un poco atrás y luego alcanza a la pantalla.
@@ -107,6 +109,8 @@ namespace HealingKnight.Gameplay.Flight
                 controller.Shooter.MedicationChanged += OnMedication;
                 OnMedication(controller.Shooter.Current);
             }
+            // En la nave las bombas son MISILES (el HUD cambia su letrero).
+            if (controller.Bombs != null) controller.Bombs.Add(0);
         }
 
         private void OnDestroy()

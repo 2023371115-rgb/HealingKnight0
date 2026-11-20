@@ -201,7 +201,7 @@ namespace HealingKnight.UI
 
         private void OnBrainChanged(float current, float max) => brainBar.SetValue(max > 0f ? current / max : 0f);
 
-        private void OnBombsChanged(int count) => bombsText.text = $"BOMBAS {count}";
+        private void OnBombsChanged(int count) => bombsText.text = $"{(player != null && player.IsFlying ? "MISILES" : "BOMBAS")} {count}";
 
         private void OnBombChargeChanged(float value01) => bombChargeBar.SetValue(value01);
 

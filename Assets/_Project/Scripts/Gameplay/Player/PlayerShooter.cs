@@ -51,6 +51,10 @@ namespace HealingKnight.Gameplay.Player
         /// <summary>Multiplica el alcance de las cápsulas (en la nave llegan hasta el otro lado de la pantalla).</summary>
         public float RangeMultiplier { get; set; } = 1f;
         public IReadOnlyList<MedicationData> Loadout => loadout;
+        /// <summary>TRIPLE DISPARO (power-up de la nave): cápsulas extra que salen abiertas en abanico, arriba y abajo.</summary>
+        public int ExtraShots { get; set; }
+        /// <summary>Ángulo entre las cápsulas del abanico.</summary>
+        public float SpreadDegrees { get; set; } = 16f;
         public int SelectedIndex => selectedIndex;
 
         private void Awake()
@@ -69,7 +73,7 @@ namespace HealingKnight.Gameplay.Player
             }
 
             int max = Mathf.Max(1, controller.Config.maxActiveCapsules);
-            pool = new ComponentPool<Projectile>(capsulePrefab, max, max * 2);
+            pool = new ComponentPool<Projectile>(capsulePrefab, max, max * 4);
         }
 
         private void OnDestroy()
@@ -188,20 +192,48 @@ namespace HealingKnight.Gameplay.Player
         {
             if (fireCooldown > 0f || pool == null || Current == null) return false;
             PlayerConfig c = controller.Config;
-            if (pool.CountActive >= c.maxActiveCapsules) return false;
+            int shots = 1 + Mathf.Max(0, ExtraShots);
+            if (pool.CountActive >= c.maxActiveCapsules * shots) return false;
 
             CharacterMotor2D motor = controller.Motor;
             Vector2 shoulder = motor.Position + new Vector2(0f, controller.MuzzleHeight);
             Vector2 dir = aim.sqrMagnitude > 0.01f ? aim.normalized : new Vector2(motor.Facing, 0f);
+            Vector2 origin = shoulder + dir * c.muzzleForward * controller.Size;
 
+            Launch(origin, dir, 1f);
+            // Abanico: una arriba y una abajo, luego otra más abierta de cada lado...
+            for (int i = 1; i < shots; i++)
+            {
+                float angle = SpreadDegrees * ((i + 1) / 2) * (i % 2 == 1 ? 1f : -1f);
+                Launch(origin, (Vector2)(Quaternion.Euler(0f, 0f, angle) * dir), 1f);
+            }
+
+            fireCooldown = c.fireInterval;
+            CombatAudio sounds = CombatAudio.Instance;
+            Sfx.Play(Sfx.FireSound(Current), sounds != null ? sounds.fireVolume : 0.45f, sounds != null ? sounds.pitchJitter : 0.06f);
+            Fired?.Invoke();
+            return true;
+        }
+
+        /// <summary>Una cápsula del medicamento actual desde cualquier lugar (los linfocitos aliados de la nave la usan).</summary>
+        public bool FireFrom(Vector2 origin, Vector2 dir, float damageScale)
+        {
+            if (pool == null || Current == null || dir.sqrMagnitude < 0.0001f) return false;
+            Launch(origin, dir.normalized, damageScale);
+            return true;
+        }
+
+        private void Launch(Vector2 origin, Vector2 dir, float damageScale)
+        {
+            PlayerConfig c = controller.Config;
             Projectile capsule = pool.Get();
             capsule.Launch(new ProjectileShot
             {
-                origin = shoulder + dir * c.muzzleForward * controller.Size,
+                origin = origin,
                 direction = dir,
                 speed = c.capsuleSpeed,
                 range = c.capsuleRange * RangeMultiplier,
-                damage = c.capsuleDamage,
+                damage = c.capsuleDamage * damageScale,
                 knockback = c.capsuleKnockback,
                 radius = 0.18f,
                 sourceTeam = Team.Player,
@@ -210,12 +242,6 @@ namespace HealingKnight.Gameplay.Player
                 color = Current.color,
                 groundMask = groundMask
             }, p => pool.Release(p));
-
-            fireCooldown = c.fireInterval;
-            CombatAudio sounds = CombatAudio.Instance;
-            Sfx.Play(Sfx.FireSound(Current), sounds != null ? sounds.fireVolume : 0.45f, sounds != null ? sounds.pitchJitter : 0.06f);
-            Fired?.Invoke();
-            return true;
         }
 
         private void OnDrawGizmosSelected()

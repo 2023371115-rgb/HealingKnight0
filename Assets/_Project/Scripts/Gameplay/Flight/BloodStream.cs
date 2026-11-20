@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using HealingKnight.Core.Damage;
 using HealingKnight.Gameplay.Combat;
 using HealingKnight.Gameplay.Player;
 using UnityEngine;
@@ -9,7 +10,7 @@ namespace HealingKnight.Gameplay.Flight
     /// GLÓBULOS ROJOS que viajan contigo por la arteria (tráfico): van un poco más lento que la pantalla, así que
     /// los vas rebasando. No hacen daño, pero estorban:
     /// - Te empujan suave si te les pegas.
-    /// - Detienen las balas, las tuyas Y las de los enemigos: úsalos de escudo, pero no dispares a ciegas.
+    /// - Detienen las balas de los enemigos (úsalos de escudo); tus cápsulas sí los atraviesan.
     /// Giran como discos (son discos con el centro hundido). Entre 'fromX' y 'toX'.
     /// Biología: son las células más abundantes de la sangre; llevan el oxígeno pegado a la hemoglobina.
     /// </summary>
@@ -124,11 +125,11 @@ namespace HealingKnight.Gameplay.Flight
                 c.t.localRotation = Quaternion.Euler(0f, 0f, Mathf.Sin(c.phase * 0.5f) * 25f);
 
                 float r = c.size * 0.46f;
-                // Atrapan balas (de los dos lados). El disco es más ancho que alto: se mide como óvalo.
+                // Atrapan las balas ENEMIGAS (las tuyas pasan). El disco es más ancho que alto: se mide como óvalo.
                 for (int i = Projectile.Flying.Count - 1; i >= 0; i--)
                 {
                     Projectile p = Projectile.Flying[i];
-                    if (p == null) continue;
+                    if (p == null || p.SourceTeam == Team.Player) continue;
                     Vector2 d = (Vector2)p.Position - world;
                     d.y /= Mathf.Max(0.3f, aspect);
                     if (d.sqrMagnitude < r * r) p.Consume();

@@ -109,10 +109,26 @@ namespace HealingKnight.Gameplay.Player
             CountChanged?.Invoke(count);
         }
 
+        /// <summary>Power-up de MISILES (nave): suma aunque pase del máximo normal, hasta 'cap'.</summary>
+        public void AddBonus(int amount, int cap)
+        {
+            count = Mathf.Max(count, Mathf.Min(count + amount, cap));
+            CountChanged?.Invoke(count);
+        }
+
         public bool TryThrow()
         {
-            if (count <= 0 || cooldown > 0f || pool == null) return false;
+            if (count <= 0 || cooldown > 0f) return false;
             PlayerConfig c = controller.Config;
+            if (controller.IsFlying)
+            {
+                // En la nave, la bomba es un MISIL que busca al enemigo más cercano.
+                Flight.ShipMissile.Launch(controller, c.bombDamage * 1.3f, c.bombBlastRadius * 1.15f,
+                    controller.Shooter != null ? controller.Shooter.Current : null, groundMask);
+                Spend(c.bombCooldown * 0.6f);
+                return true;
+            }
+            if (pool == null) return false;
             int facing = controller.Motor.Facing;
 
             MedicineBomb bomb = pool.Get();
@@ -121,12 +137,17 @@ namespace HealingKnight.Gameplay.Player
             bomb.Launch(origin, velocity, c.bombDamage, c.bombBlastRadius, controller.Shooter != null ? controller.Shooter.Current : null,
                 groundMask, b => pool.Release(b));
 
+            Spend(c.bombCooldown);
+            return true;
+        }
+
+        private void Spend(float wait)
+        {
             count--;
-            cooldown = c.bombCooldown;
+            cooldown = wait;
             CountChanged?.Invoke(count);
             // Si la barra estaba llena esperando lugar, ahora sí se convierte en bomba.
-            if (charge >= 1f) { charge = 0f; Add(1); ChargeChanged?.Invoke(charge); }
-            return true;
+            if (charge >= 1f && count < controller.Config.maxBombs) { charge = 0f; Add(1); ChargeChanged?.Invoke(charge); }
         }
     }
 }
