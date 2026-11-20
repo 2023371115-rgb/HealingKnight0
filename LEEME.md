@@ -558,8 +558,10 @@ están en el proyecto de Claude: `claude/sprites-circulatorio.md`.
 - **Hojas con todas las poses:** `python Tools/Art/cortar_hoja.py hoja.png <ruta/Prefijo> Normal Ataca Dano Muere`
   quita el fondo, separa los dibujos (en orden de lectura) y los guarda a la misma escala. Si ya existe
   `<Prefijo>_Normal.png` no lo reemplaza y escala las demás poses para que midan lo mismo; una pose `-` se ignora.
-- **Ya están** (19 nov): `LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito`, `Embolo`, `SViridans` (Normal), y los jefes
-  `Ateroma` (Normal y Enojado), `EpsteinBarr`, `TCruzi`, `GranTrombo` y `Calculo` (Normal). Con dibujo, la placa de
+- **Ya están** (20 nov): `SViridans` y `EColi` con sus 4 poses; `LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito` y
+  `Embolo` (Normal); los jefes `Plasmodium` (4 poses), `Ateroma` (Normal y Enojado), `EpsteinBarr`, `TCruzi`,
+  `GranTrombo` y `Calculo` (Normal); el linfocito B (sano e infectado) y los 8 letreros (ya medidos en
+  `SignTextAreas`). Faltan la nave, las plaquetas del bestiario, los fondos y las demás poses. Con dibujo, la placa de
   ateroma mide lo que su dibujo (a lo alto tapa casi toda la arteria), las grietas del cálculo brillan donde están
   dibujadas, y el gran trombo y T. cruzi ajustan dónde se les puede pegar.
 

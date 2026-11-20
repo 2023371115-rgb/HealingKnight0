@@ -3421,6 +3421,14 @@ namespace HealingKnight.EditorTools
                 { "Nervioso/FlechaArriba", new Rect(0.503f, 0.688f, 0.31f, 0.333f) },
                 { "Nervioso/FlechaAbajo", new Rect(0.48f, 0.696f, 0.285f, 0.333f) },
                 { "Nervioso/Secreto", new Rect(0.305f, 0.633f, 0.153f, 0.251f) },
+                { "Circulatorio/Bienvenida", new Rect(0.489f, 0.675f, 0.542f, 0.296f) },
+                { "Circulatorio/Info", new Rect(0.433f, 0.57f, 0.558f, 0.194f) },
+                { "Circulatorio/Peligro", new Rect(0.495f, 0.51f, 0.361f, 0.145f) },
+                { "Circulatorio/Salida", new Rect(0.458f, 0.659f, 0.47f, 0.265f) },
+                { "Circulatorio/FlechaDerecha", new Rect(0.499f, 0.653f, 0.494f, 0.262f) },
+                { "Circulatorio/FlechaArriba", new Rect(0.502f, 0.605f, 0.492f, 0.171f) },
+                { "Circulatorio/FlechaAbajo", new Rect(0.5f, 0.624f, 0.478f, 0.167f) },
+                { "Circulatorio/Secreto", new Rect(0.481f, 0.751f, 0.352f, 0.184f) },
         };
 
         private static Rect SignTextArea(string system, Signpost.Kind kind)

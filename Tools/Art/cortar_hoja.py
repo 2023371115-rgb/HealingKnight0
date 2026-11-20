@@ -10,7 +10,8 @@ Ejemplos:
 Qué hace:
   1. Quita el fondo verde o magenta (igual que quitar_fondo_verde.py).
   2. Busca los dibujos separados de la hoja y los ordena como se lee: de izquierda a derecha y de arriba abajo
-     (la primera pose de la lista es la de arriba a la izquierda).
+     (la primera pose de la lista es la de arriba a la izquierda). Los pedacitos sueltos (gotas, estrellitas,
+     humito) se quedan con el dibujo más cercano.
   3. Si ya existe <Prefijo>_Normal.png, NO lo reemplaza: escala las demás poses para que el personaje mida lo mismo
      que en esa Normal (con --reemplazar sí guarda la Normal de la hoja).
   4. --max N: lo más grande que puede medir una pose, en px (por omisión 512; para jefes usa 900).
@@ -88,6 +89,16 @@ def main():
         print("No encontré ningún dibujo en la hoja.")
         return 1
     grandes = [g for g in grupos if len(g) >= len(grupos[0]) * 0.08]
+    # Los pedacitos sueltos (gotas, estrellitas, anticuerpos, humo) van con el dibujo grande más cercano.
+    cajas_g = [(g.min(0), g.max(0)) for g in grandes]
+    for g in grupos[len(grandes):]:
+        cy, cx = g.mean(0)
+        def lejos(c):
+            (y0, x0), (y1, x1) = c
+            return max(y0 - cy, 0, cy - y1) ** 2 + max(x0 - cx, 0, cx - x1) ** 2
+        cerca = min(range(len(grandes)), key=lambda i: lejos(cajas_g[i]))
+        destino = marca[grandes[cerca][0][0], grandes[cerca][0][1]]
+        marca[g[:, 0], g[:, 1]] = destino
     if len(grandes) != len(poses):
         print(f"Encontré {len(grandes)} dibujos y esperaba {len(poses)} ({', '.join(poses)}). "
               "Pide la hoja con más espacio entre las poses (o revisa que no se toquen).")

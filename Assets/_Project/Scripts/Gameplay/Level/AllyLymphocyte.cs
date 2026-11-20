@@ -35,7 +35,7 @@ namespace HealingKnight.Gameplay.Level
             Sprite art = CodeSprites.ResourceArt("Aliados/LinfocitoB");   // Art/Aliados/Resources/Aliados/LinfocitoB.png
             if (art != null)
             {
-                CodeSprites.AddArt(visual, art, 1f, 31, Vector2.zero);
+                CodeSprites.AddArt(visual, art, 1.35f, 31, Vector2.zero);   // con sus anticuerpos alrededor
                 return;
             }
             Sprite c = CodeSprites.Circle;

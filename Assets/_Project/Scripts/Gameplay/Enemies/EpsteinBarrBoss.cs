@@ -245,7 +245,7 @@ namespace HealingKnight.Gameplay.Enemies
             if (healthyArt != null)
             {
                 infectedArt = CodeSprites.ResourceArt("Aliados/LinfocitoB_Infectado");
-                body = CodeSprites.AddArt(transform, healthyArt, 1.2f, 31, Vector2.zero, "Cuerpo");
+                body = CodeSprites.AddArt(transform, healthyArt, 1.6f, 31, Vector2.zero, "Cuerpo");   // con sus anticuerpos alrededor
                 eyes = new GameObject("Ojos").transform;
                 eyes.SetParent(transform, false);
                 angry = new GameObject("Enojado").transform;
