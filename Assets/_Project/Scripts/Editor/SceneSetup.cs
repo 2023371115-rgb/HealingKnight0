@@ -243,9 +243,9 @@ namespace HealingKnight.EditorTools
         private static void AddGlobalLight2D()
         {
             System.Type lightType = null;
-            foreach (var assembly in System.AppDomain.CurrentDomain.GetAssemblies())
+            foreach (var assemblyName in new[] { "Unity.RenderPipelines.Universal.Runtime", "Unity.RenderPipelines.Universal.2D.Runtime" })
             {
-                lightType = assembly.GetType("UnityEngine.Rendering.Universal.Light2D");
+                lightType = System.Type.GetType("UnityEngine.Rendering.Universal.Light2D, " + assemblyName);
                 if (lightType != null) break;
             }
             if (lightType == null) return;
