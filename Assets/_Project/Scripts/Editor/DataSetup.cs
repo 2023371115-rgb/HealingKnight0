@@ -34,7 +34,7 @@ namespace HealingKnight.EditorTools
         public EnemyData LinfocitoInfectado, EpsteinBarrJefe;
         public EnemyData SViridans, Vegetacion, TCruziJefe;
         public EnemyData Embolo, GranTromboJefe;
-        public EnemyData EColi, CalculoJefe;
+        public EnemyData EColi, CalculoJefe, Leptospira, Cercaria, Proteus, ProteusColonia;
         public LevelData CirculatorioBazo, CirculatorioArteriasVenas, CirculatorioCorazon, CirculatorioGranTrombo, CirculatorioRinon;
 
         public void Run()
@@ -740,9 +740,62 @@ namespace HealingKnight.EditorTools
             });
         }
 
-        /// <summary>Riñón (secreto): E. coli (infección urinaria) y el cálculo gigante.</summary>
+        /// <summary>Riñón (secreto, acuático): E. coli, Leptospira, cercarias de Schistosoma, Proteus, su colonia y el cálculo.</summary>
         private void CreateKidneyEnemies()
         {
+            Leptospira = Enemy("Bacteria_Leptospira", e =>
+            {
+                e.displayName = "Leptospira";
+                e.threat = ThreatType.Bacteria;
+                e.behavior = EnemyBehavior.Diver;
+                e.biologia = "Bacteria en espiral que vive en el agua de las inundaciones (la orina de las ratas la contamina). Entra por la piel " +
+                    "o los ojos y DAÑA EL RIÑÓN (leptospirosis). Nada como taladro y se lanza contra ti. Antibiótico.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 1.6f;
+                e.maxHealth = 20f; e.moveSpeed = 3.8f;
+                e.attackWindup = 0.45f; e.attackCooldown = 2.2f; e.attackDamage = 10f; e.attackKnockback = 5f;
+                e.tint = new Color(0.35f, 0.85f, 0.85f);
+            });
+            Cercaria = Enemy("Parasito_Cercaria", e =>
+            {
+                e.displayName = "Cercaria (Schistosoma)";
+                e.threat = ThreatType.Parasito;
+                e.behavior = EnemyBehavior.Frenzy;
+                e.biologia = "La larva del Schistosoma: nada en enjambre en agua dulce con su cola en forma de Y y se mete por la piel. El " +
+                    "adulto vive en las venas de la VEJIGA y causa sangre en la orina (esquistosomiasis). Antiparasitario (praziquantel).";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 0.6f;
+                e.maxHealth = 8f; e.moveSpeed = 4.8f;
+                e.attackDistance = 1f; e.attackWindup = 0.25f; e.attackCooldown = 1.6f; e.attackDamage = 5f; e.attackKnockback = 2f;
+                e.linfocitoCharge = 0;
+                e.tint = new Color(1f, 0.85f, 0.75f);
+                e.visualScale = 0.7f;
+            });
+            Proteus = Enemy("Bacteria_Proteus", e =>
+            {
+                e.displayName = "Proteus mirabilis";
+                e.threat = ThreatType.Bacteria;
+                e.behavior = EnemyBehavior.Shooter;
+                e.biologia = "Bacteria de las infecciones urinarias que hace la orina menos ácida (con su enzima ureasa) y así se forman " +
+                    "CRISTALES y piedras (cálculos de estruvita). Nada rápido y escupe cristales. Antibiótico.";
+                e.movement = EnemyMovement.Flying; e.flyHeight = 2.2f;
+                e.maxHealth = 22f; e.moveSpeed = 3.6f;
+                e.attackType = EnemyAttackType.Ranged;
+                e.attackDistance = 6f; e.attackWindup = 0.5f; e.attackCooldown = 2.4f; e.attackDamage = 7f;
+                e.projectileSpeed = 6f; e.projectileColor = new Color(0.95f, 0.97f, 1f);
+                e.tint = new Color(0.65f, 0.5f, 0.95f);
+            });
+            ProteusColonia = Enemy("Jefe_ProteusColonia", e =>
+            {
+                e.displayName = "Colonia de Proteus";
+                e.threat = ThreatType.Bacteria;
+                e.biologia = "Muchas bacterias Proteus pegadas en una BIOPELÍCULA: una capa de baba que las protege de los medicamentos y " +
+                    "donde crecen cristales. Por eso las infecciones con biopelícula tardan más en curarse. Antibiótico.";
+                e.maxHealth = 300f;
+                e.meleeDamageTakenMultiplier = 0.5f;
+                e.knockbackResistance = 1f; e.hurtStunTime = 0f; e.linfocitoCharge = 4;
+                e.attackDamage = 8f;
+                e.projectileColor = new Color(0.95f, 0.97f, 1f);
+                e.tint = new Color(0.7f, 0.55f, 0.95f);
+            });
             EColi = Enemy("Bacteria_EColi", e =>
             {
                 e.displayName = "E. coli";
@@ -1455,6 +1508,30 @@ namespace HealingKnight.EditorTools
                     "El médico quita el dolor y decide si hace falta romperla o sacarla.",
                     "Tomar suficiente AGUA todos los días y no comer demasiada sal.",
                     CalculoJefe),
+                Ficha(C, "Riñón (secreto)", "Leptospira", "Leptospira interrogans", "Bacteria", $"{CircArt}/Leptospira_Normal.png",
+                    "Leptospirosis: fiebre, dolor de músculos y ojos rojos. Si avanza puede dañar el riñón y el hígado.",
+                    "Vive en el agua y el lodo contaminados con orina de ratas. Se contagia al nadar o caminar en charcos e inundaciones.",
+                    "Antibióticos que receta el médico, lo antes posible.",
+                    "No nadar ni jugar en agua de inundaciones o charcos sucios, usar botas y evitar las ratas.",
+                    Leptospira),
+                Ficha(C, "Riñón (secreto)", "Cercaria", "Schistosoma haematobium", "Parásito (gusano plano)", $"{CircArt}/Cercaria_Normal.png",
+                    "Esquistosomiasis: sangre en la orina y daño en la vejiga. El gusano adulto vive en las venas de la vejiga.",
+                    "Las cercarias son sus larvas: nadan en ríos y lagos de agua dulce de zonas tropicales y entran por la piel.",
+                    "Un antiparasitario (praziquantel) que receta el médico.",
+                    "No bañarse en ríos o lagos donde hay esquistosomiasis y tener baños limpios (que la orina no llegue al agua).",
+                    Cercaria),
+                Ficha(C, "Riñón (secreto)", "Proteus", "Proteus mirabilis", "Bacteria", $"{CircArt}/Proteus_Normal.png",
+                    "Infección urinaria que puede formar CÁLCULOS de estruvita (cristales de la orina).",
+                    "Su enzima (ureasa) hace la orina menos ácida y así se forman cristales. Puede pegarse en una biopelícula difícil de quitar.",
+                    "Antibióticos que receta el médico; a veces también hay que quitar la piedra.",
+                    "Tomar agua, no aguantarse las ganas de orinar y atender rápido las infecciones urinarias.",
+                    Proteus),
+                Ficha(C, "Riñón (secreto, minijefe)", "Colonia de Proteus", "Biopelícula de Proteus mirabilis", "Jefe · biopelícula", $"{BossArt}/ProteusColonia/ProteusColonia_Normal.png",
+                    "Una biopelícula: muchas bacterias pegadas en una capa de baba que las protege de los medicamentos.",
+                    "Las biopelículas se forman en sondas, piedras y dientes (¡la placa dental también es una!). Por eso esas infecciones cuestan más.",
+                    "Antibióticos por más tiempo y, si hay una sonda o una piedra, cambiarla o quitarla.",
+                    "Higiene, tomar agua y que las sondas se usen solo el tiempo necesario.",
+                    ProteusColonia),
             };
             foreach (BestiaryEntry e in list)
             {

@@ -33,7 +33,7 @@ namespace HealingKnight.EditorTools
         public EnemyHealth Ldl, CelulaEspumosa, Esporozoito, Merozoito;
         public EnemyHealth PlaquetasBloqueo, EpsteinBarrJefe;
         public EnemyHealth SViridans, VegetacionBloqueo, TCruziJefe;
-        public EnemyHealth Embolo, EColi, CalculoJefe;
+        public EnemyHealth Embolo, EColi, CalculoJefe, Leptospira, Cercaria, ProteusBacteria, ProteusColoniaJefe;
         public HealthyNeuron Neuron;
         public EnemyHealth RedNeuron;
         public LightningStorm Storm;
@@ -154,6 +154,11 @@ namespace HealingKnight.EditorTools
             // Riñón (secreto): E. coli y el cálculo gigante.
             EColi = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_EColi.prefab", BuildEColi);
             CalculoJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/Calculo_Rinon.prefab", BuildKidneyStone);
+            // Riñón acuático: nadadores (Leptospira, cercarias, Proteus) y el minijefe colonia de Proteus.
+            Leptospira = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_Leptospira.prefab", BuildLeptospira);
+            Cercaria = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Parasito_Cercaria.prefab", BuildCercaria);
+            ProteusBacteria = LoadOrBuild<EnemyHealth>($"{Folder}/Enemies/Bacteria_Proteus.prefab", BuildProteus);
+            ProteusColoniaJefe = LoadOrBuild<EnemyHealth>($"{Folder}/Bosses/ProteusColonia_Rinon.prefab", BuildProteusColony);
 
             Secret = LoadOrBuild<SecretPassage>($"{Folder}/Level/SecretPassage.prefab", BuildSecret);
             Tooth = LoadOrBuild<SecretTooth>($"{Folder}/Level/DienteSecreto.prefab", BuildTooth);
@@ -680,6 +685,9 @@ namespace HealingKnight.EditorTools
                 case "Coagulo_Embolo": folder = "Circulatorio"; prefix = "Embolo"; width = 1.3f; pivot = new Vector2(0.5f, 0.5f); break;
                 case "Bacteria_SViridans": folder = "Circulatorio"; prefix = "SViridans"; width = 2.2f; break;
                 case "Bacteria_EColi": folder = "Circulatorio"; prefix = "EColi"; width = 1.9f; break;
+                case "Bacteria_Leptospira": folder = "Circulatorio"; prefix = "Leptospira"; width = 1.9f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Parasito_Cercaria": folder = "Circulatorio"; prefix = "Cercaria"; width = 1.2f; pivot = new Vector2(0.5f, 0.5f); break;
+                case "Bacteria_Proteus": folder = "Circulatorio"; prefix = "Proteus"; width = 1.7f; pivot = new Vector2(0.5f, 0.5f); break;
                 default: return;
             }
 
@@ -1750,6 +1758,77 @@ namespace HealingKnight.EditorTools
                 f.transform.localRotation = Quaternion.Euler(0f, 0f, -30f + i * 20f);
             }
             return go;
+        }
+
+        /// <summary>Leptospira: espiral turquesa (un "resorte" de bolitas) con carita al frente.</summary>
+        private GameObject BuildLeptospira()
+        {
+            GameObject go = BuildEnemy("Bacteria_Leptospira", data.Leptospira, EnemyShape.Round);
+            if (HasDrawing(go)) return go;
+            Transform visual = RoundWithoutSpikes(go);
+            Transform body = go.transform.Find("Visual/Body");
+            if (body != null) body.gameObject.SetActive(false);
+            Color line = new Color(0.05f, 0.3f, 0.35f), fill = data.Leptospira.tint;
+            for (int i = 0; i < 9; i++)
+            {
+                var p = new Vector3(-0.8f + i * 0.2f, Mathf.Sin(i * 1.6f) * 0.16f, 0f);
+                SetupUtils.SpriteChild(visual, "EspiraContorno" + i, PlaceholderArt.Circle, line, p, Vector2.one * 0.3f, 0);
+                SetupUtils.SpriteChild(visual, "Espira" + i, PlaceholderArt.Circle, fill, p, Vector2.one * 0.22f, 1);
+            }
+            SetupUtils.SpriteChild(visual, "Ojo", PlaceholderArt.Circle, Color.white, new Vector3(0.82f, 0.08f, 0f), Vector2.one * 0.16f, 2);
+            SetupUtils.SpriteChild(visual, "Pupila", PlaceholderArt.Circle, line, new Vector3(0.85f, 0.07f, 0f), Vector2.one * 0.08f, 3);
+            return go;
+        }
+
+        /// <summary>Cercaria (larva de Schistosoma): cabecita durazno y cola larga que termina en Y.</summary>
+        private GameObject BuildCercaria()
+        {
+            GameObject go = BuildEnemy("Parasito_Cercaria", data.Cercaria, EnemyShape.Round);
+            if (HasDrawing(go)) return go;
+            Transform visual = RoundWithoutSpikes(go);
+            float s = data.Cercaria.visualScale;
+            Color line = new Color(0.4f, 0.22f, 0.15f);
+            for (int i = 0; i < 5; i++)
+                SetupUtils.SpriteChild(visual, "Cola" + i, PlaceholderArt.Circle, line, new Vector3((-0.55f - i * 0.2f) * s, Mathf.Sin(i) * 0.06f * s, 0f), Vector2.one * 0.13f * s, -1);
+            for (int k = -1; k <= 1; k += 2)
+                SetupUtils.SpriteChild(visual, "Horquilla", PlaceholderArt.SquareCentered, line, new Vector3(-1.6f * s, k * 0.13f * s, 0f), new Vector2(0.35f, 0.07f) * s, -1)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, k * 30f);
+            SetupUtils.SpriteChild(visual, "Ventosa", PlaceholderArt.Circle, line, new Vector3(0.42f * s, 0f, 0f), Vector2.one * 0.18f * s, 2);
+            return go;
+        }
+
+        /// <summary>Proteus: bastón morado con muchos flagelos (como pelos) y cristalitos blancos pegados.</summary>
+        private GameObject BuildProteus()
+        {
+            GameObject go = BuildEnemy("Bacteria_Proteus", data.Proteus, EnemyShape.Bullet);
+            if (HasDrawing(go)) return go;
+            Transform visual = go.transform.Find("Visual");
+            Color hair = new Color(0.35f, 0.25f, 0.55f);
+            for (int i = 0; i < 8; i++)
+            {
+                float a = i * 45f;
+                var f = SetupUtils.SpriteChild(visual, "Flagelo" + i, PlaceholderArt.SquareCentered, hair,
+                    new Vector3(Mathf.Cos(a * Mathf.Deg2Rad) * 0.6f, Mathf.Sin(a * Mathf.Deg2Rad) * 0.38f, 0f), new Vector2(0.5f, 0.05f), -2);
+                f.transform.localRotation = Quaternion.Euler(0f, 0f, a + 20f);
+            }
+            for (int i = 0; i < 3; i++)
+                SetupUtils.SpriteChild(visual, "Cristal" + i, PlaceholderArt.SquareCentered, Color.white, new Vector3(-0.3f + i * 0.25f, 0.3f, 0f), new Vector2(0.14f, 0.14f), 3)
+                    .transform.localRotation = Quaternion.Euler(0f, 0f, 45f);
+            return go;
+        }
+
+        /// <summary>Colonia de Proteus (minijefe del Riñón): pared de biopelícula. El dibujo y la lógica, en ProteusColonyBoss.</summary>
+        private GameObject BuildProteusColony()
+        {
+            EnemyData d = data.ProteusColonia;
+            GameObject root = BossRoot("ProteusColonia_Rinon", d, out Transform v, out EnemyHealth health);
+            // Con dibujo es un montículo (más ancho que alto); con figuras, una pared. Solo la CARA recibe daño.
+            BossPoses art = AddBossPoses(root, "ProteusColonia", "ProteusColonia", 5.2f, new Vector2(0.5f, 0f), 11);   // si hay dibujo, lo pone el jefe
+            bool drawn = art != null && art.HasArt;
+            float h = drawn ? 4.2f : 6f, w = drawn ? 4.6f : 3.4f;
+            SetHurtbox(root.AddComponent<Hurtbox>(), new Vector2(0f, h * 0.55f), drawn ? new Vector2(3f, 2.4f) : new Vector2(2.6f, 3f));
+            root.AddComponent<ProteusColonyBoss>().Configure(EnemyProjectile, ProteusBacteria, h, w);
+            return root;
         }
 
         /// <summary>Cálculo gigante (jefe secreto del Riñón): el dibujo y la lógica los arma KidneyStoneBoss.</summary>

@@ -5317,13 +5317,45 @@ namespace HealingKnight.EditorTools
             return sw;
         }
 
+        // ---------- Piezas del Riñón acuático ----------
+
+        private static readonly Color FiltradoClaro = new Color(0.6f, 0.85f, 0.95f, 0.32f);
+        private static readonly Color AguaSalada = new Color(0.92f, 0.72f, 0.3f, 0.45f);
+        private static readonly Color Orina = new Color(0.95f, 0.88f, 0.45f, 0.38f);
+        private static readonly Color Biopelicula = new Color(0.75f, 0.65f, 0.95f, 0.32f);
+
+        private BuoyancyZone Water(float fromX, float toX, float low, float high, bool salty, bool startHigh, Color tint)
+        {
+            BuoyancyZone zone = Node("Agua", fromX, FloorY).AddComponent<BuoyancyZone>();
+            zone.Configure(fromX, toX, FloorY, FloorY + low, FloorY + high, salty, startHigh);
+            zone.SetTint(tint);
+            return zone;
+        }
+
+        private void Current(float x, float y, float w, float h, Vector2 push, float pulse = 0f) =>
+            Node("Corriente", x, y).AddComponent<WaterCurrent>().Configure(new Rect(x, FloorY + y, w, h), push, pulse, new Color(1f, 1f, 0.92f, 0.55f));
+
+        private void Reabsorb(float x, float y, ReabsorptionBubble.Kind kind) =>
+            Node("Reabsorcion_" + kind, x, FloorY + y).AddComponent<ReabsorptionBubble>().Configure(kind, 4f);
+
+        private void Salt(float x, float y, float bob = 1.2f) => Node("CristalDeSal", x, FloorY + y).AddComponent<SaltCrystal>().Configure(bob);
+
+        private void Swarm(EnemyHealth prefab, float x, float y, int count)
+        {
+            for (int i = 0; i < count; i++) EnemyAt(prefab, x + i * 0.9f, FloorY + y + (i % 2) * 0.8f);
+        }
+
         private void BuildRinon()
         {
-            // Riñón (secreto, 232 u): todo es de AGUA y PRESIÓN. Glomérulo (sube la presión con las dos arteriolas para
-            // pasar el colador) → túbulo con E. coli → asa de Henle (nadar: entre más hondo, más salado y más flotas) →
-            // túbulo colector (la hormona ADH sube el agua) → uréter (te persigue una piedra) → pelvis renal con el jefe:
-            // el CÁLCULO GIGANTE (litotricia: pégale en la grieta que brilla). Premio: DEPURACIÓN.
-            LevelManager manager = BuildLevelBase(232f, new LevelStyle
+            // Riñón (secreto, 384 u): un nivel ACUÁTICO que sigue el camino del filtrado por la NEFRONA.
+            // Arteria renal (a pie) → glomérulo (sube la presión con las dos arteriolas) → cápsula de Bowman y túbulo
+            // proximal (nadar; REABSORCIÓN de glucosa, aminoácidos y agua; "bombas" que jalan) → asa de Henle que baja
+            // (agua salada que te empuja hacia arriba, cristales de sal, corrientes) → rama que sube (un chorro te lanza
+            // arriba) → minijefe: COLONIA DE PROTEUS (biopelícula) → túbulo colector (dos ductos con la hormona ADH) →
+            // uréter (la ola de orina... y una piedra que rueda) → pelvis renal con el jefe: el CÁLCULO GIGANTE.
+            // Enemigos de agua: Leptospira, cercarias de Schistosoma, Proteus y E. coli. Premio: DEPURACIÓN.
+            const float length = 384f;
+            LevelManager manager = BuildLevelBase(length, new LevelStyle
             {
                 background = new Color(0.12f, 0.06f, 0.04f),
                 wall = new Color(0.4f, 0.2f, 0.14f),
@@ -5335,63 +5367,130 @@ namespace HealingKnight.EditorTools
                 backdrop = "Fondo_Rinon",
                 tissue = "Rinon"
             }, "NODO: ¡Nivel secreto: el RIÑÓN! Filtra TODA tu sangre muchas veces al día y saca lo que sobra en la orina. " +
-               "Aquí todo es AGUA y PRESIÓN.");
+               "Vas a seguir el camino del agua por la NEFRONA, el filtrito del riñón. ¡Prepárate para NADAR!");
 
-            // ---------- Glomérulo: presión ----------
+            // Aquí hay CERCARIAS (parásito): el ANTIPARASITARIO toma el lugar del antihistamínico.
+            if (manager != null)
+            {
+                SetupUtils.SetRef(manager, "levelMedication", data.Antiparasitario);
+                SetupUtils.SetRef(manager, "replacesMedication", data.Antihistaminico);
+            }
+
+            // ---------- 1) Arteria renal y glomérulo: presión (a pie) ----------
             Arena("Arena_1_Rinon", 6f, 16f, "E. COLI: la causa más común de infección urinaria (sube desde la vejiga). Antibiótico.",
                 W(0.6f, E(prefabs.EColi, data.EColi, 2)),
                 W(1.0f, E(prefabs.EColi, data.EColi, 2, SpawnSide.Both)));
             Platform(12f, 2.6f, 2.6f);
             Tip(25f, "GLOMÉRULO", "GLOMÉRULO: un colador de vasitos. Dispárale a las DOS ARTERIOLAS: cuando las dos brillen sube la PRESIÓN y el colador se abre.");
-            // Los dos botones quedan a la altura de tu disparo: el AFERENTE desde el piso y el EFERENTE desde la plataforma
-            // (antes estaba tan alto que quedaba fuera de la pantalla). Duran 9 s prendidos.
+            // Los dos botones quedan a la altura de tu disparo: el AFERENTE desde el piso y el EFERENTE desde la plataforma.
             ShootSwitch afferent = SwitchAt(30f, FloorY + 1.2f, 9f, "AFERENTE");
             Platform(34.5f, 3.4f, 3f);
             ShootSwitch efferent = SwitchAt(38f, FloorY + 4.4f, 9f, "EFERENTE");
             Node("Glomerulo", 41f, FloorY).AddComponent<GlomerulusFilter>().Configure(afferent, efferent, 12f);
             Checkpoint(44f);
 
-            // ---------- Túbulo proximal ----------
-            EnemyAt(prefabs.EColi, 52f, FloorY);
-            Platform(56f, 2.8f, 2.4f);
-            EnemyAt(prefabs.EColi, 62f, FloorY);
-            Platform(66f, 4f, 2.4f);
-            OralSerum(72f, FloorY + 1f);
+            // ---------- 2) Cápsula de Bowman y túbulo proximal: reabsorción ----------
+            Water(43f, 118f, 1f, 8.5f, false, true, FiltradoClaro);
+            Tip(47f, "BOWMAN", "CÁPSULA DE BOWMAN: lo que pasó el colador es el FILTRADO: agua, sal, glucosa... y gérmenes. ¡A nadar! " +
+                "{saltar} da una brazada y ABAJO te hunde.");
+            Reabsorb(51f, 5f, ReabsorptionBubble.Kind.Glucosa);
+            Reabsorb(55f, 2f, ReabsorptionBubble.Kind.Aminoacido);
+            Swarm(prefabs.Cercaria, 57f, 3f, 3);
+            Current(61f, 0f, 5f, 8.5f, new Vector2(0f, -2.6f), 1.5f);   // "bomba" de la pared: te jala hacia abajo
+            EnemyAt(prefabs.Leptospira, 63f, FloorY + 5f);
+            Reabsorb(64f, 7f, ReabsorptionBubble.Kind.Agua);
+            Checkpoint(66f);
+            HangingWall(69.5f, FloorY + 4f, FloorY + 18f, 1.6f);       // por DEBAJO
+            Arena("Arena_2_Proximal", 76f, 16f, "¡Infección que sube! LEPTOSPIRA (antibiótico) y CERCARIAS de Schistosoma (ANTIPARASITARIO).",
+                W(0.6f, E(prefabs.Cercaria, data.Cercaria, 4)),
+                W(1.0f, E(prefabs.Leptospira, data.Leptospira, 2), E(prefabs.Cercaria, data.Cercaria, 3, SpawnSide.Left)),
+                W(1.0f, E(prefabs.ProteusBacteria, data.Proteus, 1), E(prefabs.Leptospira, data.Leptospira, 1, SpawnSide.Left)));
+            Reabsorb(82f, 6.5f, ReabsorptionBubble.Kind.Glucosa);
+            SolidBlock(93f, 95f, FloorY + 4f);                           // por ARRIBA
+            Current(97f, 0f, 5f, 8.5f, new Vector2(0f, 3f), 1.3f);       // otra bomba: te sube
+            Reabsorb(99f, 2.5f, ReabsorptionBubble.Kind.Aminoacido);
+            EnemyAt(prefabs.Leptospira, 104f, FloorY + 5f);
+            Node("Diuretico", 108f, FloorY + 4.5f).AddComponent<DiureticPickup>();
+            Reabsorb(112f, 6f, ReabsorptionBubble.Kind.Agua);
+            SolidBlock(118f, 124f, FloorY + 8.6f);                        // sal del agua de un salto (cerca de la superficie)
+            Checkpoint(121f);
 
-            // ---------- Asa de Henle: nadar en forma de U ----------
-            Tip(76f, "ASA DE HENLE", "ASA DE HENLE: el túbulo baja en U. Entre más bajas, el agua está más SALADA y FLOTAS más. " +
-                "Nada con {saltar}, mantén ABAJO para hundirte y pasa por DEBAJO de la pared.");
-            SolidBlock(78f, 84f, FloorY + 8.5f);
-            Node("AsaDeHenle", 84f, FloorY).AddComponent<BuoyancyZone>().Configure(84f, 116f, FloorY, FloorY + 1f, FloorY + 8f, true, true);
-            HangingWall(100f, FloorY + 2f, FloorY + 18f, 2f);
-            EnemyAt(prefabs.EColi, 92f, FloorY + 4f);
-            SolidBlock(116f, 122f, FloorY + 8.5f);
-            Checkpoint(119f);
+            // ---------- 3) Asa de Henle, rama que BAJA: agua salada ----------
+            Water(124f, 176f, 1f, 9f, true, true, AguaSalada);
+            Tip(126f, "ASA DE HENLE", "ASA DE HENLE: el túbulo baja en U. Entre más hondo, el agua está más SALADA y FLOTAS más: mantén ABAJO " +
+                "para pasar por debajo de las paredes. Cuidado con los CRISTALES DE SAL y las corrientes.");
+            HangingWall(132f, FloorY + 2.6f, FloorY + 18f, 2f);
+            Current(135f, 0f, 9f, 9f, new Vector2(-2.6f, 0f), 1.7f);     // corriente de regreso (idea del equipo)
+            Salt(139f, 3f, 1.5f);
+            EnemyAt(prefabs.Leptospira, 141f, FloorY + 5f);
+            Salt(143f, 6f, 1f);
+            HangingWall(146f, FloorY + 2.2f, FloorY + 18f, 2f);
+            Reabsorb(148f, 1.1f, ReabsorptionBubble.Kind.Agua);          // premio de lo hondo
+            Checkpoint(149f);
+            Current(150f, 0f, 9f, 9f, new Vector2(2.2f, 0f), 1.5f);
+            Swarm(prefabs.Cercaria, 152f, 5f, 2);
+            Salt(153f, 2f, 1.2f);
+            Salt(156f, 5.5f, 1.5f);
+            HangingWall(160f, FloorY + 2.6f, FloorY + 18f, 2f);
+            Reabsorb(162f, 1.1f, ReabsorptionBubble.Kind.Glucosa);
+            EnemyAt(prefabs.Leptospira, 165f, FloorY + 6f);
+            Salt(166f, 3f, 1.5f);
 
-            // ---------- Túbulo colector: la hormona ADH sube el agua ----------
-            Tip(124f, "ADH", "TÚBULO COLECTOR: la hormona ADH decide cuánta AGUA guarda tu cuerpo. Dispárale al botón ADH: el agua SUBE y tú con ella.");
-            BuoyancyZone duct = Node("TubuloColector", 122f, FloorY).AddComponent<BuoyancyZone>();
-            duct.Configure(122f, 146f, FloorY, FloorY + 0.8f, FloorY + 9f, false, false);
-            ShootSwitch adh = SwitchAt(134f, FloorY + 4.5f, 0f, "ADH");
-            Node("ConexionADH", 134f, FloorY).AddComponent<SwitchToWater>().Configure(adh, duct);
-            SolidBlock(146f, 152f, FloorY + 9.5f);
-            EnemyAt(prefabs.EColi, 150f, FloorY + 9.5f);
-            Checkpoint(156f);
+            // ---------- 4) Rama que SUBE: el chorro te lanza arriba ----------
+            Tip(169f, "RAMA QUE SUBE", "La rama que SUBE del asa: aquí la sal sale del túbulo y el agua corre hacia arriba. ¡Déjate llevar por el chorro!");
+            Current(170f, 0f, 6f, 9.5f, new Vector2(0f, 5f));
+            SolidBlock(176f, 200f, FloorY + 9.5f);
+            EnemyAt(prefabs.EColi, 182f, FloorY + 9.5f);
+            Swarm(prefabs.Cercaria, 186f, 11f, 3);
+            Checkpoint(188f);
+            EnemyAt(prefabs.EColi, 194f, FloorY + 9.5f);
+            OralSerum(198f, FloorY + 10.5f);
 
-            // ---------- Uréter: te persigue una piedra ----------
-            Node("PiedraQueRueda", 160f, FloorY).AddComponent<RollingStoneChase>().Configure(160f, 192f, FloorY, 5.4f);
-            Platform(168f, 2.4f, 2.4f);
-            EnemyAt(prefabs.EColi, 175f, FloorY);
-            Platform(181f, 2.6f, 2.4f);
-            Checkpoint(194f);
+            // ---------- 5) Minijefe: colonia de Proteus (biopelícula) ----------
+            Water(200f, 234f, 1f, 8f, false, true, Biopelicula);
+            Tip(201f, "BIOPELÍCULA", "Algo tapa el túbulo: una BIOPELÍCULA de Proteus. Las bacterias en baba aguantan más los medicamentos.");
+            Arena("Arena_ProteusColonia", 205f, 26f, null,
+                W(1f, E(prefabs.ProteusColoniaJefe, data.ProteusColonia, 1)));
+            Platform(210f, 3f, 3f);
+            Platform(216.5f, 5.5f, 3f);
+            SolidBlock(234f, 240f, FloorY + 8.6f);
+            Checkpoint(237f);
 
-            // ---------- Pelvis renal: el cálculo gigante ----------
-            Tip(195.5f, "CÁLCULO", "Un CÁLCULO gigante tapa la pelvis del riñón. Las balas rebotan: pégale en la GRIETA que brilla.");
-            Arena("Arena_Calculo", 198f, 25f, null,
+            // ---------- 6) Túbulo colector: la hormona ADH (dos ductos) ----------
+            Tip(241f, "ADH", "TÚBULO COLECTOR: la hormona ADH decide cuánta AGUA guarda tu cuerpo. Dispárale al botón ADH: el agua SUBE y tú con ella.");
+            BuoyancyZone duct1 = Water(240f, 258f, 0.8f, 6.5f, false, false, Orina);
+            ShootSwitch adh1 = SwitchAt(249f, FloorY + 3.5f, 0f, "ADH");
+            Node("ConexionADH", 249f, FloorY).AddComponent<SwitchToWater>().Configure(adh1, duct1);
+            EnemyAt(prefabs.ProteusBacteria, 252f, FloorY + 6f);
+            SolidBlock(258f, 263f, FloorY + 7f);
+            BuoyancyZone duct2 = Water(263f, 283f, 0.8f, 9f, false, false, Orina);
+            ShootSwitch adh2 = SwitchAt(271f, FloorY + 4.5f, 0f, "ADH");
+            Node("ConexionADH", 271f, FloorY).AddComponent<SwitchToWater>().Configure(adh2, duct2);
+            Swarm(prefabs.Cercaria, 266f, 2f, 3);
+            EnemyAt(prefabs.ProteusBacteria, 277f, FloorY + 7f);
+            Reabsorb(268f, 7.5f, ReabsorptionBubble.Kind.Agua);
+            SolidBlock(283f, 289f, FloorY + 9.5f);
+            Checkpoint(286f);
+
+            // ---------- 7) Uréter: la ola de orina y la piedra que rueda ----------
+            Tip(290f, "URÉTER", "URÉTER: el tubo que baja la orina a la VEJIGA. Sus paredes se aprietan en ondas (peristalsis)... ¡y algo rueda atrás de ti!");
+            Water(289f, 340f, 1.4f, 1.4f, false, true, Orina);
+            Current(289f, 0f, 51f, 1.8f, new Vector2(2.4f, 0f));          // la orina corre hacia la vejiga
+            Node("PiedraQueRueda", 293f, FloorY).AddComponent<RollingStoneChase>().Configure(293f, 334f, FloorY, 5.4f);
+            Platform(300f, 2.4f, 2.4f);
+            EnemyAt(prefabs.EColi, 306f, FloorY);
+            Platform(313f, 2.6f, 2.4f);
+            EnemyAt(prefabs.Leptospira, 318f, FloorY + 4f);
+            Platform(326f, 2.4f, 2.4f);
+            Checkpoint(342f);
+
+            // ---------- 8) Pelvis renal: el cálculo gigante ----------
+            Tip(343.5f, "CÁLCULO", "Un CÁLCULO gigante tapa la pelvis del riñón. Las balas rebotan: pégale en la GRIETA que brilla.");
+            Arena("Arena_Calculo", 346f, 25f, null,
                 W(1.2f, E(prefabs.CalculoJefe, data.CalculoJefe, 1)));
-            Platform(202f, 3.2f, 2.6f);
-            Platform(210.5f, 5f, 2.6f);
-            Platform(219f, 3.2f, 2.6f);
+            Platform(350f, 3.2f, 2.6f);
+            Platform(358.5f, 5f, 2.6f);
+            Platform(367f, 3.2f, 2.6f);
 
             if (manager != null)
                 SetupUtils.SetString(manager, "completeMessage", "NODO: ¡Riñón limpio! Toma AGUA: así trabajan felices y no se forman piedras.");

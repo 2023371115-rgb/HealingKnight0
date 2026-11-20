@@ -549,20 +549,37 @@ Sales del ventrículo izquierdo y subes por la aorta y la **carótida** persigui
 **taquicardia**. Solo el **anticoagulante** lo deshace. La barra de la derecha dice cuánto le falta para llegar al
 cerebro: si llega, **EMBOLIA** y regresas al último punto de guardado (el coágulo no se cura).
 
-### Riñón (secreto, a pie, 232 u)
+### Riñón (secreto, ACUÁTICO, 384 u)
 **Entrada:** en el tramo 2 de Arterias y venas, la arteria **renal izquierda** (la rama angosta de arriba, x≈452) jala
 muy fuerte. Métete **encogida** ({fijar}) y déjate jalar: hay un riñoncito brillante adentro (NODO da una pista).
-- **Glomérulo:** un colador tapa el paso. Dispárale a las dos **arteriolas** (botones `ShootSwitch`, 9 s prendidos cada
-  uno; brillan y laten mientras están apagados): la AFERENTE desde el piso y la EFERENTE desde la plataforma. Con las dos
-  prendidas sube la **presión**, el colador se abre 4 s y te empuja (`GlomerulusFilter`).
-- **Asa de Henle:** se **nada** (`BuoyancyZone`): {saltar} da una brazada (cerca de la superficie, un salto fuera del
-  agua), mantener abajo te hunde. Entre más hondo está más **salada** y **flotas más**. Pasa por debajo de la pared.
-- **Túbulo colector:** el botón **ADH** (la hormona) sube el agua y tú con ella para llegar a la orilla de arriba
-  (`SwitchToWater`).
-- **Uréter:** una **piedra** rueda detrás de ti (`RollingStoneChase`): ¡corre!
-- **Jefe secreto: CÁLCULO GIGANTE** (`KidneyStoneBoss`): las balas **rebotan**; solo le hace daño pegarle en la
-  **grieta que brilla** (litotricia). Tres grietas en orden; al romperse una suelta piedritas que ruedan, y da saltos con
-  ondas por el piso. **Premio: DEPURACIÓN** (lo que te alenta te dura la mitad, en todo el juego). E. coli en el camino.
+Sigue el camino del agua por la **nefrona**; casi todo se **nada** (`BuoyancyZone`: {saltar} da una brazada, cerca de la
+superficie un salto fuera del agua, mantener abajo te hunde). Bajo el agua la música se oye apagada, hay burbujas, el
+fondo es más oscuro y cada tramo tiene su color de agua. Aquí el **ANTIPARASITARIO** reemplaza al antihistamínico (por
+las cercarias).
+1. **Arteria renal y glomérulo (a pie):** arena de E. coli. Un colador tapa el paso: dispárale a las dos **arteriolas**
+   (botones `ShootSwitch`, 9 s prendidos; brillan mientras están apagados), la AFERENTE desde el piso y la EFERENTE desde
+   la plataforma. Con las dos prendidas sube la **presión**, el colador se abre 4 s y te empuja (`GlomerulusFilter`).
+2. **Cápsula de Bowman y túbulo proximal (agua clara):** **reabsorción**: burbujas de glucosa, aminoácidos y agua que
+   curan un poquito (`ReabsorptionBubble`); "bombas" de la pared que te jalan arriba o abajo (`WaterCurrent` con pulso);
+   pasar por debajo y por encima de paredes; arena de **Leptospira**, **cercarias** y un **Proteus**; el **DIURÉTICO**
+   (`DiureticPickup`: 8 s nadas más rápido y las corrientes de lado te llevan adelante).
+3. **Asa de Henle, rama que baja (agua salada, ámbar):** entre más hondo más flotas: hay que mantener abajo para pasar
+   por debajo de tres paredes; **cristales de sal** que giran y lastiman (`SaltCrystal`, 3 balazos los rompen);
+   corrientes de ida y vuelta (la `HenleCurrent` del equipo vive junto a `WaterCurrent`); premios en lo hondo.
+4. **Rama que sube:** un chorro te lanza arriba a una orilla alta (E. coli y cercarias; suero).
+5. **Minijefe: COLONIA DE PROTEUS** (`ProteusColonyBoss`): una **biopelícula** que no se mueve. Dispara cristales en
+   abanico, suelta Proteus (máx. 3) y a la mitad le caen cristales desde arriba (con sombra de aviso). Solo la **cara**
+   recibe daño y **se regenera** si dejas de dispararle 2.5 s.
+6. **Túbulo colector:** dos ductos, cada uno con su botón **ADH** que sube su agua para salir de un salto
+   (`SwitchToWater`). Proteus y cercarias.
+7. **Uréter:** agua bajita que **corre hacia adelante** y una **piedra** que rueda detrás de ti (`RollingStoneChase`).
+8. **Jefe secreto: CÁLCULO GIGANTE** (`KidneyStoneBoss`): las balas **rebotan**; solo le hace daño pegarle en la
+   **grieta que brilla** (litotricia). Tres grietas en orden; al romperse una suelta piedritas que ruedan, y da saltos con
+   ondas por el piso. **Premio: DEPURACIÓN** (lo que te alenta te dura la mitad, en todo el juego).
+
+Enemigos de agua (todos con dibujo en `Art/Enemigos/Circulatorio`): **Leptospira** (se lanza en picada; antibiótico),
+**Cercaria** de Schistosoma (enjambres rápidos y débiles; antiparasitario), **Proteus** (dispara cristales; antibiótico).
+La colonia de Proteus está en `Art/Jefes/ProteusColonia` (el dibujo se voltea para mirar hacia ti).
 
 ### Dibujos del circulatorio (por hacer)
 Todo el sistema se ve con figuras hasta que existan sus PNG. Guarda cada dibujo con el **nombre exacto** y corre
@@ -574,9 +591,9 @@ están en el proyecto de Claude: `claude/sprites-circulatorio.md`.
 - **Hojas con todas las poses:** `python Tools/Art/cortar_hoja.py hoja.png <ruta/Prefijo> Normal Ataca Dano Muere`
   quita el fondo, separa los dibujos (en orden de lectura) y los guarda a la misma escala. Si ya existe
   `<Prefijo>_Normal.png` no lo reemplaza y escala las demás poses para que midan lo mismo; una pose `-` se ignora.
-- **Ya están** (20 nov): los 6 jefes con sus 4 poses (Ateroma, Plasmodium, Epstein-Barr, T. cruzi, Gran trombo y
-  Cálculo), los 7 enemigos con sus 4 poses (`LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito`, `Embolo`,
-  `SViridans` y `EColi`), `Plaquetas` (bestiario), la nave, el linfocito B, los 8 letreros y los fondos del Bazo, el
+- **Ya están** (20 nov): los 7 jefes con sus 4 poses (Ateroma, Plasmodium, Epstein-Barr, T. cruzi, Gran trombo,
+  Cálculo y la colonia de Proteus), los 10 enemigos con sus 4 poses (`LDL`, `CelulaEspumosa`, `Esporozoito`, `Merozoito`,
+  `Embolo`, `SViridans`, `EColi`, `Leptospira`, `Cercaria` y `Proteus`), `Plaquetas` (bestiario), la nave, el linfocito B, los 8 letreros y los fondos del Bazo, el
   Corazón y el Riñón: el arte del sistema circulatorio está completo. Con dibujo, la placa de
   ateroma mide lo que su dibujo (a lo alto tapa casi toda la arteria), las grietas del cálculo brillan donde están
   dibujadas, y el gran trombo y T. cruzi ajustan dónde se les puede pegar.

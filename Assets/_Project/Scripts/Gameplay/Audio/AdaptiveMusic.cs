@@ -16,7 +16,7 @@ namespace HealingKnight.Gameplay.Audio
     ///   1              (muchos enemigos/jefe) → entra la capa de Combate
     ///
     ///   - Al limpiar una arena suena el remate "Victoria" justo en el siguiente tiempo del compás.
-    ///   - Con poca vida todo se escucha "bajo el agua" (filtro) y suena un latido de corazón.
+    ///   - Con poca vida todo se escucha "bajo el agua" (filtro) y suena un latido de corazón. Nadando también.
     ///   - Con un jefe cambia a la canción "Sistema_Jefe" justo al empezar un compás, con una subida ("Entrada").
     ///   - Mientras suena un remate (Victoria o Entrada) la canción BAJA de volumen, para que no se encimen; al vencer
     ///     a un jefe, la canción del nivel regresa hasta que termina el remate de victoria.
@@ -58,7 +58,7 @@ namespace HealingKnight.Gameplay.Audio
         private static GameObject root;
         private static Song levelSong, bossSong, current;
         private static AudioSource stinger, heart;
-        private static float intensity, holdUntil, danger, duck = 1f;
+        private static float intensity, holdUntil, danger, duck = 1f, underwater;
         private static double duckFrom, duckUntil;   // cuándo suena un remate (reloj de audio): ahí baja la canción
         private static bool bossOn;
 
@@ -74,6 +74,7 @@ namespace HealingKnight.Gameplay.Audio
             stinger = heart = null;
             intensity = holdUntil = danger = 0f;
             duck = 1f;
+            underwater = 0f;
             duckFrom = duckUntil = 0.0;
             bossOn = false;
         }
@@ -298,7 +299,9 @@ namespace HealingKnight.Gameplay.Audio
 
             float master = CombatAudio.MusicLevel;
             double now = AudioSettings.dspTime;
-            float cutoff = Mathf.Lerp(22000f, 900f, danger);
+            // Nadando (riñón) la música se oye apagada, como bajo el agua; al salir se aclara.
+            underwater = Mathf.MoveTowards(underwater, Hazards.BuoyancyZone.PlayerSubmerged ? 1f : 0f, dt / 0.35f);
+            float cutoff = Mathf.Min(Mathf.Lerp(22000f, 900f, danger), Mathf.Lerp(22000f, 1300f, underwater));
             bool ducking = now >= duckFrom - 0.05 && now < duckUntil;
             duck = Mathf.MoveTowards(duck, ducking ? 0.22f : 1f, dt / (ducking ? 0.15f : 0.6f));
 
