@@ -810,6 +810,12 @@ para no chocar con la música).
 Si dice que falta el módulo de Windows: Unity Hub → Installs → tu versión → engrane → Add modules →
 *Windows Build Support (Mono)*.
 
+**APK para Android:** **Healing Knight → Construir juego (APK para Android)**. Pone solo lo de Android (nombre del paquete
+`com.healingknight.juego`, horizontal, IL2CPP + ARM64 y `.apk` en vez de `.aab`) y deja `Builds/Android/HealingKnight.apk`.
+Necesita el módulo *Android Build Support* (con OpenJDK y Android SDK & NDK Tools). La primera vez cambia el proyecto a
+Android y tarda; el botón de Windows lo regresa solo. **El juego aún no tiene controles táctiles**: en el teléfono hace
+falta un control Bluetooth. Para instalarla: pasar el .apk al teléfono y permitir "fuentes desconocidas".
+
 ## Una clase por archivo (importante)
 Unity solo puede guardar en una escena o prefab un componente cuyo archivo se llame **igual que la clase**. Si un archivo
 trae varias clases `MonoBehaviour`, solo la primera funciona y las demás quedan como **Missing Script** al guardar
