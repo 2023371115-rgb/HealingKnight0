@@ -567,8 +567,9 @@ superficie un salto fuera del agua, mantener abajo te hunde). Bajo el agua la m�
 fondo es más oscuro y cada tramo tiene su color de agua. Aquí el **ANTIPARASITARIO** reemplaza al antihistamínico (por
 las cercarias).
 1. **Arteria renal y glomérulo (a pie):** arena de E. coli. Un colador tapa el paso: dispárale a las dos **arteriolas**
-   (botones `ShootSwitch`, 9 s prendidos; brillan mientras están apagados), la AFERENTE desde el piso y la EFERENTE desde
-   la plataforma. Con las dos prendidas sube la **presión**, el colador se abre 4 s y te empuja (`GlomerulusFilter`).
+   (botones `ShootSwitch`; brillan mientras están apagados y, una vez prendidos, se **quedan prendidos**), la AFERENTE
+   desde el piso y la EFERENTE desde la plataforma. Con las dos prendidas sube la **presión**, el colador se abre (y se
+   queda abierto) y te empuja un momento (`GlomerulusFilter`).
 2. **Cápsula de Bowman y túbulo proximal (agua clara):** **reabsorción**: burbujas de glucosa, aminoácidos y agua que
    curan un poquito (`ReabsorptionBubble`); "bombas" de la pared que te jalan arriba o abajo (`WaterCurrent` con pulso);
    pasar por debajo y por encima de paredes; arena de **Leptospira**, **cercarias** y un **Proteus**; el **DIURÉTICO**
@@ -580,8 +581,8 @@ las cercarias).
 5. **Minijefe: COLONIA DE PROTEUS** (`ProteusColonyBoss`): una **biopelícula** que no se mueve. Dispara cristales en
    abanico, suelta Proteus (máx. 3) y a la mitad le caen cristales desde arriba (con sombra de aviso). Solo la **cara**
    recibe daño y **se regenera** si dejas de dispararle 2.5 s.
-6. **Túbulo colector:** dos ductos, cada uno con su botón **ADH** que sube su agua para salir de un salto
-   (`SwitchToWater`). Proteus y cercarias.
+6. **Túbulo colector:** dos ductos, cada uno con su botón **ADH**: un balazo y su agua sube (y se queda arriba) para
+   salir de un salto (`SwitchToWater`). Proteus y cercarias.
 7. **Uréter:** agua bajita que **corre hacia adelante** y una **piedra** que rueda detrás de ti (`RollingStoneChase`).
 8. **Jefe secreto: CÁLCULO GIGANTE** (`KidneyStoneBoss`): las balas **rebotan**; solo le hace daño pegarle en la
    **grieta que brilla** (litotricia). Tres grietas en orden; al romperse una suelta piedritas que ruedan, y da saltos con

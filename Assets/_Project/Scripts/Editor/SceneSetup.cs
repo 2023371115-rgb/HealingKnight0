@@ -5507,9 +5507,10 @@ namespace HealingKnight.EditorTools
             Platform(12f, 2.6f, 2.6f);
             Tip(25f, "GLOMÉRULO", "GLOMÉRULO: un colador de vasitos. Dispárale a las DOS ARTERIOLAS: cuando las dos brillen sube la PRESIÓN y el colador se abre.");
             // Los dos botones quedan a la altura de tu disparo: el AFERENTE desde el piso y el EFERENTE desde la plataforma.
-            ShootSwitch afferent = SwitchAt(30f, FloorY + 1.2f, 9f, "AFERENTE");
+            // Se quedan prendidos (-1) y el colador se queda abierto: no hay que correr contra el tiempo.
+            ShootSwitch afferent = SwitchAt(30f, FloorY + 1.2f, -1f, "AFERENTE");
             Platform(34.5f, 3.4f, 3f);
-            ShootSwitch efferent = SwitchAt(38f, FloorY + 4.4f, 9f, "EFERENTE");
+            ShootSwitch efferent = SwitchAt(38f, FloorY + 4.4f, -1f, "EFERENTE");
             Node("Glomerulo", 41f, FloorY).AddComponent<GlomerulusFilter>().Configure(afferent, efferent, 12f);
             Checkpoint(44f);
 
@@ -5583,12 +5584,12 @@ namespace HealingKnight.EditorTools
             // ---------- 6) Túbulo colector: la hormona ADH (dos ductos) ----------
             Tip(241f, "ADH", "TÚBULO COLECTOR: la hormona ADH decide cuánta AGUA guarda tu cuerpo. Dispárale al botón ADH: el agua SUBE y tú con ella.");
             BuoyancyZone duct1 = Water(240f, 258f, 0.8f, 6.5f, false, false, Orina);
-            ShootSwitch adh1 = SwitchAt(249f, FloorY + 3.5f, 0f, "ADH");
+            ShootSwitch adh1 = SwitchAt(249f, FloorY + 3.5f, -1f, "ADH");   // un balazo y el agua sube (se queda arriba)
             Node("ConexionADH", 249f, FloorY).AddComponent<SwitchToWater>().Configure(adh1, duct1);
             EnemyAt(prefabs.ProteusBacteria, 252f, FloorY + 6f);
             SolidBlock(258f, 263f, FloorY + 7f);
             BuoyancyZone duct2 = Water(263f, 283f, 0.8f, 9f, false, false, Orina);
-            ShootSwitch adh2 = SwitchAt(271f, FloorY + 4.5f, 0f, "ADH");
+            ShootSwitch adh2 = SwitchAt(271f, FloorY + 4.5f, -1f, "ADH");
             Node("ConexionADH", 271f, FloorY).AddComponent<SwitchToWater>().Configure(adh2, duct2);
             Swarm(prefabs.Cercaria, 266f, 2f, 3);
             EnemyAt(prefabs.ProteusBacteria, 277f, FloorY + 7f);

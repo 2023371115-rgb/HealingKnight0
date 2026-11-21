@@ -10,7 +10,8 @@ namespace HealingKnight.Gameplay.Hazards
 {
     /// <summary>
     /// BOTÓN que se activa a balazos (una arteriola, la hormona ADH...). Prendido brilla verde. Con 'holdTime' > 0 se
-    /// apaga solo después de ese tiempo; con 0 cada balazo lo prende/apaga.
+    /// apaga solo después de ese tiempo; con 0 cada balazo lo prende/apaga (con un respiro, para que la ráfaga no lo
+    /// prenda y apague de inmediato); con menos de 0 se QUEDA PRENDIDO para siempre.
     /// </summary>
     public class ShootSwitch : MonoBehaviour
     {
@@ -57,13 +58,14 @@ namespace HealingKnight.Gameplay.Hazards
             if (cooldown > 0f) cooldown -= dt;
             if (halo != null)
             {
-                halo.enabled = !On || holdTime <= 0f;
+                halo.enabled = !On || holdTime == 0f;
                 halo.transform.localScale = Vector3.one * (2.6f + 0.5f * Mathf.Sin(Time.time * 5f));
             }
+            if (On && holdTime != 0f)
+                lamp.transform.localScale = Vector3.one * (0.7f + 0.15f * Mathf.Sin(Time.time * 10f));
             if (On && holdTime > 0f)
             {
                 timer -= dt;
-                lamp.transform.localScale = Vector3.one * (0.7f + 0.15f * Mathf.Sin(Time.time * 10f));
                 if (timer <= 0f) Set(false);
             }
             for (int i = Projectile.Flying.Count - 1; i >= 0; i--)
@@ -73,9 +75,9 @@ namespace HealingKnight.Gameplay.Hazards
                 if (((Vector2)p.Position - (Vector2)transform.position).sqrMagnitude > radius * radius) continue;
                 p.Consume();
                 if (cooldown > 0f) continue;
-                cooldown = 0.25f;
-                if (holdTime > 0f) { timer = holdTime; Set(true); }
-                else Set(!On);
+                if (holdTime < 0f) { Set(true); continue; }
+                if (holdTime > 0f) { cooldown = 0.25f; timer = holdTime; Set(true); }
+                else { cooldown = 0.9f; Set(!On); }
             }
         }
     }

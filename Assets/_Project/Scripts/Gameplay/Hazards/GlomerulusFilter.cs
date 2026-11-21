@@ -10,7 +10,8 @@ namespace HealingKnight.Gameplay.Hazards
 {
     /// <summary>
     /// GLOMÉRULO: un "colador" de vasitos que tapa el paso. Para filtrar hace falta PRESIÓN: con los dos botones
-    /// (arteriolas) prendidos a la vez, se abre unos segundos y la presión te EMPUJA a través.
+    /// (arteriolas) prendidos a la vez, se abre y la presión te EMPUJA a través. Si los botones se quedan prendidos
+    /// (en el Riñón sí), el colador se queda ABIERTO.
     /// </summary>
     public class GlomerulusFilter : MonoBehaviour
     {
@@ -20,8 +21,8 @@ namespace HealingKnight.Gameplay.Hazards
 
         private BoxCollider2D wall;
         private Transform art;
-        private float open;
-        private bool told;
+        private float open, push;
+        private bool told, opened;
 
         public void Configure(ShootSwitch a, ShootSwitch b, float wallHeight)
         {
@@ -49,16 +50,24 @@ namespace HealingKnight.Gameplay.Hazards
             if (wall == null) return;
             float dt = Time.deltaTime;
             bool pressure = afferent != null && efferent != null && afferent.On && efferent.On;
-            if (pressure && open <= 0f)
+            if (pressure)
             {
-                open = openTime;
-                Sfx.Effect("Nave_Despegue", 0.6f);
-                GameplayEvents.RaiseMessage("¡PRESIÓN! El glomérulo FILTRA: ¡pasa ya!");
+                if (!opened)
+                {
+                    opened = true;
+                    push = openTime;
+                    Sfx.Effect("Nave_Despegue", 0.6f);
+                    GameplayEvents.RaiseMessage("¡PRESIÓN! El glomérulo FILTRA: ¡pasa ya!");
+                }
+                else if (open <= 0f) push = openTime;
+                open = Mathf.Max(open, openTime);   // mientras haya presión, sigue abierto
             }
-            if (open > 0f)
+            if (open > 0f) open -= dt;
+            if (open <= 0f) opened = false;
+            if (push > 0f)
             {
-                open -= dt;
-                // La presión te empuja hacia adelante a través del colador.
+                push -= dt;
+                // Al abrirse, la presión te empuja hacia adelante a través del colador (solo un momento).
                 PlayerController player = PlayerController.Current;
                 if (player != null && Mathf.Abs(player.Position.x - transform.position.x) < 3f && player.Position.x < transform.position.x + 1f)
                     player.Motor.Body.position += new Vector2(6f * dt, 0f);

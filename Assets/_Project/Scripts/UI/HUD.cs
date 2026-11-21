@@ -248,7 +248,7 @@ namespace HealingKnight.UI
                 chip.color = selected ? c : new Color(c.r, c.g, c.b, 0.55f);
             }
             medicationKeys.text = meds.Count > 1
-                ? PlayerControls.Format("{medicamento_anterior} ◀  cambiar  ▶ {medicamento}   ·   1-" + meds.Count + " directo")
+                ? PlayerControls.Format("{medicamento_anterior} <  cambiar  > {medicamento}   ·   1-" + meds.Count + " directo")
                 : "";
         }
 
