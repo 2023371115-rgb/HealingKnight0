@@ -802,6 +802,14 @@ Los efectos los hace `Tools/Audio/generar_sonidos.py` (ahora con filtros, FM, re
 de nivel `Tools/Audio/generar_ambientes.py` (bucles estéreo de 16 s; casi todo ruido y eventos sueltos, sin notas,
 para no chocar con la música).
 
+## Armar el juego (.exe para Windows)
+1. Corre **Healing Knight → Regenerar proyecto base** (pone todas las escenas en la lista del build).
+2. **Healing Knight → Construir juego (.exe para Windows)** (`Editor/GameBuilder.cs`). Tarda unos minutos.
+3. Se abre la carpeta `Builds/Windows/` con `HealingKnight.exe`, la carpeta `HealingKnight_Data` y otros archivos.
+   **Comparte la carpeta completa en un .zip**: el .exe solo no funciona. `Builds/` no se sube a git.
+Si dice que falta el módulo de Windows: Unity Hub → Installs → tu versión → engrane → Add modules →
+*Windows Build Support (Mono)*.
+
 ## Una clase por archivo (importante)
 Unity solo puede guardar en una escena o prefab un componente cuyo archivo se llame **igual que la clase**. Si un archivo
 trae varias clases `MonoBehaviour`, solo la primera funciona y las demás quedan como **Missing Script** al guardar
